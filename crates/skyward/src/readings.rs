@@ -36,7 +36,8 @@ impl Readings {
         if unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_CLOEXEC | libc::O_NONBLOCK) } != 0 {
             return Err(std::io::Error::last_os_error()).context("make the readings' wake pipe");
         }
-        let (wake, signal) = unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
+        let (wake, signal) =
+            unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
         let (tx, taken) = mpsc::channel();
         let (asks, asked) = mpsc::channel::<()>();
         let cfg = cfg.clone();
@@ -78,13 +79,22 @@ impl Readings {
 
     /// Read the battery at once.
     pub fn ask(&self) {
-        self.asks.send(()).expect("the readings thread runs while its readings are taken");
+        self.asks
+            .send(())
+            .expect("the readings thread runs while its readings are taken");
     }
 
     /// The readings taken since the last call.
     pub fn taken(&self) -> Vec<Reading> {
         let mut drain = [0u8; 64];
-        while unsafe { libc::read(self.wake.as_raw_fd(), drain.as_mut_ptr().cast(), drain.len()) } > 0 {}
+        while unsafe {
+            libc::read(
+                self.wake.as_raw_fd(),
+                drain.as_mut_ptr().cast(),
+                drain.len(),
+            )
+        } > 0
+        {}
         self.taken.try_iter().collect()
     }
 }

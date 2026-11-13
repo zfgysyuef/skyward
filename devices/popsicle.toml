@@ -59,6 +59,81 @@ oneshot = true
 user = "root"
 groups = ["root", "system", "wakelock", "graphics"]
 
+# The secure world reaches back into Android through the listeners this
+# daemon registers; without them the key service cannot use any key.
+# /vendor/etc/init/qseecomd.rc starts it as root in drmrpc.
+[[service]]
+path = "/vendor/bin/qseecomd"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_property = "vendor.sys.listeners.registered"
+user = "root"
+groups = ["root", "drmrpc"]
+
+# The opener the secure world's apps are reached through. It loads them
+# from the modem partition, mounted at /vendor/firmware_mnt.
+# /vendor/etc/init/hlosminkdaemon.rc runs it as system.
+[[service]]
+path = "/vendor/bin/hlosminkdaemon"
+libraries = ["/system/lib64", "/vendor/lib64"]
+user = "system"
+groups = ["system", "oem_2912", "wakelock"]
+capabilities = ["WAKE_ALARM", "BLOCK_SUSPEND"]
+
+# The key service. The same program serves the secure clock and the shared
+# secret, which the vendor manifest describes apart from it. Without it
+# the data partition stays closed.
+[[service]]
+path = "/vendor/bin/hw/android.hardware.security.onekeymint-service-qti"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_service = "android.hardware.security.keymint.IKeyMintDevice/default"
+registers = [
+    "android.hardware.security.keymint.IRemotelyProvisionedComponent/default",
+    "android.hardware.security.secureclock.ISecureClock/default",
+    "android.hardware.security.sharedsecret.ISharedSecret/default",
+]
+user = "system"
+groups = ["system", "drmrpc"]
+
+# The credential service. Its init script leaves it in the early_hal class
+# with no disabled line, so the phone starts it even where
+# vendor.gatekeeper.is_security_level_spu stays 1.
+[[service]]
+path = "/vendor/bin/hw/android.hardware.gatekeeper-rust-service-qti"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_service = "android.hardware.gatekeeper.IGatekeeper/default"
+user = "system"
+groups = ["system"]
+
+# NXP's SN220 strongbox, in the odm partition. It keeps its own key service
+# and joins the agreement on the key the notes are signed with.
+[[service]]
+path = "/odm/bin/hw/android.hardware.security.keymint3-service.strongbox.nxp"
+libraries = ["/system/lib64", "/vendor/lib64", "/odm/lib64", "/mnt/system/system/lib64", "/mnt/system/system/lib64/bootstrap"]
+ready_service = "android.hardware.security.keymint.IKeyMintDevice/strongbox"
+registers = [
+    "android.hardware.security.keymint.IRemotelyProvisionedComponent/strongbox",
+    "android.hardware.security.sharedsecret.ISharedSecret/strongbox",
+]
+user = "vendor_nxp_strongbox"
+groups = ["root"]
+
+# NXP's weaver, which a screen lock's secret is bound to. Its init script
+# runs it as vendor_nxp_weaver.
+[[service]]
+path = "/odm/bin/hw/android.hardware.weaver-service.nxp-qti"
+libraries = ["/system/lib64", "/vendor/lib64", "/odm/lib64", "/mnt/system/system/lib64", "/mnt/system/system/lib64/bootstrap"]
+ready_service = "android.hardware.weaver.IWeaver/default"
+user = "vendor_nxp_weaver"
+groups = ["vendor_nxp_weaver"]
+
+# The boot control. The phone is usable without it, so it comes last.
+[[service]]
+path = "/vendor/bin/hw/android.hardware.boot-service.qti"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_service = "android.hardware.boot.IBootControl/default"
+user = "root"
+groups = ["root"]
+
 # WLAN: Qualcomm's Peach on PCIe (qcom,cnss-peach in its dtbo), as on the
 # 17 Ultra, whose vendor partition this phone shares file for file but for
 # its build properties, a power hint and two radio libraries.

@@ -24,6 +24,10 @@ const USB_DRIVE: &str = "usb_drive";
 const LOGS: [&str; 2] = ["recovery", "kernel"];
 const LOG_PLACES: [&str; 2] = ["temporary", "storage"];
 
+fn inner_screen() -> String {
+    "inner".to_string()
+}
+
 /// The settings as they are kept. A value missing is the one a recovery
 /// starts with, and one this version does not know is left out.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -49,6 +53,10 @@ pub struct Settings {
     pub vibration: f32,
     /// A computer connected over USB is offered internal storage.
     pub file_transfer: bool,
+    /// Which panel a fold shows: `inner` or `cover`. A phone with one
+    /// screen keeps `inner`.
+    #[serde(default = "inner_screen")]
+    pub screen: String,
     pub install: Install,
     pub backup: Backup,
     pub logs: Logs,
@@ -126,7 +134,11 @@ impl Settings {
             vibrate: state.vibrate,
             vibration: state.vibration,
             file_transfer: state.file_transfer,
-            install: Install { check_signature: state.check_signature, keep_recovery: state.keep_recovery },
+            screen: if state.cover { "cover" } else { "inner" }.to_string(),
+            install: Install {
+                check_signature: state.check_signature,
+                keep_recovery: state.keep_recovery,
+            },
             backup: Backup {
                 parts: names(&state.backup, &PARTS),
                 to: match state.backup_to {
@@ -137,7 +149,10 @@ impl Settings {
                 compress: state.compress,
                 verify: state.verify,
             },
-            logs: Logs { kinds: names(&state.logs, &LOGS), to: LOG_PLACES[state.logs_to].to_string() },
+            logs: Logs {
+                kinds: names(&state.logs, &LOGS),
+                to: LOG_PLACES[state.logs_to].to_string(),
+            },
         }
     }
 
@@ -153,12 +168,16 @@ impl Settings {
 
     /// The language chosen on the language page.
     pub fn chosen(&self) -> Option<Lang> {
-        self.language.as_deref().and_then(|tag| Lang::for_locale(tag).ok())
+        self.language
+            .as_deref()
+            .and_then(|tag| Lang::for_locale(tag).ok())
     }
 
     /// The language the pages last spoke.
     pub fn spoken(&self) -> Option<Lang> {
-        self.spoken.as_deref().and_then(|tag| Lang::for_locale(tag).ok())
+        self.spoken
+            .as_deref()
+            .and_then(|tag| Lang::for_locale(tag).ok())
     }
 
     /// Put the settings into `state`, each that is one the pages can show:
@@ -173,7 +192,10 @@ impl Settings {
         if (0.0..=1.0).contains(&self.brightness) {
             state.brightness = self.brightness;
         }
-        if let Some(at) = SCREEN_OFF.iter().position(|off| off.map_or(0, |ms| ms / 1000) == self.screen_off) {
+        if let Some(at) = SCREEN_OFF
+            .iter()
+            .position(|off| off.map_or(0, |ms| ms / 1000) == self.screen_off)
+        {
             state.screen_off = at;
         }
         if let Some(at) = TIME_ZONES.iter().position(|zone| zone.2 == self.time_zone) {
@@ -184,6 +206,11 @@ impl Settings {
             state.vibration = self.vibration;
         }
         state.file_transfer = self.file_transfer;
+        match self.screen.as_str() {
+            "cover" => state.cover = true,
+            "inner" => state.cover = false,
+            _ => {}
+        }
         state.check_signature = self.install.check_signature;
         state.keep_recovery = self.install.keep_recovery;
         state.backup = picked(&self.backup.parts, &PARTS);
@@ -203,7 +230,11 @@ impl Settings {
 
 /// The names of those of `all` that are `ticked`.
 fn names(ticked: &[bool], all: &[&str]) -> Vec<String> {
-    all.iter().zip(ticked).filter(|(_, &on)| on).map(|(name, _)| name.to_string()).collect()
+    all.iter()
+        .zip(ticked)
+        .filter(|(_, &on)| on)
+        .map(|(name, _)| name.to_string())
+        .collect()
 }
 
 /// Which of `all` the names `kept` tick.
@@ -250,7 +281,10 @@ impl Keeper {
             Kept::Nothing => Some(None),
             Kept::Unreadable => None,
         };
-        Keeper { holds, standing: None }
+        Keeper {
+            holds,
+            standing: None,
+        }
     }
 
     /// The settings to write at `now`, given those the pages `show`: none
@@ -263,7 +297,9 @@ impl Keeper {
             return None;
         }
         match &self.standing {
-            Some((stood, since)) if *stood == show => since.filter(|&since| now >= since + WAIT_MS).map(|_| show),
+            Some((stood, since)) if *stood == show => {
+                since.filter(|&since| now >= since + WAIT_MS).map(|_| show)
+            }
             _ => {
                 self.standing = Some((show, Some(now)));
                 None
@@ -322,31 +358,60 @@ mod tests {
         let mut back = State::default();
         kept.apply(&mut back);
         assert_eq!(Settings::of(&back), Settings::of(&state));
-        assert_eq!((back.lang, back.screen_off, back.time_zone), (Lang::En, 6, 7));
+        assert_eq!(
+            (back.lang, back.screen_off, back.time_zone),
+            (Lang::En, 6, 7)
+        );
     }
 
     #[test]
     fn each_value_is_kept_as_what_it_means() {
-        let state = State { screen_off: 3, time_zone: 1, backup: [true, false, false, true], ..State::default() };
+        let state = State {
+            screen_off: 3,
+            time_zone: 1,
+            backup: [true, false, false, true],
+            ..State::default()
+        };
         let text = Settings::of(&state).text();
         let json: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert_eq!(json["screen_off"], 120, "two minutes, in seconds");
         assert_eq!(json["time_zone"], "Asia/Hong_Kong");
-        assert_eq!(json["backup"]["parts"], serde_json::json!(["boot", "modem"]));
+        assert_eq!(
+            json["backup"]["parts"],
+            serde_json::json!(["boot", "modem"])
+        );
         assert_eq!(json["logs"]["to"], "temporary");
         assert_eq!(json["spoken"], "zh-Hans");
-        assert!(json.get("language").is_none(), "no language is chosen until one is");
-        let never = Settings::of(&State { screen_off: SCREEN_OFF.len() - 1, ..State::default() });
+        assert!(
+            json.get("language").is_none(),
+            "no language is chosen until one is"
+        );
+        let never = Settings::of(&State {
+            screen_off: SCREEN_OFF.len() - 1,
+            ..State::default()
+        });
         assert_eq!(never.screen_off, 0, "a screen that stays on");
     }
 
     #[test]
     fn what_a_file_leaves_out_is_what_a_recovery_starts_with() {
-        let kept = Settings::read(r#"{ "dark": true, "backup": { "compress": true }, "colour": "blue" }"#).unwrap();
+        let kept =
+            Settings::read(r#"{ "dark": true, "backup": { "compress": true }, "colour": "blue" }"#)
+                .unwrap();
         let mut state = State::default();
         kept.apply(&mut state);
         assert!(state.dark && state.compress);
-        assert_eq!(Settings::of(&state), Settings { dark: true, backup: Backup { compress: true, ..Backup::default() }, ..Settings::default() });
+        assert_eq!(
+            Settings::of(&state),
+            Settings {
+                dark: true,
+                backup: Backup {
+                    compress: true,
+                    ..Backup::default()
+                },
+                ..Settings::default()
+            }
+        );
         assert!(!state.language_chosen);
         assert!(Settings::read("dark = true").is_err(), "not JSON");
     }
@@ -359,44 +424,103 @@ mod tests {
             vibration: f32::NAN,
             screen_off: 7,
             time_zone: "Mars/Olympus".into(),
-            backup: Backup { parts: vec!["boot".into(), "photos".into()], to: "cloud".into(), ..Backup::default() },
-            logs: Logs { kinds: vec!["kernel".into()], to: "printer".into() },
+            backup: Backup {
+                parts: vec!["boot".into(), "photos".into()],
+                to: "cloud".into(),
+                ..Backup::default()
+            },
+            logs: Logs {
+                kinds: vec!["kernel".into()],
+                to: "printer".into(),
+            },
             ..Settings::default()
         };
         let mut state = State::default();
         kept.apply(&mut state);
         let start = State::default();
-        assert_eq!((state.brightness, state.vibration), (start.brightness, start.vibration));
-        assert_eq!((state.screen_off, state.time_zone, state.backup_to, state.logs_to), (start.screen_off, start.time_zone, start.backup_to, start.logs_to));
+        assert_eq!(
+            (state.brightness, state.vibration),
+            (start.brightness, start.vibration)
+        );
+        assert_eq!(
+            (
+                state.screen_off,
+                state.time_zone,
+                state.backup_to,
+                state.logs_to
+            ),
+            (
+                start.screen_off,
+                start.time_zone,
+                start.backup_to,
+                start.logs_to
+            )
+        );
         assert!(!state.language_chosen);
-        assert_eq!(state.backup, [true, false, false, false], "a part this version has not is left out");
+        assert_eq!(
+            state.backup,
+            [true, false, false, false],
+            "a part this version has not is left out"
+        );
         assert_eq!(state.logs, [false, true]);
     }
 
     #[test]
     fn changed_settings_are_written_once_they_have_stood_for_a_moment() {
         let mut keeper = Keeper::new(&Kept::Settings(Settings::default()));
-        assert_eq!(keeper.due(Settings::default(), 0), None, "what the file holds is not written again");
-        let dark = Settings { dark: true, ..Settings::default() };
+        assert_eq!(
+            keeper.due(Settings::default(), 0),
+            None,
+            "what the file holds is not written again"
+        );
+        let dark = Settings {
+            dark: true,
+            ..Settings::default()
+        };
         assert_eq!(keeper.due(dark.clone(), 1_000), None);
-        let dim = Settings { brightness: 0.5, ..dark.clone() };
+        let dim = Settings {
+            brightness: 0.5,
+            ..dark.clone()
+        };
         assert_eq!(keeper.due(dim.clone(), 2_500), None, "a change waits again");
         assert_eq!(keeper.due(dim.clone(), 4_000), None);
-        assert_eq!(keeper.due(dim.clone(), 4_500), Some(dim.clone()), "having stood for the wait since the last change");
+        assert_eq!(
+            keeper.due(dim.clone(), 4_500),
+            Some(dim.clone()),
+            "having stood for the wait since the last change"
+        );
         keeper.written(dim.clone());
         assert_eq!(keeper.due(dim.clone(), 9_000), None, "and once");
-        assert_eq!(keeper.due(Settings::default(), 9_000), None, "going back starts another wait");
-        assert_eq!(keeper.due(Settings::default(), 11_000), Some(Settings::default()));
+        assert_eq!(
+            keeper.due(Settings::default(), 9_000),
+            None,
+            "going back starts another wait"
+        );
+        assert_eq!(
+            keeper.due(Settings::default(), 11_000),
+            Some(Settings::default())
+        );
     }
 
     #[test]
     fn settings_that_failed_to_be_written_wait_for_the_next_change() {
         let mut keeper = Keeper::new(&Kept::Nothing);
-        let dark = Settings { dark: true, ..Settings::default() };
+        let dark = Settings {
+            dark: true,
+            ..Settings::default()
+        };
         keeper.due(dark.clone(), 0);
-        assert_eq!(keeper.due(dark.clone(), 2_000), Some(dark.clone()), "an empty file takes what the pages show");
+        assert_eq!(
+            keeper.due(dark.clone(), 2_000),
+            Some(dark.clone()),
+            "an empty file takes what the pages show"
+        );
         keeper.failed();
-        assert_eq!(keeper.due(dark.clone(), 60_000), None, "not tried at every look");
+        assert_eq!(
+            keeper.due(dark.clone(), 60_000),
+            None,
+            "not tried at every look"
+        );
         let light = Settings::default();
         keeper.due(light.clone(), 61_000);
         assert_eq!(keeper.due(light.clone(), 63_000), Some(light));
@@ -405,7 +529,10 @@ mod tests {
     #[test]
     fn a_file_that_could_not_be_read_is_left_alone_until_its_place_is_made_afresh() {
         let mut keeper = Keeper::new(&Kept::Unreadable);
-        let dark = Settings { dark: true, ..Settings::default() };
+        let dark = Settings {
+            dark: true,
+            ..Settings::default()
+        };
         keeper.due(dark.clone(), 0);
         assert_eq!(keeper.due(dark.clone(), 10_000), None);
         keeper.remade();
@@ -414,6 +541,10 @@ mod tests {
         keeper.written(dark.clone());
         keeper.remade();
         keeper.due(dark.clone(), 20_000);
-        assert_eq!(keeper.due(dark.clone(), 22_000), Some(dark), "erasing takes the file with it, so it is written again");
+        assert_eq!(
+            keeper.due(dark.clone(), 22_000),
+            Some(dark),
+            "erasing takes the file with it, so it is written again"
+        );
     }
 }

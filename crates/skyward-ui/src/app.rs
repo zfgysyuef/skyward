@@ -12,9 +12,9 @@ use crate::glow::{self, GlowClock};
 use crate::lang::{Lang, Text};
 use crate::motion::{self, Spring};
 use crate::pages::{self, Band, Ctx};
-use crate::sprite::{Blurs, Sprite};
 use crate::search;
 use crate::settings::Settings;
+use crate::sprite::{Blurs, Sprite};
 use crate::term::{self, Term, TermKey};
 use crate::theme::Theme;
 use crate::tr;
@@ -209,7 +209,10 @@ pub enum SkywardStage {
     Download(Progress),
     /// The build is written into the recovery partitions and read back:
     /// bytes so far, of all.
-    Write { done: u64, total: u64 },
+    Write {
+        done: u64,
+        total: u64,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -237,28 +240,52 @@ pub const USB_DRIVE: &str = "/mnt/usb";
 
 /// What a USB drive plugged in that cannot be read is said to be, and what
 /// is asked for while none is plugged in.
-pub const USB_DRIVE_UNREADABLE: Text = ["无法读取该 U 盘", "無法讀取這個 USB 隨身碟", "This USB drive can't be read"];
-pub const USB_DRIVE_WANTED: Text = ["请通过 OTG 连接 U 盘", "請透過 OTG 連接 USB 隨身碟", "Connect a USB drive through OTG"];
+pub const USB_DRIVE_UNREADABLE: Text = [
+    "无法读取该 U 盘",
+    "無法讀取這個 USB 隨身碟",
+    "This USB drive can't be read",
+];
+pub const USB_DRIVE_WANTED: Text = [
+    "请通过 OTG 连接 U 盘",
+    "請透過 OTG 連接 USB 隨身碟",
+    "Connect a USB drive through OTG",
+];
 
 /// The data partition's name, as the filesystem page lists it.
 pub const DATA_PARTITION: &str = "data";
 
 /// What work that needs the data partition is told while it is being
 /// opened.
-pub const DATA_OPENING: Text = ["正在打开 data 分区，请稍后再试", "正在開啟 data 分割區，請稍後再試", "Opening the data partition. Try again shortly"];
+pub const DATA_OPENING: Text = [
+    "正在打开 data 分区，请稍后再试",
+    "正在開啟 data 分割區，請稍後再試",
+    "Opening the data partition. Try again shortly",
+];
 
 /// What an install is told while the last one has not ended.
-pub const INSTALL_UNFINISHED: Text = ["上一次安装尚未结束，请稍后再试", "上一次安裝尚未結束，請稍後再試", "The last install hasn't ended. Try again shortly"];
+pub const INSTALL_UNFINISHED: Text = [
+    "上一次安装尚未结束，请稍后再试",
+    "上一次安裝尚未結束，請稍後再試",
+    "The last install hasn't ended. Try again shortly",
+];
 
 /// What work on the data partition is told once it has been erased whole.
-pub const DATA_ERASED: Text = ["data 分区已清除", "data 分割區已清除", "The data partition was wiped"];
+pub const DATA_ERASED: Text = [
+    "data 分区已清除",
+    "data 分割區已清除",
+    "The data partition was wiped",
+];
 
 /// What work on internal storage is told before the data partition is
 /// decrypted.
 pub const DECRYPT_FIRST: Text = ["请先完成「解密」", "請先完成「解密」", "Decrypt first"];
 
 /// What going back is told while work that can be stopped goes on.
-const WAIT_OR_STOP: Text = ["请等待完成或停止后再返回", "請等待完成或停止後再返回", "Wait for it to finish, or stop it, before going back"];
+const WAIT_OR_STOP: Text = [
+    "请等待完成或停止后再返回",
+    "請等待完成或停止後再返回",
+    "Wait for it to finish, or stop it, before going back",
+];
 
 /// A password typed, which what is printed of it leaves out: the recovery
 /// prints each effect the pages ask for.
@@ -299,9 +326,11 @@ const SSID_MAX: usize = 32;
 /// What turns down a password the protection `security` cannot take.
 fn refused(l: Lang, security: Security, password: &str) -> Option<&'static str> {
     match security {
-        Security::Psk | Security::PskSae if !(8..=63).contains(&password.len()) => {
-            Some(l.pick(["请输入 8 到 63 位密码", "請輸入 8 到 63 個字元的密碼", "Enter a password of 8 to 63 characters"]))
-        }
+        Security::Psk | Security::PskSae if !(8..=63).contains(&password.len()) => Some(l.pick([
+            "请输入 8 到 63 位密码",
+            "請輸入 8 到 63 個字元的密碼",
+            "Enter a password of 8 to 63 characters",
+        ])),
         _ if password.is_empty() => Some(l.pick(["请输入密码", "請輸入密碼", "Enter a password"])),
         _ => None,
     }
@@ -633,7 +662,9 @@ pub enum BackupEnd {
     Saved(String),
     /// A backup restored, but for what it held in the folders of users gone
     /// since, which only the system makes: where those were.
-    Restored { unmade: Vec<String> },
+    Restored {
+        unmade: Vec<String>,
+    },
     /// Stopped as asked: a backup stopped leaves nothing of itself, and a
     /// restore stops only while nothing is written.
     Stopped,
@@ -679,10 +710,15 @@ pub struct FileRow {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FileKind {
     /// A folder, and how many entries it holds when it can be read.
-    Folder { items: Option<usize> },
+    Folder {
+        items: Option<usize>,
+    },
     File,
     /// A symbolic link: where it points, and whether that is a folder.
-    Link { target: String, folder: bool },
+    Link {
+        target: String,
+        folder: bool,
+    },
     /// A device, socket or pipe.
     Special,
 }
@@ -703,33 +739,53 @@ pub struct Folder {
 impl Folder {
     /// The folder at `path`, not read yet.
     pub fn new(path: &str) -> Folder {
-        Folder { path: path.into(), entries: Ok(Vec::new()), listed: 0, left: Vec::new() }
+        Folder {
+            path: path.into(),
+            entries: Ok(Vec::new()),
+            listed: 0,
+            left: Vec::new(),
+        }
     }
 
     /// The entry at this place in the list.
     fn entry(&self, i: usize) -> &FileRow {
-        &self.entries.as_ref().expect("an entry touched is one the list shows")[i]
+        &self
+            .entries
+            .as_ref()
+            .expect("an entry touched is one the list shows")[i]
     }
 
     /// Where the entry of this name in the folder is.
     fn inside(&self, name: &str) -> String {
-        std::path::Path::new(&self.path).join(name).to_string_lossy().into_owned()
+        std::path::Path::new(&self.path)
+            .join(name)
+            .to_string_lossy()
+            .into_owned()
     }
 
     /// The folder this one is in; none for the root.
     fn up(&self) -> Option<String> {
-        std::path::Path::new(&self.path).parent().map(|p| p.to_string_lossy().into_owned())
+        std::path::Path::new(&self.path)
+            .parent()
+            .map(|p| p.to_string_lossy().into_owned())
     }
 
     /// The folder this many levels below the root, by its place in the
     /// path shown over the list; none for this folder itself.
     fn ancestor(&self, depth: usize) -> Option<String> {
         let path = std::path::Path::new(&self.path);
-        let names: Vec<_> = path.components().filter(|c| matches!(c, std::path::Component::Normal(_))).collect();
+        let names: Vec<_> = path
+            .components()
+            .filter(|c| matches!(c, std::path::Component::Normal(_)))
+            .collect();
         if depth >= names.len() {
             return None;
         }
-        let mut up = if path.has_root() { std::path::PathBuf::from("/") } else { std::path::PathBuf::new() };
+        let mut up = if path.has_root() {
+            std::path::PathBuf::from("/")
+        } else {
+            std::path::PathBuf::new()
+        };
         up.extend(&names[..depth]);
         Some(up.to_string_lossy().into_owned())
     }
@@ -767,13 +823,21 @@ fn installable(e: &FileRow) -> bool {
 /// Whether the installer takes a file by its name: an update package, a
 /// zip that installs itself, or a partition image.
 pub(crate) fn installs(e: &FileRow) -> bool {
-    let named = std::path::Path::new(&e.name).extension().is_some_and(|ext| ext.eq_ignore_ascii_case("zip") || ext.eq_ignore_ascii_case("img"));
-    named && matches!(e.kind, FileKind::File | FileKind::Link { folder: false, .. })
+    let named = std::path::Path::new(&e.name)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("zip") || ext.eq_ignore_ascii_case("img"));
+    named
+        && matches!(
+            e.kind,
+            FileKind::File | FileKind::Link { folder: false, .. }
+        )
 }
 
 /// The last part of `path`, as the installing page names the file there.
 fn file_name(path: &str) -> Option<String> {
-    std::path::Path::new(path).file_name().map(|n| n.to_string_lossy().into_owned())
+    std::path::Path::new(path)
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
 }
 
 /// A partition the mount page lists: its name, where it sits, and how it
@@ -819,7 +883,11 @@ pub enum Data {
     Opening,
     /// Open, with this user's own files waiting on their screen lock,
     /// answered with `keys`; `checking` while what they entered is checked.
-    Locked { user: u32, keys: Keys, checking: bool },
+    Locked {
+        user: u32,
+        keys: Keys,
+        checking: bool,
+    },
     /// Open, every user's own files with it.
     Open,
     /// Not opened, and why.
@@ -901,8 +969,17 @@ pub enum Wipe {
 }
 
 /// What the wipe page offers, in the order it lists them.
-pub const WIPES: [Wipe; 9] =
-    [Wipe::All, Wipe::AppData, Wipe::Media, Wipe::AppCaches, Wipe::SystemCaches, Wipe::Art, Wipe::Logs, Wipe::Updates, Wipe::Cache];
+pub const WIPES: [Wipe; 9] = [
+    Wipe::All,
+    Wipe::AppData,
+    Wipe::Media,
+    Wipe::AppCaches,
+    Wipe::SystemCaches,
+    Wipe::Art,
+    Wipe::Logs,
+    Wipe::Updates,
+    Wipe::Cache,
+];
 
 /// A part of the phone that erasing goes through, in the order it does.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1013,28 +1090,50 @@ pub enum Install {
     Waiting,
     /// The package of `size` bytes is looked at; a zip's signature is
     /// checked, once the installer tells how far.
-    Checking { size: u64, stage: Option<Stage> },
+    Checking {
+        size: u64,
+        stage: Option<Stage>,
+    },
     /// An image waits to be told where it goes.
     Choosing(Choice),
     /// An update waits for the user to agree: the version it brings, and
     /// whether all user data is erased after it.
-    Confirming { version: Option<String>, wipe: bool },
+    Confirming {
+        version: Option<String>,
+        wipe: bool,
+    },
     /// `overwriting` says whether the update writes over the running
     /// system.
-    Updating { version: Option<String>, stage: Option<Stage>, overwriting: bool },
-    Flashing { partition: &'static str, stage: Option<Stage> },
+    Updating {
+        version: Option<String>,
+        stage: Option<Stage>,
+        overwriting: bool,
+    },
+    Flashing {
+        partition: &'static str,
+        stage: Option<Stage>,
+    },
     /// A zip with an install script waits for the user to agree to run it.
     ConfirmingScript,
     /// A system to install beside the installed one waits for the room its
     /// root takes to be chosen.
     SystemChoosing(SystemChoice),
     /// The system is being installed: its name, and how far.
-    Systeming { name: String, stage: Option<Stage> },
+    Systeming {
+        name: String,
+        stage: Option<Stage>,
+    },
     /// Its install script is made ready and then, once `running`, runs; how
     /// far it says it is, once it says.
-    Scripting { stage: Option<Stage>, running: bool },
+    Scripting {
+        stage: Option<Stage>,
+        running: bool,
+    },
     /// `damage` is what a failure may have left broken.
-    Finished { outcome: Outcome, damage: Option<Damage> },
+    Finished {
+        outcome: Outcome,
+        damage: Option<Damage>,
+    },
     /// In rescue, all user data is being erased, as the computer asked.
     Wiping,
     /// In rescue, erasing all user data ended: done, or why it stopped.
@@ -1110,15 +1209,38 @@ pub enum Target {
     PowerOff,
 }
 
-pub const TARGETS: [Target; 6] = [Target::System, Target::Recovery, Target::Fastboot, Target::Bootloader, Target::Edl, Target::PowerOff];
+pub const TARGETS: [Target; 6] = [
+    Target::System,
+    Target::Recovery,
+    Target::Fastboot,
+    Target::Bootloader,
+    Target::Edl,
+    Target::PowerOff,
+];
 
 /// Where the fastboot page goes, in the order it lists them: the volume
 /// keys move between them and the power key takes one.
 pub const FASTBOOT_CHOICES: [(Text, Action); 4] = [
-    (["重启到系统", "重新啟動到系統", "Reboot to system"], Action::RebootTo(Target::System)),
-    (["进入恢复模式", "進入復原模式", "Enter recovery"], Action::EnterRecovery),
-    (["重启到 Bootloader", "重新啟動到 Bootloader", "Reboot to bootloader"], Action::RebootTo(Target::Bootloader)),
-    (["关机", "關機", "Power off"], Action::RebootTo(Target::PowerOff)),
+    (
+        ["重启到系统", "重新啟動到系統", "Reboot to system"],
+        Action::RebootTo(Target::System),
+    ),
+    (
+        ["进入恢复模式", "進入復原模式", "Enter recovery"],
+        Action::EnterRecovery,
+    ),
+    (
+        [
+            "重启到 Bootloader",
+            "重新啟動到 Bootloader",
+            "Reboot to bootloader",
+        ],
+        Action::RebootTo(Target::Bootloader),
+    ),
+    (
+        ["关机", "關機", "Power off"],
+        Action::RebootTo(Target::PowerOff),
+    ),
 ];
 
 /// How far a computer has the USB port.
@@ -1142,21 +1264,65 @@ pub struct Fastboot {
 
 /// How long the screen stays on with nothing touched, in milliseconds, in
 /// the order the page lists them; `None` keeps it on.
-pub const SCREEN_OFF: [Option<u64>; 7] = [Some(15_000), Some(30_000), Some(60_000), Some(120_000), Some(300_000), Some(600_000), None];
+pub const SCREEN_OFF: [Option<u64>; 7] = [
+    Some(15_000),
+    Some(30_000),
+    Some(60_000),
+    Some(120_000),
+    Some(300_000),
+    Some(600_000),
+    None,
+];
 
 /// The time zones the clock and the times on the pages can keep, in the
 /// order their page lists them: the name, the cities it covers, and the
 /// zone's name in the tz database.
 pub const TIME_ZONES: [(Text, Text, &str); 9] = [
-    (["中国标准时间", "中國標準時間", "China Standard Time"], ["北京、上海", "北京、上海", "Beijing, Shanghai"], "Asia/Shanghai"),
-    (["香港时间", "香港時間", "Hong Kong Time"], ["香港", "香港", "Hong Kong"], "Asia/Hong_Kong"),
-    (["台北时间", "台北時間", "Taipei Time"], ["台北", "台北", "Taipei"], "Asia/Taipei"),
-    (["日本标准时间", "日本標準時間", "Japan Standard Time"], ["东京", "東京", "Tokyo"], "Asia/Tokyo"),
-    (["协调世界时", "世界標準時間", "Coordinated Universal Time"], ["UTC", "UTC", "UTC"], "UTC"),
-    (["英国时间", "英國時間", "British Time"], ["伦敦", "倫敦", "London"], "Europe/London"),
-    (["中欧时间", "中歐時間", "Central European Time"], ["柏林、巴黎", "柏林、巴黎", "Berlin, Paris"], "Europe/Berlin"),
-    (["美国东部时间", "美國東部時間", "Eastern Time"], ["纽约", "紐約", "New York"], "America/New_York"),
-    (["美国太平洋时间", "美國太平洋時間", "Pacific Time"], ["洛杉矶", "洛杉磯", "Los Angeles"], "America/Los_Angeles"),
+    (
+        ["中国标准时间", "中國標準時間", "China Standard Time"],
+        ["北京、上海", "北京、上海", "Beijing, Shanghai"],
+        "Asia/Shanghai",
+    ),
+    (
+        ["香港时间", "香港時間", "Hong Kong Time"],
+        ["香港", "香港", "Hong Kong"],
+        "Asia/Hong_Kong",
+    ),
+    (
+        ["台北时间", "台北時間", "Taipei Time"],
+        ["台北", "台北", "Taipei"],
+        "Asia/Taipei",
+    ),
+    (
+        ["日本标准时间", "日本標準時間", "Japan Standard Time"],
+        ["东京", "東京", "Tokyo"],
+        "Asia/Tokyo",
+    ),
+    (
+        ["协调世界时", "世界標準時間", "Coordinated Universal Time"],
+        ["UTC", "UTC", "UTC"],
+        "UTC",
+    ),
+    (
+        ["英国时间", "英國時間", "British Time"],
+        ["伦敦", "倫敦", "London"],
+        "Europe/London",
+    ),
+    (
+        ["中欧时间", "中歐時間", "Central European Time"],
+        ["柏林、巴黎", "柏林、巴黎", "Berlin, Paris"],
+        "Europe/Berlin",
+    ),
+    (
+        ["美国东部时间", "美國東部時間", "Eastern Time"],
+        ["纽约", "紐約", "New York"],
+        "America/New_York",
+    ),
+    (
+        ["美国太平洋时间", "美國太平洋時間", "Pacific Time"],
+        ["洛杉矶", "洛杉磯", "Los Angeles"],
+        "America/Los_Angeles",
+    ),
 ];
 
 /// What a control does when touched.
@@ -1170,7 +1336,9 @@ pub enum Action {
     /// Try opening the data partition again, after it did not open.
     OpenData,
     Back,
-    Theme { dark: bool },
+    Theme {
+        dark: bool,
+    },
     Toggle(Switch),
     RebootTarget(usize),
     /// Choose or leave out what the wipe page erases.
@@ -1199,6 +1367,8 @@ pub enum Action {
     Dismiss,
     /// Keep the screen on for this choice in [`SCREEN_OFF`].
     ScreenOff(usize),
+    /// Show the cover screen, or the inner one, on a fold.
+    Panel(bool),
     /// Keep the time zone at this place in [`TIME_ZONES`].
     TimeZone(usize),
     /// Speak this language.
@@ -1450,7 +1620,11 @@ impl Fold {
     /// as is left of it folding; none once it has folded away.
     pub fn shown(&self, offset: f32) -> Option<Rect> {
         let h = self.bar.h - offset.max(0.0);
-        (h > 0.0).then(|| Rect { y: self.bar.y - offset.min(0.0), h, ..self.bar })
+        (h > 0.0).then(|| Rect {
+            y: self.bar.y - offset.min(0.0),
+            h,
+            ..self.bar
+        })
     }
 
     /// How strongly the bar, and its icon and words, show with the page
@@ -1470,7 +1644,12 @@ impl Fold {
         widgets::search_bar(out, t, r, bar);
         // The icon and words stay centred in what is left of the bar.
         let sink = r.y + r.h / 2.0 - (self.bar.y + self.bar.h / 2.0);
-        out.lay(words, self.bar.x.floor() as i32, (self.bar.y.floor() + sink).round() as i32, level);
+        out.lay(
+            words,
+            self.bar.x.floor() as i32,
+            (self.bar.y.floor() + sink).round() as i32,
+            level,
+        );
     }
 
     /// How far the large title has gone up with the page `offset` pixels
@@ -1509,7 +1688,13 @@ pub struct HeroArt {
 impl Frame {
     /// A page of cards on the grey page colour that opens with its title in
     /// large type and goes back with `<`.
-    pub fn new(t: &Theme, canvas: Canvas, hits: Vec<Hit>, title: &'static str, content_top: f32) -> Frame {
+    pub fn new(
+        t: &Theme,
+        canvas: Canvas,
+        hits: Vec<Hit>,
+        title: &'static str,
+        content_top: f32,
+    ) -> Frame {
         Frame {
             canvas,
             hits,
@@ -1536,7 +1721,10 @@ impl Frame {
     pub fn shown(&self, r: Rect, offset: f32) -> Option<Rect> {
         match &self.fold {
             Some(fold) if fold.bar == r => fold.shown(offset),
-            _ => Some(Rect { y: r.y - offset, ..r }),
+            _ => Some(Rect {
+                y: r.y - offset,
+                ..r
+            }),
         }
     }
 
@@ -1559,14 +1747,20 @@ impl Frame {
         let rows = self.rows.as_ref()?;
         let action = rows.action?;
         let i = rows.at(y)?;
-        Some(Hit { rect: rows.rect(i, self.canvas.w as f32), action: action(i) })
+        Some(Hit {
+            rect: rows.rect(i, self.canvas.w as f32),
+            action: action(i),
+        })
     }
 
     /// How tall the page is: its canvas, or its rows and the margin after
     /// them if they reach further.
     pub fn height(&self, t: &Theme) -> f32 {
         let h = self.canvas.h as f32;
-        let h = self.rows.as_ref().map_or(h, |r| h.max((r.bottom() + t.m.margin * 2.0).ceil()));
+        let h = self
+            .rows
+            .as_ref()
+            .map_or(h, |r| h.max((r.bottom() + t.m.margin * 2.0).ceil()));
         h + self.dock.as_ref().map_or(0.0, |d| d.canvas.h as f32)
     }
 }
@@ -1594,6 +1788,10 @@ pub struct State {
     pub vibration: f32,
     /// A computer connected over USB is offered internal storage.
     pub file_transfer: bool,
+    /// The phone has a cover screen, which the settings then offer.
+    pub has_cover: bool,
+    /// Show the cover screen rather than the inner one.
+    pub cover: bool,
     pub reboot: usize,
     /// What the wipe page has chosen, by place in [`WIPES`].
     pub wipe: [bool; WIPES.len()],
@@ -1765,6 +1963,8 @@ impl Default for State {
             vibrate: true,
             vibration: SLIDER_START,
             file_transfer: true,
+            has_cover: false,
+            cover: false,
             reboot: 0,
             wipe: [false; WIPES.len()],
             cache_partition: false,
@@ -1807,7 +2007,10 @@ impl Default for State {
             usb_drive: None,
             drive: Folder::new(""),
             file: None,
-            fastboot: Fastboot { running: false, link: UsbLink::Unplugged },
+            fastboot: Fastboot {
+                running: false,
+                link: UsbLink::Unplugged,
+            },
             erase: Erase::default(),
             asked: Asked::default(),
             clip: None,
@@ -1905,7 +2108,9 @@ impl State {
 
     /// Whether Skyward is being updated.
     pub fn updating_skyward(&self) -> bool {
-        self.skyward_job.as_ref().is_some_and(|j| j.outcome.is_none())
+        self.skyward_job
+            .as_ref()
+            .is_some_and(|j| j.outcome.is_none())
     }
 
     /// Whether the phone has the page `screen`: the WLAN page where the
@@ -1961,7 +2166,9 @@ pub enum Effect {
     /// screenshots in the owner's shared storage where `storage` says it is
     /// open, and otherwise held until it is, telling how it went with
     /// [`App::screenshot_saved`].
-    Screenshot { storage: bool },
+    Screenshot {
+        storage: bool,
+    },
     /// Offer internal storage to a computer over USB, or stop.
     FileTransfer(bool),
     /// Start receiving a package over USB.
@@ -1974,7 +2181,10 @@ pub enum Effect {
     InstallPath(String),
     /// Write the image the installer holds to `partition` in the slots
     /// `pick` means.
-    Flash { partition: &'static str, pick: Pick },
+    Flash {
+        partition: &'static str,
+        pick: Pick,
+    },
     /// Stop waiting for the computer, for where an image goes, or for an
     /// update to be agreed to.
     Cancel,
@@ -1997,7 +2207,9 @@ pub enum Effect {
     /// [`App::set_systems`] or [`App::systems_work_failed`].
     RemoveSystem,
     /// Install the system the installer holds with a root of `size` bytes.
-    InstallSystem { size: u64 },
+    InstallSystem {
+        size: u64,
+    },
     /// Mount the slot's partition with this base name, such as `system`.
     Mount(String),
     /// Unmount the slot's partition with this base name.
@@ -2014,7 +2226,10 @@ pub enum Effect {
     /// Open the own files of `user` with what they entered at their screen
     /// lock, telling what still waits with [`App::data_waiting`] or why it
     /// did not open with [`App::unlock_failed`].
-    Unlock { user: u32, code: String },
+    Unlock {
+        user: u32,
+        code: String,
+    },
     /// Hand the USB port back from fastboot to adb, bring up what the
     /// recovery runs from the slot's partitions, then show its pages with
     /// [`App::enter_recovery`].
@@ -2043,13 +2258,24 @@ pub enum Effect {
     TermInput(Vec<u8>),
     /// Copy or move an entry into a folder; with no choice made yet, a name
     /// taken there is told with [`App::file_clash`] instead of going on.
-    Paste { op: FileOp, path: String, into: String, clash: Option<ClashChoice> },
+    Paste {
+        op: FileOp,
+        path: String,
+        into: String,
+        clash: Option<ClashChoice>,
+    },
     /// Give an entry a new name; how it went comes back with
     /// [`App::renamed`].
-    Rename { path: String, name: String },
+    Rename {
+        path: String,
+        name: String,
+    },
     /// Give an entry these permission bits; how it went comes back with
     /// [`App::mode_set`].
-    SetMode { path: String, mode: u32 },
+    SetMode {
+        path: String,
+        mode: u32,
+    },
     /// Read the file at this path to edit it, as much as
     /// [`editor::MAX_BYTES`] and one byte more, telling what it holds with
     /// [`App::text_opened`].
@@ -2057,7 +2283,10 @@ pub enum Effect {
     /// Write `text` as the contents of the file at `path`, which keeps what
     /// it has beside them; how it went comes back with
     /// [`App::text_saved`].
-    SaveText { path: String, text: String },
+    SaveText {
+        path: String,
+        text: String,
+    },
     /// Delete an entry, folders whole.
     Delete(String),
     /// Stop the work on files under way.
@@ -2077,25 +2306,47 @@ pub enum Effect {
     /// [`App::part_at`], [`App::part_ended`] and [`App::part_work_ended`];
     /// making the data partition afresh as another filesystem is a factory
     /// reset, which tells as erasing tells.
-    Filesystem { name: String, action: FsAction },
+    Filesystem {
+        name: String,
+        action: FsAction,
+    },
     /// Save the logs chosen, the recovery's own and the kernel's, into a
     /// folder of their own in internal storage or the temporary folder,
     /// saying where with [`App::report`].
-    ExportLogs { recovery: bool, kernel: bool, storage: bool },
+    ExportLogs {
+        recovery: bool,
+        kernel: bool,
+        storage: bool,
+    },
     /// Back up the parts ticked, by their place in [`BACKUP_PARTS`], into
     /// a folder of their own in `place`, telling how it goes with
     /// [`App::backup_started`], [`App::backup_plan`], [`App::backup_at`]
     /// and [`App::backup_ended`].
-    Backup { parts: [bool; 4], place: Place, compress: bool, verify: bool },
+    Backup {
+        parts: [bool; 4],
+        place: Place,
+        compress: bool,
+        verify: bool,
+    },
     /// Restore the parts ticked of the backup in the folder `name` of
     /// `place`, telling how it goes as a backup does.
-    Restore { place: Place, name: String, parts: [bool; 4] },
+    Restore {
+        place: Place,
+        name: String,
+        parts: [bool; 4],
+    },
     /// Look for backups in the places that can be read, telling what is
     /// found with [`App::set_backups`].
-    FindBackups { storage: bool, usb: bool },
+    FindBackups {
+        storage: bool,
+        usb: bool,
+    },
     /// Delete the backup in the folder `name` of `place`, telling how it
     /// went with [`App::backup_deleted`].
-    DeleteBackup { place: Place, name: String },
+    DeleteBackup {
+        place: Place,
+        name: String,
+    },
     /// Stop the backup under way, or the check before a restore.
     StopBackup,
     /// Read where the update stands, telling it with [`App::set_update`].
@@ -2104,7 +2355,12 @@ pub enum Effect {
     /// [`App::set_wlan`].
     Wlan(bool),
     ScanWlan,
-    JoinWlan { ssid: Vec<u8>, name: String, security: Security, password: Secret },
+    JoinWlan {
+        ssid: Vec<u8>,
+        name: String,
+        security: Security,
+        password: Secret,
+    },
     LeaveWlan,
     /// Ask the update server for the newest system, telling what it
     /// answered with [`App::update_checked`].
@@ -2132,20 +2388,42 @@ enum Drag {
     /// press began at a screen edge (true for the left one).
     /// `at` is when it came down: held long enough over an entry of the file
     /// manager, it opens what can be done with that entry.
-    Press { x: f32, y: f32, action: Option<Action>, edge: Option<bool>, at: u64 },
+    Press {
+        x: f32,
+        y: f32,
+        action: Option<Action>,
+        edge: Option<bool>,
+        at: u64,
+    },
     /// A press held long enough to have done its work; nothing it does
     /// counts until it lifts.
     Held,
-    Scroll { last: f32 },
+    Scroll {
+        last: f32,
+    },
     /// Swiping in from a screen edge, the finger now `x` across; the cue
     /// keeps to height `cy`, set by where the swipe began. Past the
     /// threshold, lifting goes back.
-    Edge { start: f32, from_left: bool, armed: bool, x: f32, cy: f32 },
+    Edge {
+        start: f32,
+        from_left: bool,
+        armed: bool,
+        x: f32,
+        cy: f32,
+    },
     Slider(Slider, Rect),
-    Confirm { which: Confirm, track: Rect, grab: f32 },
+    Confirm {
+        which: Confirm,
+        track: Rect,
+        grab: f32,
+    },
     /// Scrolling a terminal's screen back through what the shell wrote, or
     /// the editor's text, `carry` being the part of a row not yet scrolled.
-    History { last: f32, carry: f32, pitch: f32 },
+    History {
+        last: f32,
+        carry: f32,
+        pitch: f32,
+    },
     Pattern,
     /// A finger that landed just after the panel lit; nothing it does
     /// counts until it lifts.
@@ -2177,7 +2455,11 @@ enum Press {
     /// The power key on a swipe-to-confirm control, whose knob slides along
     /// its track at `track` from `at` while the key is held; let go once
     /// it has slid far enough, the control confirms.
-    Slide { which: Confirm, track: Rect, at: u64 },
+    Slide {
+        which: Confirm,
+        track: Rect,
+        at: u64,
+    },
     /// Done with: nothing more comes of it until it is let go.
     Spent,
 }
@@ -2364,16 +2646,32 @@ struct Fade {
 
 impl Fade {
     fn hidden(show: Ease, hide: Ease) -> Fade {
-        Fade { on: false, since: 0, from: 0.0, show, hide }
+        Fade {
+            on: false,
+            since: 0,
+            from: 0.0,
+            show,
+            hide,
+        }
     }
 
     fn shown(show: Ease, hide: Ease) -> Fade {
-        Fade { on: true, since: 0, from: 1.0, show, hide }
+        Fade {
+            on: true,
+            since: 0,
+            from: 1.0,
+            show,
+            hide,
+        }
     }
 
     /// How far in, 0 to 1, at `now`.
     fn level(&self, now: u64) -> f32 {
-        let (target, ease) = if self.on { (1.0, self.show) } else { (0.0, self.hide) };
+        let (target, ease) = if self.on {
+            (1.0, self.show)
+        } else {
+            (0.0, self.hide)
+        };
         self.from + (target - self.from) * ease.progress(now.saturating_sub(self.since))
     }
 
@@ -2424,7 +2722,9 @@ fn full_brightness() -> Fade {
 /// The level the panel dims to shortly before it goes off, for the
 /// brightness set.
 fn dim_level(full: f32) -> f32 {
-    (full - DIM_DROP).clamp(MIN_BRIGHTNESS, DIM_CEILING).min(full)
+    (full - DIM_DROP)
+        .clamp(MIN_BRIGHTNESS, DIM_CEILING)
+        .min(full)
 }
 
 /// How long the panel stays dim before going off, for a screen-off time.
@@ -2445,7 +2745,15 @@ fn within(r: Rect, (top, bottom): (f32, f32)) -> bool {
 
 /// Lay the sprite `blurs` keeps, moved by (`dx`, `dy`), in `color` at
 /// `level` of its strength, blurred by `blur` pixels.
-fn draw_faded(out: &mut Canvas, blurs: &mut Blurs, dx: f32, dy: f32, color: Rgba, level: f32, blur: f32) {
+fn draw_faded(
+    out: &mut Canvas,
+    blurs: &mut Blurs,
+    dx: f32,
+    dy: f32,
+    color: Rgba,
+    level: f32,
+    blur: f32,
+) {
     if level > 0.0 {
         blurs.get(blur).draw(out, dx, dy, color, level);
     }
@@ -2503,19 +2811,24 @@ impl RowPress {
         }
         let up = |t: u64| motion::settle(t - self.rise, ROW_PRESS_PERIOD);
         match self.fall {
-            Some(fall) if now >= fall => up(fall) * (1.0 - motion::settle(now - fall, ROW_PRESS_PERIOD)),
+            Some(fall) if now >= fall => {
+                up(fall) * (1.0 - motion::settle(now - fall, ROW_PRESS_PERIOD))
+            }
             _ => up(now),
         }
     }
 
     /// Whether it has faded back after being let go.
     fn gone(&self, now: u64) -> bool {
-        self.fall.is_some_and(|fall| now >= fall && motion::settle(now - fall, ROW_PRESS_PERIOD) == 1.0)
+        self.fall
+            .is_some_and(|fall| now >= fall && motion::settle(now - fall, ROW_PRESS_PERIOD) == 1.0)
     }
 
     /// Whether it is darkening or fading back at `now`.
     fn changing(&self, now: u64) -> bool {
-        let dark = self.fall.is_none() && now >= self.rise && motion::settle(now - self.rise, ROW_PRESS_PERIOD) == 1.0;
+        let dark = self.fall.is_none()
+            && now >= self.rise
+            && motion::settle(now - self.rise, ROW_PRESS_PERIOD) == 1.0;
         now >= self.rise && !dark && !self.gone(now)
     }
 
@@ -2575,7 +2888,10 @@ fn row_wide(t: &Theme, r: Rect) -> bool {
 /// left, top, width and height.
 fn row_part(r: Rect, canvas: &Canvas) -> (u32, u32, u32, u32) {
     let (x0, y0) = (r.x.floor().max(0.0) as u32, r.y.floor().max(0.0) as u32);
-    let (x1, y1) = (((r.x + r.w).ceil() as u32).min(canvas.w), ((r.y + r.h).ceil() as u32).min(canvas.h));
+    let (x1, y1) = (
+        ((r.x + r.w).ceil() as u32).min(canvas.w),
+        ((r.y + r.h).ceil() as u32).min(canvas.h),
+    );
     (x0, y0, x1 - x0, y1 - y0)
 }
 
@@ -2803,6 +3119,49 @@ impl App {
         self.corners = radius;
     }
 
+    /// Lay the pages out for another panel. A fold calls this when the lid
+    /// opens or shuts. The page stack stays; everything drawn for the
+    /// previous size is dropped, and the next frame draws it again.
+    pub fn fit(&mut self, w: u32, h: u32, px_per_dp: f32, corners: f32) {
+        self.w = w;
+        self.h = h;
+        self.px_per_dp = px_per_dp;
+        self.corners = corners;
+        self.frame = None;
+        self.spots = None;
+        self.button = None;
+        self.chord = None;
+        self.seek = None;
+        self.knob = None;
+        self.adjusting = false;
+        self.height = 0.0;
+        self.drag = Drag::Idle;
+        self.tracker = Tracker::default();
+        self.fling = None;
+        self.glide = None;
+        self.pull = 0.0;
+        self.bounce = None;
+        self.cue = None;
+        self.glow = None;
+        self.morph = None;
+        self.row_press = None;
+        self.row_art = None;
+        self.shown = None;
+        self.turn = None;
+        self.layer = None;
+        self.stale.clear();
+        self.cols = 0;
+        self.backdrop = None;
+        self.dither = None;
+        self.charge_art = None;
+        self.charge_canvas = None;
+        self.titles = None;
+        self.search_words = None;
+        self.chip = None;
+        self.button_chip = None;
+        self.dirty = true;
+    }
+
     pub fn theme(&self) -> Theme {
         if self.state.dark {
             Theme::dark(self.w, self.h, self.px_per_dp)
@@ -2816,11 +3175,15 @@ impl App {
     }
 
     fn top(&self) -> &(Screen, f32, Focus) {
-        self.stack.last().expect("the page stack always holds a page")
+        self.stack
+            .last()
+            .expect("the page stack always holds a page")
     }
 
     fn top_mut(&mut self) -> &mut (Screen, f32, Focus) {
-        self.stack.last_mut().expect("the page stack always holds a page")
+        self.stack
+            .last_mut()
+            .expect("the page stack always holds a page")
     }
 
     /// Whether the panel needs a new frame since the last call.
@@ -2833,7 +3196,8 @@ impl App {
     /// backlight eases, else when a shown message should disappear or the
     /// panel should dim or go off.
     pub fn deadline(&self, now: u64) -> Option<u64> {
-        let sliding = matches!(self.button, Some((_, Press::Slide { .. }))) && self.state.confirm < 1.0;
+        let sliding =
+            matches!(self.button, Some((_, Press::Slide { .. }))) && self.state.confirm < 1.0;
         let moving = self.display_on
             && (self.fling.is_some()
                 || self.glide.is_some()
@@ -2845,7 +3209,9 @@ impl App {
                 || self.bar.moving(now)
                 || self.morph.is_some()
                 || self.turn.is_some()
-                || self.row_press.is_some_and(|p| p.changing(now) || p.gone(now))
+                || self
+                    .row_press
+                    .is_some_and(|p| p.changing(now) || p.gone(now))
                 || self.glowing());
         // The content going dark or coming up, and the charging screen's
         // tide, move a frame at a time while the panel is lit.
@@ -2856,17 +3222,46 @@ impl App {
         let darkens = self.row_press.map(|p| p.rise).filter(|&rise| rise > now);
         let easing = self.bright.moving(now).then_some(now + BACKLIGHT_STEP_MS);
         let held = match self.drag {
-            Drag::Press { action: Some(Action::OpenEntry(_)), at, .. } => Some(at + LONG_PRESS_MS),
+            Drag::Press {
+                action: Some(Action::OpenEntry(_)),
+                at,
+                ..
+            } => Some(at + LONG_PRESS_MS),
             _ => None,
         };
         let repeat = match self.button {
             Some((_, Press::Volume { next, .. })) => Some(next),
-            Some((_, Press::Power { spot: Spot { stop: Stop::Hit(Action::OpenEntry(_)), .. }, at })) => Some(at + LONG_PRESS_MS),
+            Some((
+                _,
+                Press::Power {
+                    spot:
+                        Spot {
+                            stop: Stop::Hit(Action::OpenEntry(_)),
+                            ..
+                        },
+                    at,
+                },
+            )) => Some(at + LONG_PRESS_MS),
             _ => None,
         };
-        let blink = self.blink_at(now).filter(|_| self.display_on).map(|(_, next)| next);
+        let blink = self
+            .blink_at(now)
+            .filter(|_| self.display_on)
+            .map(|(_, next)| next);
         let chord = self.chord.map(|(_, at)| at + CHORD_MS);
-        [self.toast.as_ref().map(|t| t.1), easing, self.idle_due(), held, repeat, blink, darkens, chord].into_iter().flatten().min()
+        [
+            self.toast.as_ref().map(|t| t.1),
+            easing,
+            self.idle_due(),
+            held,
+            repeat,
+            blink,
+            darkens,
+            chord,
+        ]
+        .into_iter()
+        .flatten()
+        .min()
     }
 
     /// Whether a text field's cursor shows at `now`, and when it next turns;
@@ -2884,7 +3279,11 @@ impl App {
         if !self.display_on {
             return None;
         }
-        Some(if self.bright.on { active + after - dim_span(after) } else { active + after })
+        Some(if self.bright.on {
+            active + after - dim_span(after)
+        } else {
+            active + after
+        })
     }
 
     /// Open what can be done with entry `i` of the folder shown, held long
@@ -2915,13 +3314,29 @@ impl App {
         // An entry of the file manager held long enough, under a finger or
         // the power key, opens what can be done with it, a folder as much as
         // a file, with a tap of the motor.
-        if let Drag::Press { action: Some(Action::OpenEntry(i)), at, .. } = self.drag {
+        if let Drag::Press {
+            action: Some(Action::OpenEntry(i)),
+            at,
+            ..
+        } = self.drag
+        {
             if now >= at + LONG_PRESS_MS {
                 self.drag = Drag::Held;
                 fx.extend(self.held_entry(i));
             }
         }
-        if let Some((key, Press::Power { spot: Spot { stop: Stop::Hit(Action::OpenEntry(i)), .. }, at })) = self.button {
+        if let Some((
+            key,
+            Press::Power {
+                spot:
+                    Spot {
+                        stop: Stop::Hit(Action::OpenEntry(i)),
+                        ..
+                    },
+                at,
+            },
+        )) = self.button
+        {
             if now >= at + LONG_PRESS_MS {
                 self.button = Some((key, Press::Spent));
                 fx.extend(self.held_entry(i));
@@ -2938,7 +3353,12 @@ impl App {
         }
         // The charging screen goes once it has shown long enough: on a
         // panel lit for it, with the panel, else for the page.
-        if self.display_on && self.charging.as_ref().is_some_and(|c| c.shown.on && now >= c.since + CHARGE_MS) {
+        if self.display_on
+            && self
+                .charging
+                .as_ref()
+                .is_some_and(|c| c.shown.on && now >= c.since + CHARGE_MS)
+        {
             let c = self.charging.as_mut().expect("the charging screen shows");
             if c.dark_after {
                 self.sleep(now);
@@ -2946,7 +3366,11 @@ impl App {
                 c.shown.set(false, now);
             }
         }
-        if self.charging.as_ref().is_some_and(|c| !c.shown.on && !c.shown.moving(now)) {
+        if self
+            .charging
+            .as_ref()
+            .is_some_and(|c| !c.shown.on && !c.shown.moving(now))
+        {
             self.end_charging();
         }
         // Once the content is dark, the panel is off, and what showed goes
@@ -2962,7 +3386,12 @@ impl App {
             self.toast = None;
             self.dirty = true;
         }
-        if self.blink_at(now).is_some_and(|(on, _)| on != self.caret_shown) || self.morph.is_some() || self.turn.is_some() {
+        if self
+            .blink_at(now)
+            .is_some_and(|(on, _)| on != self.caret_shown)
+            || self.morph.is_some()
+            || self.turn.is_some()
+        {
             self.dirty = true;
         }
         if let Some(p) = self.row_press {
@@ -2986,7 +3415,11 @@ impl App {
                 // The glide ran into an end: the speed it had left throws
                 // the page past it, and it springs back.
                 let speed = fling.velocity(now);
-                let period = if speed.abs() <= self.theme().m.dp(HARD_BOUNCE_DP) { 0.4 } else { 0.55 };
+                let period = if speed.abs() <= self.theme().m.dp(HARD_BOUNCE_DP) {
+                    0.4
+                } else {
+                    0.55
+                };
                 self.bounce = Some(Spring::new(now, 0.0, speed, period));
                 self.fling = None;
             } else if done {
@@ -3000,7 +3433,11 @@ impl App {
             if rows != scrolled {
                 self.scroll_rows(rows - scrolled);
             }
-            self.glide = if done { None } else { Some((glide, pitch, rows)) };
+            self.glide = if done {
+                None
+            } else {
+                Some((glide, pitch, rows))
+            };
         }
         if let Some(b) = self.bounce {
             self.dirty = true;
@@ -3010,7 +3447,11 @@ impl App {
         }
         if let Some((target, spring)) = self.seek {
             let (off, done) = spring.at(now);
-            let at = if done { target } else { (target + off).clamp(0.0, self.max_scroll()) };
+            let at = if done {
+                target
+            } else {
+                (target + off).clamp(0.0, self.max_scroll())
+            };
             let top = self.top_mut();
             if top.1 != at {
                 top.1 = at;
@@ -3033,7 +3474,13 @@ impl App {
         // last moved on has been drawn.
         if let Some((key, Press::Volume { down, next })) = self.button {
             if now >= next && self.frame.is_some() {
-                self.button = Some((key, Press::Volume { down, next: now + REPEAT_MS }));
+                self.button = Some((
+                    key,
+                    Press::Volume {
+                        down,
+                        next: now + REPEAT_MS,
+                    },
+                ));
                 fx.extend(self.volume(down, now));
             }
         }
@@ -3075,13 +3522,18 @@ impl App {
             (gone, gone)
         } else {
             let under = (fr.content_top - widgets::bar_bottom(&t) - t.m.dp(20.0)).max(0.0);
-            (fr.header && fr.title_lift(scroll) >= t.m.dp(TITLE_FADE_DP), scroll > under)
+            (
+                fr.header && fr.title_lift(scroll) >= t.m.dp(TITLE_FADE_DP),
+                scroll > under,
+            )
         })
     }
 
     /// Bring the bar and its title in or out as the page scrolls.
     fn follow_scroll(&mut self, now: u64) {
-        let Some((title, bar)) = self.bar_wanted() else { return };
+        let Some((title, bar)) = self.bar_wanted() else {
+            return;
+        };
         self.title.set(title, now);
         self.bar.set(bar, now);
         if self.title.moving(now) || self.bar.moving(now) {
@@ -3142,13 +3594,20 @@ impl App {
     pub fn plugged(&mut self, now: u64, cable_in: bool) {
         if cable_in {
             let dark = !self.display_on;
-            let mut shown = self.charging.take().map_or(Fade::hidden(CHARGE_SHOW, CHARGE_HIDE), |c| c.shown);
+            let mut shown = self
+                .charging
+                .take()
+                .map_or(Fade::hidden(CHARGE_SHOW, CHARGE_HIDE), |c| c.shown);
             if dark {
                 shown.jump(true);
             } else {
                 shown.set(true, now);
             }
-            self.charging = Some(Charging { since: now, shown, dark_after: dark });
+            self.charging = Some(Charging {
+                since: now,
+                shown,
+                dark_after: dark,
+            });
             self.dirty = true;
         }
         if self.display_on {
@@ -3182,7 +3641,8 @@ impl App {
     /// Whether the panel lit so recently that a touch or key should only
     /// keep it awake.
     fn just_woke(&self, now: u64) -> bool {
-        self.woke_at.is_some_and(|w| now.saturating_sub(w) < WAKE_GUARD_MS)
+        self.woke_at
+            .is_some_and(|w| now.saturating_sub(w) < WAKE_GUARD_MS)
     }
 
     /// Turn the panel off: the content goes dark under the backlight it has
@@ -3281,7 +3741,11 @@ impl App {
     /// answered with, still closed.
     pub fn data_waiting(&mut self, waiting: Option<(u32, Keys)>) {
         self.state.data = match waiting {
-            Some((user, keys)) => Data::Locked { user, keys, checking: false },
+            Some((user, keys)) => Data::Locked {
+                user,
+                keys,
+                checking: false,
+            },
             None => Data::Open,
         };
         self.state.code.clear();
@@ -3347,7 +3811,10 @@ impl App {
 
     /// What the shell wrote.
     pub fn term_output(&mut self, bytes: &[u8]) {
-        let term = self.term.as_mut().expect("only a shell that started writes");
+        let term = self
+            .term
+            .as_mut()
+            .expect("only a shell that started writes");
         term.feed(bytes);
         if self.screen() == Screen::Terminal {
             self.refresh();
@@ -3357,9 +3824,20 @@ impl App {
     /// The shell has ended as `end` says; its screen says so, and that
     /// Enter starts another.
     pub fn term_ended(&mut self, end: TermEnd) {
-        let (l, term) = (self.state.lang, self.term.as_mut().expect("only a shell that started ends"));
+        let (l, term) = (
+            self.state.lang,
+            self.term.as_mut().expect("only a shell that started ends"),
+        );
         let how = fmt::term_end(l, &end);
-        term.feed(tr!(l, "\r\n[{how}。按「回车」重新启动]\r\n", "\r\n[{how}。按「Enter」重新啟動]\r\n", "\r\n[{how}. Press Enter to start it again]\r\n").as_bytes());
+        term.feed(
+            tr!(
+                l,
+                "\r\n[{how}。按「回车」重新启动]\r\n",
+                "\r\n[{how}。按「Enter」重新啟動]\r\n",
+                "\r\n[{how}. Press Enter to start it again]\r\n"
+            )
+            .as_bytes(),
+        );
         term.running = false;
         if self.screen() == Screen::Terminal {
             self.refresh();
@@ -3379,7 +3857,12 @@ impl App {
         if matches!(task, FileTask::Copy { .. } | FileTask::Move { .. }) {
             self.state.clip = None;
         }
-        self.state.job = Some(FileJob { task, progress: None, outcome: None, stopping: false });
+        self.state.job = Some(FileJob {
+            task,
+            progress: None,
+            outcome: None,
+            stopping: false,
+        });
         // The work's page takes the place of the entry's page, sliding in
         // over it.
         if self.screen() == Screen::FileInfo {
@@ -3393,7 +3876,11 @@ impl App {
 
     /// How far work on files has come, in bytes and in entries.
     pub fn file_progress(&mut self, bytes: (u64, u64), entries: (u64, u64)) {
-        let job = self.state.job.as_mut().expect("only work under way moves on");
+        let job = self
+            .state
+            .job
+            .as_mut()
+            .expect("only work under way moves on");
         job.progress = Some((bytes, entries));
         if self.screen() == Screen::FileJob {
             self.refresh();
@@ -3440,7 +3927,11 @@ impl App {
     /// How far giving the data partition's files their labels has come:
     /// entries looked at, of how many, and how many took a new label.
     pub fn relabel_progress(&mut self, checked: u64, total: u64, changed: u64) {
-        let job = self.state.relabel.as_mut().expect("only work under way moves on");
+        let job = self
+            .state
+            .relabel
+            .as_mut()
+            .expect("only work under way moves on");
         (job.checked, job.total, job.changed) = (checked, total, changed);
         if self.screen() == Screen::Relabel {
             self.refresh();
@@ -3450,7 +3941,11 @@ impl App {
     /// Giving the data partition's files their labels has ended: its page
     /// says how, lit for the user to read.
     pub fn relabel_ended(&mut self, end: JobEnd, now: u64) {
-        let job = self.state.relabel.as_mut().expect("only work under way ends");
+        let job = self
+            .state
+            .relabel
+            .as_mut()
+            .expect("only work under way ends");
         job.stopping = false;
         job.outcome = Some(end);
         self.wake(now);
@@ -3466,14 +3961,25 @@ impl App {
 
     /// The partition the page of one shows.
     fn fs_row(&self) -> Option<&FsRow> {
-        self.state.filesystems.as_ref()?.as_ref().ok()?.get(self.state.fs_chosen)
+        self.state
+            .filesystems
+            .as_ref()?
+            .as_ref()
+            .ok()?
+            .get(self.state.fs_chosen)
     }
 
     /// Work on whole partitions has begun. Work the system asked for, which
     /// `asked` says, has its page as the only one; the filesystem page's
     /// opens over it, to go back to once the work has ended.
     pub fn part_work_started(&mut self, kind: PartKind, asked: bool) {
-        self.state.part_work = Some(PartWork { kind, asked, items: Vec::new(), output: Vec::new(), outcome: None });
+        self.state.part_work = Some(PartWork {
+            kind,
+            asked,
+            items: Vec::new(),
+            output: Vec::new(),
+            outcome: None,
+        });
         match asked {
             true => {
                 self.stack = vec![(Screen::PartWork, 0.0, Focus::Unset)];
@@ -3486,14 +3992,25 @@ impl App {
 
     /// The partitions the work goes through.
     pub fn part_listed(&mut self, names: Vec<String>) {
-        let work = self.state.part_work.as_mut().expect("only work under way lists its partitions");
-        work.items = names.into_iter().map(|name| (name, ItemState::Waiting)).collect();
+        let work = self
+            .state
+            .part_work
+            .as_mut()
+            .expect("only work under way lists its partitions");
+        work.items = names
+            .into_iter()
+            .map(|name| (name, ItemState::Waiting))
+            .collect();
         self.refresh();
     }
 
     /// The partition at `index` is under way.
     pub fn part_at(&mut self, index: usize) {
-        let work = self.state.part_work.as_mut().expect("only work under way moves on");
+        let work = self
+            .state
+            .part_work
+            .as_mut()
+            .expect("only work under way moves on");
         work.items[index].1 = ItemState::Working;
         self.refresh();
     }
@@ -3501,9 +4018,18 @@ impl App {
     /// The partition at `index` ended as `end`, the program working on it
     /// having said `said`.
     pub fn part_ended(&mut self, index: usize, end: ItemEnd, said: &str) {
-        let work = self.state.part_work.as_mut().expect("only work under way ends a partition");
+        let work = self
+            .state
+            .part_work
+            .as_mut()
+            .expect("only work under way ends a partition");
         work.items[index].1 = ItemState::Ended(end);
-        let lines: Vec<String> = said.lines().map(str::trim_end).filter(|l| !l.is_empty()).map(str::to_string).collect();
+        let lines: Vec<String> = said
+            .lines()
+            .map(str::trim_end)
+            .filter(|l| !l.is_empty())
+            .map(str::to_string)
+            .collect();
         if !lines.is_empty() {
             work.output = lines[lines.len().saturating_sub(SCRIPT_LINES)..].to_vec();
         }
@@ -3515,10 +4041,19 @@ impl App {
     /// went through every partition: the phone then leaves on its own. The
     /// data partition, worked on, is closed now.
     pub fn part_work_ended(&mut self, outcome: Result<(), PartStop>, now: u64) {
-        let work = self.state.part_work.as_mut().expect("only work under way ends");
-        let failed = outcome.is_err() || work.items.iter().any(|(_, s)| matches!(s, ItemState::Ended(ItemEnd::Failed(_))));
+        let work = self
+            .state
+            .part_work
+            .as_mut()
+            .expect("only work under way ends");
+        let failed = outcome.is_err()
+            || work
+                .items
+                .iter()
+                .any(|(_, s)| matches!(s, ItemState::Ended(ItemEnd::Failed(_))));
         let lit = failed || !work.asked;
-        let data = work.kind == PartKind::Repair && work.items.iter().any(|(name, _)| name == DATA_PARTITION);
+        let data = work.kind == PartKind::Repair
+            && work.items.iter().any(|(name, _)| name == DATA_PARTITION);
         work.outcome = Some(outcome);
         if data && self.state.data != Data::Erased {
             self.state.data = Data::Closed;
@@ -3588,7 +4123,14 @@ impl App {
             return;
         }
         self.state.wlan = Some(w);
-        if matches!(self.screen(), Screen::Home | Screen::Wlan | Screen::WlanNetwork | Screen::Update | Screen::SkywardUpdate) {
+        if matches!(
+            self.screen(),
+            Screen::Home
+                | Screen::Wlan
+                | Screen::WlanNetwork
+                | Screen::Update
+                | Screen::SkywardUpdate
+        ) {
             self.refresh();
         }
         // The status bar shows the network joined over every page.
@@ -3613,7 +4155,13 @@ impl App {
         let battery = info.battery.as_ref();
         Bar {
             clock,
-            battery: battery.map(|b| (b.level, b.charging().then_some(if b.quick { Bolt::Quick } else { Bolt::Charging }))),
+            battery: battery.map(|b| {
+                (
+                    b.level,
+                    b.charging()
+                        .then_some(if b.quick { Bolt::Quick } else { Bolt::Charging }),
+                )
+            }),
             wlan: self.wlan_mark(),
             data: match self.state.data {
                 Data::Erased => None,
@@ -3626,10 +4174,22 @@ impl App {
     }
 
     pub fn wlan_mark(&self) -> Option<WlanMark> {
-        let Some(Joined { stage: Joining::Connected(link), .. }) = self.state.wlan.as_ref()?.joined.as_ref() else { return None };
+        let Some(Joined {
+            stage: Joining::Connected(link),
+            ..
+        }) = self.state.wlan.as_ref()?.joined.as_ref()
+        else {
+            return None;
+        };
         let t = self.state.traffic;
         let (speed, unit) = fmt::speed(t.rx + t.tx);
-        Some(WlanMark { level: fmt::signal_level(link.signal), receiving: t.rx > 0, sending: t.tx > 0, speed, unit })
+        Some(WlanMark {
+            level: fmt::signal_level(link.signal),
+            receiving: t.rx > 0,
+            sending: t.tx > 0,
+            speed,
+            unit,
+        })
     }
 
     /// What the update server answered, and what internal storage holds of
@@ -3648,7 +4208,11 @@ impl App {
     /// How far downloading the full package has come, and how fast it goes,
     /// in bytes a second.
     pub fn download_progress(&mut self, progress: Progress, rate: u64) {
-        let job = self.state.download.as_mut().expect("only a download under way moves on");
+        let job = self
+            .state
+            .download
+            .as_mut()
+            .expect("only a download under way moves on");
         job.progress = Some(progress);
         job.rate = rate;
         if self.screen() == Screen::Update {
@@ -3659,7 +4223,11 @@ impl App {
     /// Downloading the full package has ended, leaving `have` of it: the
     /// update page says how, lit for the user to read.
     pub fn download_ended(&mut self, end: DownloadEnd, have: Have, now: u64) {
-        let job = self.state.download.as_mut().expect("only a download under way ends");
+        let job = self
+            .state
+            .download
+            .as_mut()
+            .expect("only a download under way ends");
         job.stopping = false;
         job.outcome = Some(end);
         self.state.have = have;
@@ -3681,7 +4249,11 @@ impl App {
     /// How far updating Skyward has come, and how fast the download goes,
     /// in bytes a second.
     pub fn skyward_progress(&mut self, stage: SkywardStage, rate: u64) {
-        let job = self.state.skyward_job.as_mut().expect("only an update under way moves on");
+        let job = self
+            .state
+            .skyward_job
+            .as_mut()
+            .expect("only an update under way moves on");
         job.stage = Some(stage);
         job.rate = rate;
         if self.screen() == Screen::SkywardUpdate {
@@ -3692,7 +4264,11 @@ impl App {
     /// Updating Skyward has ended: its page says how, lit for the user to
     /// read.
     pub fn skyward_ended(&mut self, end: SkywardEnd, now: u64) {
-        let job = self.state.skyward_job.as_mut().expect("only an update under way ends");
+        let job = self
+            .state
+            .skyward_job
+            .as_mut()
+            .expect("only an update under way ends");
         job.stopping = false;
         job.outcome = Some(end);
         self.wake(now);
@@ -3720,7 +4296,10 @@ impl App {
                 self.state.file = None;
                 self.settle_page();
                 self.refresh();
-                self.say(self.state.lang.pick(["已重命名", "已重新命名", "Renamed"]), now);
+                self.say(
+                    self.state.lang.pick(["已重命名", "已重新命名", "Renamed"]),
+                    now,
+                );
             }
             Err(RenameRefused::Taken) => self.say_taken(now),
             Err(RenameRefused::Failed(why)) => self.report(&why, now),
@@ -3733,9 +4312,23 @@ impl App {
         let l = self.state.lang;
         let bits = match outcome {
             Ok(bits) => bits,
-            Err(why) => return self.report(&tr!(l, "修改权限失败：{why}", "修改權限失敗：{why}", "Couldn't change the permissions: {why}"), now),
+            Err(why) => {
+                return self.report(
+                    &tr!(
+                        l,
+                        "修改权限失败：{why}",
+                        "修改權限失敗：{why}",
+                        "Couldn't change the permissions: {why}"
+                    ),
+                    now,
+                )
+            }
         };
-        let entry = self.state.file.as_mut().expect("the permissions page shows an entry");
+        let entry = self
+            .state
+            .file
+            .as_mut()
+            .expect("the permissions page shows an entry");
         entry.mode = (entry.mode & !0o7777) | bits;
         let name = entry.name.clone();
         if let Ok(entries) = &mut self.state.files.entries {
@@ -3744,7 +4337,14 @@ impl App {
             }
         }
         if bits != wanted {
-            self.say(l.pick(["该位置不支持修改权限", "這個位置不支援修改權限", "Permissions can't be changed here"]), now);
+            self.say(
+                l.pick([
+                    "该位置不支持修改权限",
+                    "這個位置不支援修改權限",
+                    "Permissions can't be changed here",
+                ]),
+                now,
+            );
         }
         self.refresh();
     }
@@ -3753,15 +4353,50 @@ impl App {
     /// more than [`editor::MAX_BYTES`]; or why it could not be read. Text
     /// opens on the editor page, wrapped to its card; anything else is
     /// turned down, saying why.
-    pub fn text_opened(&mut self, f: &Fonts, path: String, read: Result<Option<Vec<u8>>, String>, now: u64) {
+    pub fn text_opened(
+        &mut self,
+        f: &Fonts,
+        path: String,
+        read: Result<Option<Vec<u8>>, String>,
+        now: u64,
+    ) {
         let l = self.state.lang;
         let bytes = match read {
             Ok(Some(bytes)) => bytes,
-            Ok(None) => return self.say(l.pick(["暂不支持编辑超过 2 MB 的文件", "尚不支援編輯超過 2 MB 的檔案", "Files over 2 MB can't be edited"]), now),
-            Err(why) => return self.report(&tr!(l, "读取失败：{why}", "讀取失敗：{why}", "Couldn't read it: {why}"), now),
+            Ok(None) => {
+                return self.say(
+                    l.pick([
+                        "暂不支持编辑超过 2 MB 的文件",
+                        "尚不支援編輯超過 2 MB 的檔案",
+                        "Files over 2 MB can't be edited",
+                    ]),
+                    now,
+                )
+            }
+            Err(why) => {
+                return self.report(
+                    &tr!(
+                        l,
+                        "读取失败：{why}",
+                        "讀取失敗：{why}",
+                        "Couldn't read it: {why}"
+                    ),
+                    now,
+                )
+            }
         };
-        let Some(text) = String::from_utf8(bytes).ok().filter(|text| !text.contains('\0')) else {
-            return self.say(l.pick(["仅支持编辑 UTF-8 编码的文本文件", "僅支援編輯 UTF-8 編碼的文字檔", "Only UTF-8 text files can be edited"]), now);
+        let Some(text) = String::from_utf8(bytes)
+            .ok()
+            .filter(|text| !text.contains('\0'))
+        else {
+            return self.say(
+                l.pick([
+                    "仅支持编辑 UTF-8 编码的文本文件",
+                    "僅支援編輯 UTF-8 編碼的文字檔",
+                    "Only UTF-8 text files can be edited",
+                ]),
+                now,
+            );
         };
         let l = editor::layout(&self.theme(), f);
         self.state.editor = Some(Editor::new(path, &text, l.cols as usize, l.rows as usize));
@@ -3775,18 +4410,35 @@ impl App {
     pub fn text_saved(&mut self, outcome: Result<(), String>, now: u64) {
         match outcome {
             Ok(()) => {
-                self.state.editor.as_mut().expect("the editor page shows a file").saved();
+                self.state
+                    .editor
+                    .as_mut()
+                    .expect("the editor page shows a file")
+                    .saved();
                 self.refresh();
                 self.say(self.state.lang.pick(["已保存", "已儲存", "Saved"]), now);
             }
-            Err(why) => self.report(&tr!(self.state.lang, "保存失败：{why}", "儲存失敗：{why}", "Couldn't save it: {why}"), now),
+            Err(why) => self.report(
+                &tr!(
+                    self.state.lang,
+                    "保存失败：{why}",
+                    "儲存失敗：{why}",
+                    "Couldn't save it: {why}"
+                ),
+                now,
+            ),
         }
     }
 
     /// The name typed for an entry is another entry's in the folder.
     fn say_taken(&mut self, now: u64) {
         let name = &self.state.new_name;
-        let said = tr!(self.state.lang, "该文件夹中已有\"{name}\"", "這個資料夾中已有「{name}」", "This folder already has “{name}”");
+        let said = tr!(
+            self.state.lang,
+            "该文件夹中已有\"{name}\"",
+            "這個資料夾中已有「{name}」",
+            "This folder already has “{name}”"
+        );
         self.say(&said, now);
     }
 
@@ -3816,7 +4468,14 @@ impl App {
     /// until it ends. `reset` for a factory reset, `asked` when the system
     /// asked for it before the recovery started.
     pub fn erase_started(&mut self, reset: bool, asked: bool, parts: Vec<Part>) {
-        self.state.erase = Erase { reset, asked, parts, done: 0, progress: None, outcome: None };
+        self.state.erase = Erase {
+            reset,
+            asked,
+            parts,
+            done: 0,
+            progress: None,
+            outcome: None,
+        };
         self.stack = vec![(Screen::Erase, 0.0, Focus::Unset)];
         self.settle_page();
         self.refresh();
@@ -3825,7 +4484,11 @@ impl App {
     /// Erasing has come to `part`.
     pub fn erase_at(&mut self, part: Part) {
         let erase = &mut self.state.erase;
-        erase.done = erase.parts.iter().position(|&p| p == part).expect("erasing comes only to the parts it set out with");
+        erase.done = erase
+            .parts
+            .iter()
+            .position(|&p| p == part)
+            .expect("erasing comes only to the parts it set out with");
         erase.progress = None;
         self.refresh();
     }
@@ -3846,7 +4509,11 @@ impl App {
             erase.done = erase.parts.len();
         }
         erase.progress = None;
-        let data_gone = erase.parts.iter().position(|&p| p == Part::Data).is_some_and(|k| k < erase.done);
+        let data_gone = erase
+            .parts
+            .iter()
+            .position(|&p| p == Part::Data)
+            .is_some_and(|k| k < erase.done);
         if outcome.is_err() || !erase.asked {
             self.wake(now);
         }
@@ -3872,10 +4539,26 @@ impl App {
                 self.state.next_slot = None;
                 self.state.boot_slots = Some(Ok(slots));
                 let slot = slots.active.letter();
-                self.say(&tr!(self.state.lang, "下次将从槽位 {slot} 启动", "下次將從槽位 {slot} 啟動", "Slot {slot} starts next"), now);
+                self.say(
+                    &tr!(
+                        self.state.lang,
+                        "下次将从槽位 {slot} 启动",
+                        "下次將從槽位 {slot} 啟動",
+                        "Slot {slot} starts next"
+                    ),
+                    now,
+                );
                 self.refresh();
             }
-            Err(why) => self.say(&tr!(self.state.lang, "切换失败：{why}", "切換失敗：{why}", "Couldn't switch: {why}"), now),
+            Err(why) => self.say(
+                &tr!(
+                    self.state.lang,
+                    "切换失败：{why}",
+                    "切換失敗：{why}",
+                    "Couldn't switch: {why}"
+                ),
+                now,
+            ),
         }
     }
 
@@ -3892,8 +4575,18 @@ impl App {
     pub fn systems_work_failed(&mut self, why: &str, now: u64) {
         let l = self.state.lang;
         let said = match self.state.systems_work.take() {
-            Some(SystemsWork::Removing) => tr!(l, "删除失败：{why}", "刪除失敗：{why}", "Couldn't remove: {why}"),
-            _ => tr!(l, "切换失败：{why}", "切換失敗：{why}", "Couldn't switch: {why}"),
+            Some(SystemsWork::Removing) => tr!(
+                l,
+                "删除失败：{why}",
+                "刪除失敗：{why}",
+                "Couldn't remove: {why}"
+            ),
+            _ => tr!(
+                l,
+                "切换失败：{why}",
+                "切換失敗：{why}",
+                "Couldn't switch: {why}"
+            ),
         };
         self.say(&said, now);
         self.refresh();
@@ -3917,7 +4610,13 @@ impl App {
     /// first, by when each was made, and those that cannot be read after
     /// them, by their folder's name, which is when each was begun.
     pub fn set_backups(&mut self, mut backups: Vec<BackupEntry>) {
-        let key = |e: &BackupEntry| (e.held.is_ok(), e.held.as_ref().map_or(0, |h| h.made), e.name.clone());
+        let key = |e: &BackupEntry| {
+            (
+                e.held.is_ok(),
+                e.held.as_ref().map_or(0, |h| h.made),
+                e.name.clone(),
+            )
+        };
         backups.sort_by_key(|e| std::cmp::Reverse(key(e)));
         self.state.backups = backups;
         self.refresh();
@@ -3925,19 +4624,34 @@ impl App {
 
     /// Look for backups in the places that can be read now.
     fn find_backups(&self) -> Effect {
-        Effect::FindBackups { storage: self.state.place_open(Place::Storage), usb: self.state.place_open(Place::UsbDrive) }
+        Effect::FindBackups {
+            storage: self.state.place_open(Place::Storage),
+            usb: self.state.place_open(Place::UsbDrive),
+        }
     }
 
     /// Backing up, or restoring, has begun: its page shows how far it comes.
     /// `checks` when each part is read back to check it.
     pub fn backup_started(&mut self, restore: bool, place: Place, checks: bool) {
-        self.state.backup_job = Some(BackupJob { restore, place, checks, plan: Vec::new(), at: None, outcome: None, stopping: false });
+        self.state.backup_job = Some(BackupJob {
+            restore,
+            place,
+            checks,
+            plan: Vec::new(),
+            at: None,
+            outcome: None,
+            stopping: false,
+        });
         self.open(Screen::BackupJob);
     }
 
     /// The parts the work goes through, once they are measured.
     pub fn backup_plan(&mut self, plan: Vec<(String, u64)>) {
-        self.state.backup_job.as_mut().expect("only work under way is measured").plan = plan;
+        self.state
+            .backup_job
+            .as_mut()
+            .expect("only work under way is measured")
+            .plan = plan;
         if self.screen() == Screen::BackupJob {
             self.refresh();
         }
@@ -3945,7 +4659,11 @@ impl App {
 
     /// How far the work has come.
     pub fn backup_at(&mut self, at: BackupAt) {
-        self.state.backup_job.as_mut().expect("only work under way moves on").at = Some(at);
+        self.state
+            .backup_job
+            .as_mut()
+            .expect("only work under way moves on")
+            .at = Some(at);
         if self.screen() == Screen::BackupJob {
             self.refresh();
         }
@@ -3954,7 +4672,11 @@ impl App {
     /// Backing up or restoring has ended: its page says how, lit for the
     /// user to read.
     pub fn backup_ended(&mut self, end: BackupEnd, now: u64) {
-        let job = self.state.backup_job.as_mut().expect("only work under way ends");
+        let job = self
+            .state
+            .backup_job
+            .as_mut()
+            .expect("only work under way ends");
         job.stopping = false;
         job.outcome = Some(end);
         self.wake(now);
@@ -3978,7 +4700,15 @@ impl App {
                 vec![self.find_backups()]
             }
             Err(why) => {
-                self.report(&tr!(self.state.lang, "删除失败：{why}", "刪除失敗：{why}", "Couldn't delete it: {why}"), now);
+                self.report(
+                    &tr!(
+                        self.state.lang,
+                        "删除失败：{why}",
+                        "刪除失敗：{why}",
+                        "Couldn't delete it: {why}"
+                    ),
+                    now,
+                );
                 Vec::new()
             }
         }
@@ -4000,7 +4730,13 @@ impl App {
     /// The runtime listed a folder of `place` at `listed`, its path from
     /// the place's top, or could not: it becomes the folder shown to choose
     /// a file to install in, with what it holds that may be installed.
-    pub fn set_place(&mut self, place: Place, folder: String, files: Result<Vec<FileRow>, String>, listed: i64) {
+    pub fn set_place(
+        &mut self,
+        place: Place,
+        folder: String,
+        files: Result<Vec<FileRow>, String>,
+        listed: i64,
+    ) {
         let files = files.map(|entries| entries.into_iter().filter(installable).collect());
         self.show_folder(Screen::Choose(place), folder, files, listed);
     }
@@ -4017,7 +4753,12 @@ impl App {
         self.state.usb_drive = drive;
         self.state.drive = Folder::new("");
         self.refresh();
-        let gone = !self.state.place_open(Place::UsbDrive) && self.state.restore.as_ref().is_some_and(|(e, _)| e.place == Place::UsbDrive);
+        let gone = !self.state.place_open(Place::UsbDrive)
+            && self
+                .state
+                .restore
+                .as_ref()
+                .is_some_and(|(e, _)| e.place == Place::UsbDrive);
         match self.screen() {
             Screen::RestoreBackup if gone => {
                 self.state.restore = None;
@@ -4047,17 +4788,34 @@ impl App {
     /// `folder` becomes the one the list on page `screen` shows. A folder
     /// gone back up to shows where it was left, as the stock file manager
     /// does; any other starts from its top.
-    fn show_folder(&mut self, screen: Screen, folder: String, files: Result<Vec<FileRow>, String>, listed: i64) {
+    fn show_folder(
+        &mut self,
+        screen: Screen,
+        folder: String,
+        files: Result<Vec<FileRow>, String>,
+        listed: i64,
+    ) {
         let left = &self.state.folder(screen).path;
         if folder != *left && self.screen() == screen {
             // Climbing out of a folder, the keys come back to it; any other
             // folder starts them at its top.
-            let came_from = std::path::Path::new(left).strip_prefix(&folder).ok().and_then(|rest| rest.components().next());
+            let came_from = std::path::Path::new(left)
+                .strip_prefix(&folder)
+                .ok()
+                .and_then(|rest| rest.components().next());
             let name = came_from.map(|c| c.as_os_str().to_string_lossy().into_owned());
             let k = name.and_then(|name| files.as_ref().ok()?.iter().position(|e| e.name == name));
-            let row = if screen == Screen::Files { Action::OpenEntry } else { Action::ChooseEntry };
+            let row = if screen == Screen::Files {
+                Action::OpenEntry
+            } else {
+                Action::ChooseEntry
+            };
             self.top_mut().2 = match k {
-                Some(k) => Focus::On(Spot { stop: Stop::Hit(row(k)), group: Group::Page, rect: Rect::new(0.0, 0.0, 0.0, 0.0) }),
+                Some(k) => Focus::On(Spot {
+                    stop: Stop::Hit(row(k)),
+                    group: Group::Page,
+                    rect: Rect::new(0.0, 0.0, 0.0, 0.0),
+                }),
                 None => Focus::Unset,
             };
             self.top_mut().1 = self.state.folder_mut(screen).scroll_for(&folder);
@@ -4097,11 +4855,24 @@ impl App {
             let t = self.theme();
             let screen = self.screen();
             for rows in std::mem::take(&mut self.stale) {
-                let band = Band { rows, cols: (0, self.cols) };
-                let cx = Ctx { t: &t, f, info, state: &self.state, term: self.term.as_ref(), band: Some(band) };
+                let band = Band {
+                    rows,
+                    cols: (0, self.cols),
+                };
+                let cx = Ctx {
+                    t: &t,
+                    f,
+                    info,
+                    state: &self.state,
+                    term: self.term.as_ref(),
+                    band: Some(band),
+                };
                 let fresh = pages::render(screen, &cx);
                 let mut canvas = self.frame.take().expect("checked above").canvas;
-                assert_eq!(canvas.h, fresh.canvas.h, "a page drawn again in part is as tall as it was");
+                assert_eq!(
+                    canvas.h, fresh.canvas.h,
+                    "a page drawn again in part is as tall as it was"
+                );
                 canvas.replace(&fresh.canvas);
                 self.frame = Some(Frame { canvas, ..fresh });
             }
@@ -4110,8 +4881,18 @@ impl App {
             let t = self.theme();
             let screen = self.screen();
             let first = self.top().1.max(0.0) as u32;
-            let band = Band { rows: (first, first + self.h), cols: (0, wide.min(self.w)) };
-            let cx = Ctx { t: &t, f, info, state: &self.state, term: self.term.as_ref(), band: Some(band) };
+            let band = Band {
+                rows: (first, first + self.h),
+                cols: (0, wide.min(self.w)),
+            };
+            let cx = Ctx {
+                t: &t,
+                f,
+                info,
+                state: &self.state,
+                term: self.term.as_ref(),
+                band: Some(band),
+            };
             let mut frame = pages::render(screen, &cx);
             // A page drawn in part across holds its rows whole, the columns
             // of them drawn on as they are needed.
@@ -4147,7 +4928,9 @@ impl App {
     /// it scrolls into view; that done, make the About page field's dither,
     /// for that page to open without making it. Whether any is left to do.
     pub fn draw_ahead(&mut self, f: &Fonts, info: &DeviceInfo) -> bool {
-        let Some(frame) = &self.frame else { return false };
+        let Some(frame) = &self.frame else {
+            return false;
+        };
         let (held, h) = (frame.canvas.held(), frame.canvas.h);
         if self.cols < self.w {
             self.draw_cols(f, info, self.w);
@@ -4158,7 +4941,9 @@ impl App {
         } else if self.dither.is_none() {
             self.dither = Some(glow::Dither::new(self.w as usize, self.h as usize));
         }
-        self.cols < self.w || self.frame.as_ref().is_some_and(|fr| !fr.canvas.whole()) || self.dither.is_none()
+        self.cols < self.w
+            || self.frame.as_ref().is_some_and(|fr| !fr.canvas.whole())
+            || self.dither.is_none()
     }
 
     /// Draw the columns of the current page's rows drawn from where they
@@ -4171,10 +4956,24 @@ impl App {
         }
         let held = frame.canvas.held();
         let t = self.theme();
-        let band = Band { rows: (held.start, held.end), cols: (self.cols, wide) };
-        let cx = Ctx { t: &t, f, info, state: &self.state, term: self.term.as_ref(), band: Some(band) };
+        let band = Band {
+            rows: (held.start, held.end),
+            cols: (self.cols, wide),
+        };
+        let cx = Ctx {
+            t: &t,
+            f,
+            info,
+            state: &self.state,
+            term: self.term.as_ref(),
+            band: Some(band),
+        };
         let part = pages::render(self.screen(), &cx).canvas;
-        self.frame.as_mut().expect("drawn above").canvas.replace(&part);
+        self.frame
+            .as_mut()
+            .expect("drawn above")
+            .canvas
+            .replace(&part);
         self.cols = wide;
         self.layer = None;
     }
@@ -4185,7 +4984,10 @@ impl App {
     fn draw_rows(&mut self, f: &Fonts, info: &DeviceInfo, from: f32, to: f32) {
         let Some(frame) = &self.frame else { return };
         let h = frame.canvas.h;
-        let (from, to) = ((from.max(0.0) as u32).min(h), (to.max(0.0).ceil() as u32).min(h));
+        let (from, to) = (
+            (from.max(0.0) as u32).min(h),
+            (to.max(0.0).ceil() as u32).min(h),
+        );
         let held = frame.canvas.held();
         let least = self.h / 4;
         let mut bands = Vec::new();
@@ -4202,8 +5004,18 @@ impl App {
         let t = self.theme();
         let screen = self.screen();
         for rows in bands {
-            let band = Band { rows, cols: (0, self.w) };
-            let cx = Ctx { t: &t, f, info, state: &self.state, term: self.term.as_ref(), band: Some(band) };
+            let band = Band {
+                rows,
+                cols: (0, self.w),
+            };
+            let cx = Ctx {
+                t: &t,
+                f,
+                info,
+                state: &self.state,
+                term: self.term.as_ref(),
+                band: Some(band),
+            };
             let part = pages::render(screen, &cx).canvas;
             self.frame.as_mut().expect("drawn above").canvas.join(&part);
         }
@@ -4223,7 +5035,14 @@ impl App {
     /// Draw what the panel shows now: the page, the charging screen over it
     /// while a cable has just gone in, both as dark as the content stands
     /// as the panel goes off or comes up.
-    pub fn compose(&mut self, out: &mut Canvas, f: &Fonts, info: &DeviceInfo, clock: &str, now: u64) {
+    pub fn compose(
+        &mut self,
+        out: &mut Canvas,
+        f: &Fonts,
+        info: &DeviceInfo,
+        clock: &str,
+        now: u64,
+    ) {
         let charge = self.charging.as_ref().map_or(0.0, |c| c.shown.level(now));
         if charge < 1.0 {
             self.compose_page(out, f, info, clock, now);
@@ -4235,20 +5054,55 @@ impl App {
     }
 
     /// The charging screen, `level` of the way over the page drawn on `out`.
-    fn compose_charging(&mut self, out: &mut Canvas, f: &Fonts, info: &DeviceInfo, level: f32, now: u64) {
-        let battery = info.battery.as_ref().expect("a cable went in on a phone whose battery is read");
+    fn compose_charging(
+        &mut self,
+        out: &mut Canvas,
+        f: &Fonts,
+        info: &DeviceInfo,
+        level: f32,
+        now: u64,
+    ) {
+        let battery = info
+            .battery
+            .as_ref()
+            .expect("a cable went in on a phone whose battery is read");
         let (t, lang) = (self.theme(), self.state.lang);
-        if !self.charge_art.as_ref().is_some_and(|a| a.shows(lang, battery)) {
-            self.charge_art = Some(charge::Art::new(f, &t.m, lang, battery).expect("the screens' face takes the charging screen's weight"));
+        if !self
+            .charge_art
+            .as_ref()
+            .is_some_and(|a| a.shows(lang, battery))
+        {
+            self.charge_art = Some(
+                charge::Art::new(f, &t.m, lang, battery)
+                    .expect("the screens' face takes the charging screen's weight"),
+            );
         }
         let since = self.charging.as_ref().map_or(now, |c| c.since);
-        let dither = self.dither.get_or_insert_with(|| glow::Dither::new(out.w as usize, out.h as usize));
+        let dither = self
+            .dither
+            .get_or_insert_with(|| glow::Dither::new(out.w as usize, out.h as usize));
         let art = self.charge_art.as_ref().expect("drawn above");
         if level >= 1.0 {
-            charge::draw(out, art, &t.m, battery.level, now.saturating_sub(since), dither);
+            charge::draw(
+                out,
+                art,
+                &t.m,
+                battery.level,
+                now.saturating_sub(since),
+                dither,
+            );
         } else {
-            let screen = self.charge_canvas.get_or_insert_with(|| Canvas::new(out.w, out.h));
-            charge::draw(screen, art, &t.m, battery.level, now.saturating_sub(since), dither);
+            let screen = self
+                .charge_canvas
+                .get_or_insert_with(|| Canvas::new(out.w, out.h));
+            charge::draw(
+                screen,
+                art,
+                &t.m,
+                battery.level,
+                now.saturating_sub(since),
+                dither,
+            );
             out.lay(screen, 0, 0, level);
         }
     }
@@ -4258,7 +5112,14 @@ impl App {
     /// page, the `<`, the page sliding in or out over or under the page
     /// left, the status bar, any message, and the back cue while a swipe
     /// from an edge is under way.
-    fn compose_page(&mut self, out: &mut Canvas, f: &Fonts, info: &DeviceInfo, clock: &str, now: u64) {
+    fn compose_page(
+        &mut self,
+        out: &mut Canvas,
+        f: &Fonts,
+        info: &DeviceInfo,
+        clock: &str,
+        now: u64,
+    ) {
         // A page opened is drawn from its left edge as it slides in.
         let opening = self.turn.as_ref().is_some_and(|t| !t.back);
         self.render(f, info, if opening { 0 } else { self.w });
@@ -4289,7 +5150,11 @@ impl App {
         let title = self.frame.as_ref().expect("rendered above").title;
         let key = (title, self.state.dark);
         if self.titles.as_ref().is_none_or(|(k, _, _)| *k != key) {
-            self.titles = Some((key, Blurs::new(widgets::big_title(&t, f, title)), Blurs::new(widgets::small_title(&t, f, title))));
+            self.titles = Some((
+                key,
+                Blurs::new(widgets::big_title(&t, f, title)),
+                Blurs::new(widgets::small_title(&t, f, title)),
+            ));
         }
         if let Some(fold) = self.frame.as_ref().and_then(|fr| fr.fold) {
             let key = (fold.hint, self.state.dark);
@@ -4328,10 +5193,24 @@ impl App {
             let page = &self.frame.as_ref().expect("rendered above").canvas;
             let (x, y, w, h) = row_part(press.rect, page);
             let pressed = t.pressed();
-            let band = Band { rows: (y, y + h), cols: (x, x + w) };
-            let cx = Ctx { t: &pressed, f, info, state: &self.state, term: self.term.as_ref(), band: Some(band) };
+            let band = Band {
+                rows: (y, y + h),
+                cols: (x, x + w),
+            };
+            let cx = Ctx {
+                t: &pressed,
+                f,
+                info,
+                state: &self.state,
+                term: self.term.as_ref(),
+                band: Some(band),
+            };
             let down = pages::render(screen, &cx).canvas;
-            assert_eq!((down.w, down.h), (page.w, page.h), "a page held down is laid out as it was");
+            assert_eq!(
+                (down.w, down.h),
+                (page.w, page.h),
+                "a page held down is laid out as it was"
+            );
             self.row_art = Some((page.crop(x, y, w, h), down.crop(x, y, w, h)));
         }
         let view = View {
@@ -4360,13 +5239,19 @@ impl App {
                     let page = match self.layer.take() {
                         Some((shown, c)) if still && shown == view => c,
                         kept => {
-                            let mut c = kept.map(|(_, c)| c).unwrap_or_else(|| Canvas::new(out.w, out.h));
+                            let mut c = kept
+                                .map(|(_, c)| c)
+                                .unwrap_or_else(|| Canvas::new(out.w, out.h));
                             self.paint_page(&mut c, &t, Some((f, info)), &view);
                             c
                         }
                     };
                     let turn = self.turn.as_ref().expect("sliding");
-                    let (front, behind) = if back { (&turn.left, &page) } else { (&page, &turn.left) };
+                    let (front, behind) = if back {
+                        (&turn.left, &page)
+                    } else {
+                        (&page, &turn.left)
+                    };
                     out.slide(front, behind, at, shift, dim, self.corners);
                     self.layer = Some((view, page));
                 }
@@ -4383,9 +5268,22 @@ impl App {
             widgets::toast(out, &t, f, text);
         }
         match self.drag {
-            Drag::Edge { start, from_left, armed, x, cy } => {
+            Drag::Edge {
+                start,
+                from_left,
+                armed,
+                x,
+                cy,
+            } => {
                 let travel = if from_left { x - start } else { start - x };
-                widgets::back_cue(out, &t, from_left, cy, widgets::back_cue_depth(&t, travel), armed);
+                widgets::back_cue(
+                    out,
+                    &t,
+                    from_left,
+                    cy,
+                    widgets::back_cue_depth(&t, travel),
+                    armed,
+                );
             }
             _ => {
                 if let Some((from_left, cy, s)) = self.cue {
@@ -4399,7 +5297,13 @@ impl App {
     /// any message and the back cue, which lie over every page. Rows of its
     /// long list come into view are drawn with `fresh`; a page drawn again
     /// as it last showed has them drawn already.
-    fn paint_page(&mut self, out: &mut Canvas, t: &Theme, fresh: Option<(&Fonts, &DeviceInfo)>, view: &View) {
+    fn paint_page(
+        &mut self,
+        out: &mut Canvas,
+        t: &Theme,
+        fresh: Option<(&Fonts, &DeviceInfo)>,
+        view: &View,
+    ) {
         let m = t.m;
         let screen = self.screen();
         let (scroll, offset, pressing) = (view.scroll, view.offset, view.pressing);
@@ -4413,7 +5317,10 @@ impl App {
             }
         };
         let frame = self.frame.as_ref().expect("a page is drawn from its frame");
-        let (_, big, small) = self.titles.as_mut().expect("a page's titles are drawn with it");
+        let (_, big, small) = self
+            .titles
+            .as_mut()
+            .expect("a page's titles are drawn with it");
         // The row a finger holds darkens as part of the page, under what is
         // laid over the page.
         let press_row = |out: &mut Canvas| {
@@ -4430,31 +5337,78 @@ impl App {
             let glow = self.glow.as_ref().expect("the About page keeps its field");
             let fade = (1.0 - scroll / m.dp(ABOUT_FIELD_DP)).clamp(0.0, 1.0);
             let top = (widgets::bar_bottom(t) + m.dp(ABOUT_FIELD_DP)) / m.h as f32;
-            let field = glow::sample(glow, out.w as usize, out.h as usize, FIELD_CELL, top, t.pal.bg, fade);
-            let dither = self.dither.get_or_insert_with(|| glow::Dither::new(out.w as usize, out.h as usize));
-            glow::paint(out, &field, fade, &glow::Layer { canvas: &frame.canvas, runs: &art.runs, offset: offset as isize }, dither);
+            let field = glow::sample(
+                glow,
+                out.w as usize,
+                out.h as usize,
+                FIELD_CELL,
+                top,
+                t.pal.bg,
+                fade,
+            );
+            let dither = self
+                .dither
+                .get_or_insert_with(|| glow::Dither::new(out.w as usize, out.h as usize));
+            glow::paint(
+                out,
+                &field,
+                fade,
+                &glow::Layer {
+                    canvas: &frame.canvas,
+                    runs: &art.runs,
+                    offset: offset as isize,
+                },
+                dither,
+            );
             press_row(out);
             let range = m.dp(ABOUT_LOGO_DP) - widgets::bar_bottom(t);
             let v = (scroll / range).clamp(0.0, 1.0);
-            art.version.draw_scaled(out, 0.0, 0.0, 1.0 - 0.1 * v, t.hero.version, 1.0 - v);
-            art.author.draw_scaled(out, 0.0, 0.0, 1.0 - 0.1 * v, t.hero.version, 1.0 - v);
+            art.version
+                .draw_scaled(out, 0.0, 0.0, 1.0 - 0.1 * v, t.hero.version, 1.0 - v);
+            art.author
+                .draw_scaled(out, 0.0, 0.0, 1.0 - 0.1 * v, t.hero.version, 1.0 - v);
             let l = ((scroll - range) / m.dp(ABOUT_LOGO_FADE_DP)).clamp(0.0, 1.0);
-            glow::ink_wordmark(out, &field, &glow.look().ink, &art.wordmark, 1.0 - 0.1 * l, 1.0 - l, fade, dither);
+            glow::ink_wordmark(
+                out,
+                &field,
+                &glow.look().ink,
+                &art.wordmark,
+                1.0 - 0.1 * l,
+                1.0 - l,
+                fade,
+                dither,
+            );
         } else {
             // The page rows on screen above a long list's rows, those rows,
             // and the page colour past the ends; every pixel is written
             // once.
             let h = out.h as f32;
-            let span = frame.rows.as_ref().map(|r| ((r.edges[0] - offset).clamp(0.0, h), (r.bottom() - offset).clamp(0.0, h)));
+            let span = frame.rows.as_ref().map(|r| {
+                (
+                    (r.edges[0] - offset).clamp(0.0, h),
+                    (r.bottom() - offset).clamp(0.0, h),
+                )
+            });
             let (list_top, list_end) = span.unwrap_or((h, h));
             let first = (-offset).clamp(0.0, h) as usize;
             let last = (frame.canvas.h as f32 - offset).clamp(first as f32, list_top) as usize;
             if first < last {
                 let from = offset as i32 + first as i32;
-                out.put_rows(&frame.canvas, from, from + (last - first) as i32, first as i32);
+                out.put_rows(
+                    &frame.canvas,
+                    from,
+                    from + (last - first) as i32,
+                    first as i32,
+                );
             }
             out.fill_rect(0.0, 0.0, out.w as f32, first as f32, frame.bg);
-            out.fill_rect(0.0, last as f32, out.w as f32, list_top - last as f32, frame.bg);
+            out.fill_rect(
+                0.0,
+                last as f32,
+                out.w as f32,
+                list_top - last as f32,
+                frame.bg,
+            );
             let below = list_end.max(last as f32);
             out.fill_rect(0.0, below, out.w as f32, h - below, frame.bg);
             if let Some(rows) = &frame.rows {
@@ -4462,16 +5416,30 @@ impl App {
                 // shows. Those more than half a screen away are let go, and
                 // their canvases drawn over again for the rows coming in, as
                 // a list view recycles its rows.
-                let near = rows.within(offset - h * NEAR_SCREENS, offset + h * (1.0 + NEAR_SCREENS));
-                self.spare.extend(self.drawn.extract_if(.., |(i, _)| !near.contains(i)).map(|(_, c)| c));
+                let near =
+                    rows.within(offset - h * NEAR_SCREENS, offset + h * (1.0 + NEAR_SCREENS));
+                self.spare.extend(
+                    self.drawn
+                        .extract_if(.., |(i, _)| !near.contains(i))
+                        .map(|(_, c)| c),
+                );
                 for i in rows.within(offset, offset + h) {
                     let k = match self.drawn.iter().position(|(j, _)| *j == i) {
                         Some(k) => k,
                         None => {
-                            let (f, info) = fresh.expect("a page drawn again as it last showed has its rows in view drawn");
+                            let (f, info) = fresh.expect(
+                                "a page drawn again as it last showed has its rows in view drawn",
+                            );
                             let mut c = self.spare.pop().unwrap_or_else(|| Canvas::new(out.w, 0));
                             c.resize((rows.edges[i + 1] - rows.edges[i]) as u32);
-                            let cx = Ctx { t, f, info, state: &self.state, term: self.term.as_ref(), band: None };
+                            let cx = Ctx {
+                                t,
+                                f,
+                                info,
+                                state: &self.state,
+                                term: self.term.as_ref(),
+                                band: None,
+                            };
                             pages::row(screen, &cx, i, &mut c);
                             self.drawn.push((i, c));
                             self.drawn.len() - 1
@@ -4485,18 +5453,36 @@ impl App {
             }
             press_row(out);
             if let Some(fold) = &frame.fold {
-                let (_, words) = self.search_words.as_ref().expect("a folding search bar's words are made with its page");
+                let (_, words) = self
+                    .search_words
+                    .as_ref()
+                    .expect("a folding search bar's words are made with its page");
                 fold.draw(out, t, words, offset);
             }
             if frame.header {
                 let level = (1.0 - frame.title_lift(scroll) / m.dp(TITLE_FADE_DP)).clamp(0.0, 1.0);
-                draw_faded(out, big, 0.0, -frame.title_lift(offset), t.pal.text, level, (1.0 - level) * m.dp(TITLE_BLUR_DP));
+                draw_faded(
+                    out,
+                    big,
+                    0.0,
+                    -frame.title_lift(offset),
+                    t.pal.text,
+                    level,
+                    (1.0 - level) * m.dp(TITLE_BLUR_DP),
+                );
             }
         }
         // The search page's round button and the home page's search bar
         // darken at once under a finger.
-        if let Some(a) = pressing.filter(|a| matches!(a, Action::CloseSearch | Action::Open(Screen::Search))) {
-            let r = frame.hits.iter().find(|h| h.action == a).expect("a button held down is on its page").rect;
+        if let Some(a) =
+            pressing.filter(|a| matches!(a, Action::CloseSearch | Action::Open(Screen::Search)))
+        {
+            let r = frame
+                .hits
+                .iter()
+                .find(|h| h.action == a)
+                .expect("a button held down is on its page")
+                .rect;
             match frame.shown(r, offset) {
                 Some(r) if a == Action::CloseSearch => widgets::cancel_held(out, t, r),
                 Some(r) => widgets::search_bar_held(out, t, r),
@@ -4513,9 +5499,20 @@ impl App {
             match strip {
                 // The strip under the bar is veiled with it, and the list
                 // thins out below the strip.
-                Some((p, top)) => widgets::strip_mask(out, t, frame.bg, bar, top.round(), top.round() + p.canvas.h as f32),
+                Some((p, top)) => widgets::strip_mask(
+                    out,
+                    t,
+                    frame.bg,
+                    bar,
+                    top.round(),
+                    top.round() + p.canvas.h as f32,
+                ),
                 None => {
-                    let stops = if frame.hero.is_some() { &widgets::ABOUT_BAR_MASK[..] } else { &widgets::BAR_MASK[..] };
+                    let stops = if frame.hero.is_some() {
+                        &widgets::ABOUT_BAR_MASK[..]
+                    } else {
+                        &widgets::BAR_MASK[..]
+                    };
                     widgets::bar_mask(out, t, stops, frame.bg, bar);
                 }
             }
@@ -4538,7 +5535,10 @@ impl App {
             }
         }
         if let Some((glyph, action)) = frame.button {
-            let (_, chip, x, y) = self.button_chip.as_ref().expect("a page's round button is drawn with its chip");
+            let (_, chip, x, y) = self
+                .button_chip
+                .as_ref()
+                .expect("a page's round button is drawn with its chip");
             out.lay(chip, *x, *y, bar);
             if pressing == Some(action) {
                 widgets::button_held(out, t, glyph);
@@ -4550,7 +5550,11 @@ impl App {
             shine(out, Group::Fixed);
         }
         let level = view.title;
-        let blur = if frame.hero.is_some() { 0.0 } else { (1.0 - level) * m.dp(TITLE_BLUR_DP) };
+        let blur = if frame.hero.is_some() {
+            0.0
+        } else {
+            (1.0 - level) * m.dp(TITLE_BLUR_DP)
+        };
         draw_faded(out, small, 0.0, 0.0, t.pal.text, level, blur);
     }
 
@@ -4575,9 +5579,17 @@ impl App {
         }
         // Where the page in front stands, in screen widths from the left
         // edge.
-        let along = if turn.back { 1.0 + x / 1000.0 } else { x / 1000.0 };
+        let along = if turn.back {
+            1.0 + x / 1000.0
+        } else {
+            x / 1000.0
+        };
         let w = self.w as f32;
-        Some(((along * w).round() as i32, (BEHIND_SHIFT * w * (1.0 - along)).round() as i32, BEHIND_DIM * (1.0 - along)))
+        Some((
+            (along * w).round() as i32,
+            (BEHIND_SHIFT * w * (1.0 - along)).round() as i32,
+            BEHIND_DIM * (1.0 - along),
+        ))
     }
 
     /// Whether the cursor of the text field on `screen` shows at `now`: it
@@ -4594,19 +5606,42 @@ impl App {
 
     /// Draw the search bar on its way between the home page and the search
     /// page; see [`Morph`].
-    fn compose_morph(&mut self, out: &mut Canvas, f: &Fonts, info: &DeviceInfo, clock: &str, now: u64, caret_on: bool) {
+    fn compose_morph(
+        &mut self,
+        out: &mut Canvas,
+        f: &Fonts,
+        info: &DeviceInfo,
+        clock: &str,
+        now: u64,
+        caret_on: bool,
+    ) {
         let t = self.theme();
         let m = t.m;
         let mut morph = self.morph.take().expect("composing it");
         let (q, _) = morph.at(now);
         let (field, _) = widgets::search_layout(&t);
-        let home = Rect::new(m.margin, m.content_top - morph.scroll, m.w as f32 - m.margin * 2.0, m.search_h);
+        let home = Rect::new(
+            m.margin,
+            m.content_top - morph.scroll,
+            m.w as f32 - m.margin * 2.0,
+            m.search_h,
+        );
         let along = |a: f32, b: f32| a + (b - a) * q;
-        let bar = Rect::new(m.margin, along(home.y, field.y), along(home.w, field.w), m.search_h);
+        let bar = Rect::new(
+            m.margin,
+            along(home.y, field.y),
+            along(home.w, field.w),
+            m.search_h,
+        );
         let rise = bar.y - home.y;
         if !morph.into {
             // The home page's rows coming down with its bar.
-            self.draw_rows(f, info, morph.scroll - rise, morph.scroll - rise + m.h as f32);
+            self.draw_rows(
+                f,
+                info,
+                morph.scroll - rise,
+                morph.scroll - rise + m.h as f32,
+            );
         }
         let frame = self.frame.as_ref().expect("rendered above");
         out.fill_rect(0.0, 0.0, out.w as f32, out.h as f32, frame.bg);
@@ -4614,7 +5649,9 @@ impl App {
             // The search page's keyboard and what it shows under its
             // field, from its frame; that comes in once the bar is nearly
             // there.
-            let (_, keys_top) = *morph.keyboard.get_or_insert_with(|| keyboard_strip(&t, frame));
+            let (_, keys_top) = *morph
+                .keyboard
+                .get_or_insert_with(|| keyboard_strip(&t, frame));
             let (body, top) = morph.body.get_or_insert_with(|| {
                 let top = (field.y + field.h).ceil() as i32;
                 let mut body = Canvas::new(frame.canvas.w, (keys_top - top).max(0) as u32);
@@ -4622,22 +5659,50 @@ impl App {
                 (body, top)
             });
             let (delay, span) = MORPH_BODY_MS;
-            out.lay(body, 0, *top, (now.saturating_sub(morph.start + delay) as f32 / span as f32).min(1.0));
+            out.lay(
+                body,
+                0,
+                *top,
+                (now.saturating_sub(morph.start + delay) as f32 / span as f32).min(1.0),
+            );
         } else {
             // The home page under its bar comes down with it.
             let below = m.content_top + m.search_h;
-            out.put_rows(&frame.canvas, below.floor() as i32, frame.canvas.h as i32, (below - morph.scroll + rise).floor() as i32);
+            out.put_rows(
+                &frame.canvas,
+                below.floor() as i32,
+                frame.canvas.h as i32,
+                (below - morph.scroll + rise).floor() as i32,
+            );
         }
-        let title = morph.title.get_or_insert_with(|| Blurs::new(widgets::big_title(&t, f, pages::HOME_TITLE)));
+        let title = morph
+            .title
+            .get_or_insert_with(|| Blurs::new(widgets::big_title(&t, f, pages::HOME_TITLE)));
         let level = (1.0 - q / MORPH_TITLE_GONE).clamp(0.0, 1.0);
-        draw_faded(out, title, 0.0, rise - morph.scroll, t.pal.text, level, (1.0 - level) * m.dp(TITLE_BLUR_DP));
+        draw_faded(
+            out,
+            title,
+            0.0,
+            rise - morph.scroll,
+            t.pal.text,
+            level,
+            (1.0 - level) * m.dp(TITLE_BLUR_DP),
+        );
         if let Some((keys, top)) = &morph.keyboard {
-            out.put(keys, (*top as f32 + (1.0 - q) * keys.h as f32).round() as i32);
+            out.put(
+                keys,
+                (*top as f32 + (1.0 - q) * keys.h as f32).round() as i32,
+            );
         }
         widgets::search_capsule(out, &t, f, bar, self.state.lang.pick(pages::SEARCH_HINT));
         // The cursor shows from the start, going up with the field.
         if let Some(caret) = frame.caret.as_ref().filter(|_| morph.into && caret_on) {
-            out.lay(&caret.art, caret.x, caret.y + (bar.y - field.y).round() as i32, 1.0);
+            out.lay(
+                &caret.art,
+                caret.x,
+                caret.y + (bar.y - field.y).round() as i32,
+                1.0,
+            );
         }
         let (disc, cross) = morph.cancel.get_or_insert_with(|| {
             let (disc, cross) = widgets::cancel_art(&t);
@@ -4733,18 +5798,36 @@ impl App {
             return;
         }
         self.end_turn();
-        let Some(view) = self.shown.take() else { return };
-        let mut left = self.backdrop.take().unwrap_or_else(|| Canvas::new(self.w, self.h));
+        let Some(view) = self.shown.take() else {
+            return;
+        };
+        let mut left = self
+            .backdrop
+            .take()
+            .unwrap_or_else(|| Canvas::new(self.w, self.h));
         // The `<` comes up with the finger, before its page goes.
-        let view = View { pressing: None, ..view };
+        let view = View {
+            pressing: None,
+            ..view
+        };
         let t = self.theme();
         self.paint_page(&mut left, &t, None, &view);
         // A page left within the first frames of sliding in, before it was
         // drawn across, shows its colour where it was not drawn yet.
         if let Some(fr) = self.frame.as_ref().filter(|_| self.cols < self.w) {
-            left.fill_rect(self.cols as f32, 0.0, (self.w - self.cols) as f32, self.h as f32, fr.bg);
+            left.fill_rect(
+                self.cols as f32,
+                0.0,
+                (self.w - self.cols) as f32,
+                self.h as f32,
+                fr.bg,
+            );
         }
-        self.turn = Some(Turn { back, left, spring: None });
+        self.turn = Some(Turn {
+            back,
+            left,
+            spring: None,
+        });
         self.dirty = true;
     }
 
@@ -4764,7 +5847,13 @@ impl App {
         // The home page is the page shown, or the one under the search.
         let home = self.stack.len() - if into { 1 } else { 2 };
         // On the way down the keyboard goes with the search page's frame.
-        let keyboard = if into { None } else { self.frame.as_ref().map(|fr| keyboard_strip(&self.theme(), fr)) };
+        let keyboard = if into {
+            None
+        } else {
+            self.frame
+                .as_ref()
+                .map(|fr| keyboard_strip(&self.theme(), fr))
+        };
         self.morph = Some(Morph {
             into,
             spring: Spring::new(now, (q - target) * 1000.0, speed * 1000.0, MORPH_PERIOD),
@@ -4787,7 +5876,8 @@ impl App {
         if self.stack.len() <= 1 {
             return fx;
         }
-        let morph = self.screen() == Screen::Search && self.stack[self.stack.len() - 2].0 == Screen::Home;
+        let morph =
+            self.screen() == Screen::Search && self.stack[self.stack.len() - 2].0 == Screen::Home;
         if morph {
             self.start_morph(false, now);
         }
@@ -4800,7 +5890,14 @@ impl App {
             // being written, which nothing may cut short.
             Screen::Systems => {
                 if self.state.systems_work.is_some() {
-                    self.say(l.pick(["正在写入，请等待写入完成", "正在寫入，請等待寫入完成", "Writing. Wait for it to finish"]), now);
+                    self.say(
+                        l.pick([
+                            "正在写入，请等待写入完成",
+                            "正在寫入，請等待寫入完成",
+                            "Writing. Wait for it to finish",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 self.state.system_pick = None;
@@ -4825,10 +5922,22 @@ impl App {
             // Changes not saved are given up only by going back again while
             // the warning shows.
             Screen::Editor => {
-                let changed = self.state.editor.as_ref().expect("the editor page shows a file").changed;
+                let changed = self
+                    .state
+                    .editor
+                    .as_ref()
+                    .expect("the editor page shows a file")
+                    .changed;
                 if changed && self.unsaved_warned.is_none_or(|at| now >= at + TOAST_MS) {
                     self.unsaved_warned = Some(now);
-                    self.say(l.pick(["修改尚未保存，再次返回将放弃修改", "修改尚未儲存，再次返回將捨棄修改", "Changes aren't saved. Go back again to discard them"]), now);
+                    self.say(
+                        l.pick([
+                            "修改尚未保存，再次返回将放弃修改",
+                            "修改尚未儲存，再次返回將捨棄修改",
+                            "Changes aren't saved. Go back again to discard them",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 self.state.editor = None;
@@ -4860,7 +5969,12 @@ impl App {
                 self.state.job = None;
             }
             Screen::Relabel => {
-                if self.state.relabel.as_ref().is_some_and(|j| j.outcome.is_none()) {
+                if self
+                    .state
+                    .relabel
+                    .as_ref()
+                    .is_some_and(|j| j.outcome.is_none())
+                {
                     self.say(l.pick(WAIT_OR_STOP), now);
                     return fx;
                 }
@@ -4870,8 +5984,20 @@ impl App {
             // partition may hold another filesystem, and what is to be done
             // to it is chosen afresh.
             Screen::PartWork => {
-                if self.state.part_work.as_ref().is_some_and(|w| w.outcome.is_none()) {
-                    self.say(l.pick(["请等待完成后再返回", "請等待完成後再返回", "Wait for it to finish before going back"]), now);
+                if self
+                    .state
+                    .part_work
+                    .as_ref()
+                    .is_some_and(|w| w.outcome.is_none())
+                {
+                    self.say(
+                        l.pick([
+                            "请等待完成后再返回",
+                            "請等待完成後再返回",
+                            "Wait for it to finish before going back",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 self.state.part_work = None;
@@ -4883,9 +6009,22 @@ impl App {
             }
             // The page stays while Skyward is updated: once downloaded, the
             // build is written at once, which nothing may cut short.
-            Screen::SkywardUpdate => match self.state.skyward_job.as_ref().filter(|j| j.outcome.is_none()).map(|j| j.stage) {
+            Screen::SkywardUpdate => match self
+                .state
+                .skyward_job
+                .as_ref()
+                .filter(|j| j.outcome.is_none())
+                .map(|j| j.stage)
+            {
                 Some(Some(SkywardStage::Write { .. })) => {
-                    self.say(l.pick(["正在写入，请等待写入完成", "正在寫入，請等待寫入完成", "Writing. Wait for it to finish"]), now);
+                    self.say(
+                        l.pick([
+                            "正在写入，请等待写入完成",
+                            "正在寫入，請等待寫入完成",
+                            "Writing. Wait for it to finish",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 Some(_) => {
@@ -4896,10 +6035,22 @@ impl App {
             },
             // A restore that has begun writing cannot be stopped.
             Screen::BackupJob => {
-                let job = self.state.backup_job.as_ref().expect("the backup page shows work");
+                let job = self
+                    .state
+                    .backup_job
+                    .as_ref()
+                    .expect("the backup page shows work");
                 if job.outcome.is_none() {
                     let writing = job.restore && job.at.is_some_and(|a| !a.checking);
-                    let said = if writing { ["正在恢复，请等待恢复完成", "正在還原，請等待還原完成", "Restoring. Wait for it to finish"] } else { WAIT_OR_STOP };
+                    let said = if writing {
+                        [
+                            "正在恢复，请等待恢复完成",
+                            "正在還原，請等待還原完成",
+                            "Restoring. Wait for it to finish",
+                        ]
+                    } else {
+                        WAIT_OR_STOP
+                    };
                     self.say(l.pick(said), now);
                     return fx;
                 }
@@ -4911,24 +6062,55 @@ impl App {
             match self.state.install {
                 // Checking a signature only reads the package, and stops
                 // when the page is left.
-                Install::Checking { stage: Some(Stage::Signature { .. }), .. } => {
+                Install::Checking {
+                    stage: Some(Stage::Signature { .. }),
+                    ..
+                } => {
                     self.state.install = Install::Ending;
                     fx.push(Effect::Cancel);
                 }
                 Install::Checking { .. } => {
-                    self.say(l.pick(["正在读取文件，请稍后再试", "正在讀取檔案，請稍後再試", "Reading the file. Try again shortly"]), now);
+                    self.say(
+                        l.pick([
+                            "正在读取文件，请稍后再试",
+                            "正在讀取檔案，請稍後再試",
+                            "Reading the file. Try again shortly",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 Install::Updating { .. } | Install::Scripting { .. } => {
-                    self.say(l.pick(["正在安装，请等待安装完成", "正在安裝，請等待安裝完成", "Installing. Wait for it to finish"]), now);
+                    self.say(
+                        l.pick([
+                            "正在安装，请等待安装完成",
+                            "正在安裝，請等待安裝完成",
+                            "Installing. Wait for it to finish",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 Install::Flashing { .. } => {
-                    self.say(l.pick(["正在刷入，请等待刷入完成", "正在刷入，請等待刷入完成", "Flashing. Wait for it to finish"]), now);
+                    self.say(
+                        l.pick([
+                            "正在刷入，请等待刷入完成",
+                            "正在刷入，請等待刷入完成",
+                            "Flashing. Wait for it to finish",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 Install::Systeming { .. } => {
-                    self.say(l.pick(["正在安装，请等待安装完成", "正在安裝，請等待安裝完成", "Installing. Wait for it to finish"]), now);
+                    self.say(
+                        l.pick([
+                            "正在安装，请等待安装完成",
+                            "正在安裝，請等待安裝完成",
+                            "Installing. Wait for it to finish",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 Install::Opening => {
@@ -4936,7 +6118,14 @@ impl App {
                     return fx;
                 }
                 Install::Wiping => {
-                    self.say(l.pick(["正在清除，请等待清除完成", "正在清除，請等待清除完成", "Wiping. Wait for it to finish"]), now);
+                    self.say(
+                        l.pick([
+                            "正在清除，请等待清除完成",
+                            "正在清除，請等待清除完成",
+                            "Wiping. Wait for it to finish",
+                        ]),
+                        now,
+                    );
                     return fx;
                 }
                 Install::Starting
@@ -4951,7 +6140,9 @@ impl App {
                 }
                 // Rescue waits on for the computer's next command until
                 // its page is left.
-                Install::Finished { .. } | Install::Wiped(_) if self.state.source == Source::Rescue => {
+                Install::Finished { .. } | Install::Wiped(_)
+                    if self.state.source == Source::Rescue =>
+                {
                     self.state.install = Install::Ending;
                     fx.push(Effect::Cancel);
                 }
@@ -4972,7 +6163,9 @@ impl App {
         // changed what it holds.
         match self.screen() {
             Screen::Restore => fx.push(self.find_backups()),
-            Screen::Filesystem | Screen::Filesystems if left == Screen::PartWork => fx.push(Effect::ReadFilesystems),
+            Screen::Filesystem | Screen::Filesystems if left == Screen::PartWork => {
+                fx.push(Effect::ReadFilesystems)
+            }
             _ => {}
         }
         fx
@@ -4994,7 +6187,15 @@ impl App {
         if matches!(ev, Event::Wipe | Event::Reboot(_)) {
             return;
         }
-        if matches!(ev, Event::Image { .. } | Event::Ready { .. } | Event::Script | Event::System { .. } | Event::Done(_) | Event::Finished(_)) {
+        if matches!(
+            ev,
+            Event::Image { .. }
+                | Event::Ready { .. }
+                | Event::Script
+                | Event::System { .. }
+                | Event::Done(_)
+                | Event::Finished(_)
+        ) {
             self.wake(now);
         }
         let install = &mut self.state.install;
@@ -5002,19 +6203,49 @@ impl App {
             Event::Waiting => *install = Install::Waiting,
             Event::Checking { size } => *install = Install::Checking { size, stage: None },
             Event::Ready { version, wipe } => *install = Install::Confirming { version, wipe },
-            Event::Installing { version } => *install = Install::Updating { version, stage: None, overwriting: false },
+            Event::Installing { version } => {
+                *install = Install::Updating {
+                    version,
+                    stage: None,
+                    overwriting: false,
+                }
+            }
             Event::Overwriting => {
                 if let Install::Updating { overwriting, .. } = install {
                     *overwriting = true;
                 }
             }
-            Event::Image { kind, size, partitions } => {
-                *install = Install::Choosing(Choice { kind, size, partitions, partition: 0, pick: Pick::Current })
+            Event::Image {
+                kind,
+                size,
+                partitions,
+            } => {
+                *install = Install::Choosing(Choice {
+                    kind,
+                    size,
+                    partitions,
+                    partition: 0,
+                    pick: Pick::Current,
+                })
             }
             Event::Script => *install = Install::ConfirmingScript,
-            Event::System { name, version, sizes } => *install = Install::SystemChoosing(SystemChoice { name, version, sizes, size: 0 }),
+            Event::System {
+                name,
+                version,
+                sizes,
+            } => {
+                *install = Install::SystemChoosing(SystemChoice {
+                    name,
+                    version,
+                    sizes,
+                    size: 0,
+                })
+            }
             Event::Running => {
-                *install = Install::Scripting { stage: None, running: true };
+                *install = Install::Scripting {
+                    stage: None,
+                    running: true,
+                };
                 self.state.script_output.clear();
             }
             Event::Print(line) => {
@@ -5033,14 +6264,27 @@ impl App {
                 _ => {}
             },
             Event::Reflashed(reflash) => self.state.reflash = Some(reflash),
-            Event::Wipe | Event::Reboot(_) => unreachable!("the runtime carries out what rescue asks of it"),
+            Event::Wipe | Event::Reboot(_) => {
+                unreachable!("the runtime carries out what rescue asks of it")
+            }
             Event::Done(outcome) | Event::Finished(outcome) => {
                 let damage = match (&outcome, &*install) {
-                    (Outcome::Failed(_), Install::Updating { overwriting: true, .. }) => Some(Damage::System),
-                    (Outcome::Failed(_), Install::Flashing { partition, stage: Some(Stage::Flashing { done, .. }) }) if *done > 0 => {
-                        Some(Damage::Partition(partition))
+                    (
+                        Outcome::Failed(_),
+                        Install::Updating {
+                            overwriting: true, ..
+                        },
+                    ) => Some(Damage::System),
+                    (
+                        Outcome::Failed(_),
+                        Install::Flashing {
+                            partition,
+                            stage: Some(Stage::Flashing { done, .. }),
+                        },
+                    ) if *done > 0 => Some(Damage::Partition(partition)),
+                    (Outcome::Failed(_), Install::Scripting { running: true, .. }) => {
+                        Some(Damage::Script)
                     }
-                    (Outcome::Failed(_), Install::Scripting { running: true, .. }) => Some(Damage::Script),
                     _ => None,
                 };
                 *install = Install::Finished { outcome, damage };
@@ -5067,7 +6311,9 @@ impl App {
             Screen::Systems => vec![Effect::ReadSystems],
             Screen::Restore => vec![self.find_backups()],
             Screen::Files => vec![Effect::ReadDir(self.state.files.path.clone())],
-            Screen::Choose(place) if self.state.place_open(place) => vec![Effect::ReadPlace(place, self.state.folder(s).path.clone())],
+            Screen::Choose(place) if self.state.place_open(place) => {
+                vec![Effect::ReadPlace(place, self.state.folder(s).path.clone())]
+            }
             Screen::Search => {
                 self.state.search.clear();
                 self.state.layer = Layer::Letters;
@@ -5082,23 +6328,41 @@ impl App {
                     Vec::new()
                 }
             }
-            Screen::Decrypt if matches!(self.state.data, Data::Closed | Data::Failed(_)) => self.open_data(),
+            Screen::Decrypt if matches!(self.state.data, Data::Closed | Data::Failed(_)) => {
+                self.open_data()
+            }
             // As the stock updater does, the page asks the update server as
             // it opens, once a network is joined and nothing has been heard.
             Screen::Update => {
                 let mut fx = vec![Effect::ReadUpdate];
-                if self.state.update_server && matches!(self.state.check, Check::Idle | Check::Failed(_)) && self.state.online() {
+                if self.state.update_server
+                    && matches!(self.state.check, Check::Idle | Check::Failed(_))
+                    && self.state.online()
+                {
                     self.state.check = Check::Asking;
                     fx.push(Effect::CheckUpdate);
                 }
                 fx
             }
             // Skyward's own page asks GitHub the same way.
-            Screen::SkywardUpdate if matches!(self.state.skyward_check, SkywardCheck::Idle | SkywardCheck::Failed(_)) && self.state.online() => {
+            Screen::SkywardUpdate
+                if matches!(
+                    self.state.skyward_check,
+                    SkywardCheck::Idle | SkywardCheck::Failed(_)
+                ) && self.state.online() =>
+            {
                 self.state.skyward_check = SkywardCheck::Asking;
                 vec![Effect::CheckSkyward]
             }
-            Screen::Wlan if self.state.wlan.as_ref().is_some_and(|w| w.power == Power::On) => vec![Effect::ScanWlan],
+            Screen::Wlan
+                if self
+                    .state
+                    .wlan
+                    .as_ref()
+                    .is_some_and(|w| w.power == Power::On) =>
+            {
+                vec![Effect::ScanWlan]
+            }
             _ => Vec::new(),
         }
     }
@@ -5157,9 +6421,16 @@ impl App {
             // The switch moves at once; the runtime then tells how the WLAN
             // came up, or went off.
             Action::Toggle(Switch::Wlan) => {
-                let w = self.state.wlan.as_mut().expect("the WLAN switch shows on a phone whose WLAN is brought up");
+                let w = self
+                    .state
+                    .wlan
+                    .as_mut()
+                    .expect("the WLAN switch shows on a phone whose WLAN is brought up");
                 let on = matches!(w.power, Power::Off | Power::Failed(_));
-                *w = Wlan { power: if on { Power::Starting } else { Power::Off }, ..Wlan::default() };
+                *w = Wlan {
+                    power: if on { Power::Starting } else { Power::Off },
+                    ..Wlan::default()
+                };
                 self.refresh();
                 return vec![Effect::Wlan(on)];
             }
@@ -5185,9 +6456,17 @@ impl App {
                 if self.state.mount_failure.take().is_some() {
                     self.refresh();
                 }
-                let row = &self.state.mounts.as_ref().expect("a partition toggled is one the page lists")[i];
+                let row = &self
+                    .state
+                    .mounts
+                    .as_ref()
+                    .expect("a partition toggled is one the page lists")[i];
                 let base = row.base.clone();
-                return vec![if row.mounted { Effect::Unmount(base) } else { Effect::Mount(base) }];
+                return vec![if row.mounted {
+                    Effect::Unmount(base)
+                } else {
+                    Effect::Mount(base)
+                }];
             }
             Action::RebootTarget(i) => {
                 self.state.reboot = i;
@@ -5196,7 +6475,10 @@ impl App {
             // Everything takes in every part, so choosing it leaves the
             // parts out, and choosing a part on its own leaves it out.
             Action::WipeItem(item) => {
-                let k = WIPES.iter().position(|&w| w == item).expect("the page offers only what it lists");
+                let k = WIPES
+                    .iter()
+                    .position(|&w| w == item)
+                    .expect("the page offers only what it lists");
                 let on = !self.state.wipe[k];
                 match (on, item) {
                     (true, Wipe::All) => {
@@ -5211,7 +6493,14 @@ impl App {
                 }
                 self.refresh();
             }
-            Action::Confirm(_) => self.say(l.pick(["请按住圆形按钮向右滑动", "請按住圓形按鈕向右滑動", "Hold the round button and slide it right"]), now),
+            Action::Confirm(_) => self.say(
+                l.pick([
+                    "请按住圆形按钮向右滑动",
+                    "請按住圓形按鈕向右滑動",
+                    "Hold the round button and slide it right",
+                ]),
+                now,
+            ),
             Action::Slider(_) | Action::Pattern => {}
             Action::Sideload => match self.state.install {
                 Install::Idle | Install::Finished { .. } => {
@@ -5268,15 +6557,45 @@ impl App {
             // folder it is in stays put: the entry stays picked for another
             // folder.
             Action::Paste => {
-                let clip = self.state.clip.clone().expect("only a picked entry is pasted");
-                let (path, folder) = (std::path::Path::new(&clip.path), std::path::Path::new(&self.state.files.path));
-                let name = path.file_name().map_or_else(|| clip.path.clone(), |n| n.to_string_lossy().into_owned());
+                let clip = self
+                    .state
+                    .clip
+                    .clone()
+                    .expect("only a picked entry is pasted");
+                let (path, folder) = (
+                    std::path::Path::new(&clip.path),
+                    std::path::Path::new(&self.state.files.path),
+                );
+                let name = path
+                    .file_name()
+                    .map_or_else(|| clip.path.clone(), |n| n.to_string_lossy().into_owned());
                 if folder.starts_with(path) {
-                    self.say(&tr!(l, "无法将\"{name}\"放入其自身中", "無法將「{name}」放入其本身中", "“{name}” can't go inside itself"), now);
+                    self.say(
+                        &tr!(
+                            l,
+                            "无法将\"{name}\"放入其自身中",
+                            "無法將「{name}」放入其本身中",
+                            "“{name}” can't go inside itself"
+                        ),
+                        now,
+                    );
                 } else if clip.op == FileOp::Move && path.parent() == Some(folder) {
-                    self.say(&tr!(l, "\"{name}\"已在该文件夹中", "「{name}」已在這個資料夾中", "“{name}” is already in this folder"), now);
+                    self.say(
+                        &tr!(
+                            l,
+                            "\"{name}\"已在该文件夹中",
+                            "「{name}」已在這個資料夾中",
+                            "“{name}” is already in this folder"
+                        ),
+                        now,
+                    );
                 } else {
-                    return vec![Effect::Paste { op: clip.op, path: clip.path, into: self.state.files.path.clone(), clash: None }];
+                    return vec![Effect::Paste {
+                        op: clip.op,
+                        path: clip.path,
+                        into: self.state.files.path.clone(),
+                        clash: None,
+                    }];
                 }
             }
             Action::Unpick => {
@@ -5284,23 +6603,49 @@ impl App {
                 self.refresh();
             }
             Action::RenameEntry => {
-                self.state.new_name = self.state.file.as_ref().expect("the file page shows an entry").name.clone();
+                self.state.new_name = self
+                    .state
+                    .file
+                    .as_ref()
+                    .expect("the file page shows an entry")
+                    .name
+                    .clone();
                 self.state.layer = Layer::Letters;
                 self.open(Screen::Rename);
             }
             Action::EditEntry => return vec![Effect::OpenText(self.entry_path())],
             Action::InstallEntry => {
-                let size = self.state.file.as_ref().expect("the file page shows an entry").size;
+                let size = self
+                    .state
+                    .file
+                    .as_ref()
+                    .expect("the file page shows an entry")
+                    .size;
                 return self.install_opened(self.entry_path(), size, now);
             }
             Action::SaveText => {
-                let ed = self.state.editor.as_ref().expect("the editor page shows a file");
-                return vec![Effect::SaveText { path: ed.path.clone(), text: ed.text() }];
+                let ed = self
+                    .state
+                    .editor
+                    .as_ref()
+                    .expect("the editor page shows a file");
+                return vec![Effect::SaveText {
+                    path: ed.path.clone(),
+                    text: ed.text(),
+                }];
             }
             Action::OpenPermissions => self.open(Screen::Permissions),
             Action::ModeBit(bit) => {
-                let mode = self.state.file.as_ref().expect("the permissions page shows an entry").mode;
-                return vec![Effect::SetMode { path: self.entry_path(), mode: (mode ^ bit) & 0o7777 }];
+                let mode = self
+                    .state
+                    .file
+                    .as_ref()
+                    .expect("the permissions page shows an entry")
+                    .mode;
+                return vec![Effect::SetMode {
+                    path: self.entry_path(),
+                    mode: (mode ^ bit) & 0o7777,
+                }];
             }
             Action::AskDelete => {
                 self.state.asking_delete = true;
@@ -5318,10 +6663,19 @@ impl App {
                     self.state.clip = None;
                     return Vec::new();
                 }
-                return vec![Effect::Paste { op: clip.op, path: clip.path, into, clash: Some(choice) }];
+                return vec![Effect::Paste {
+                    op: clip.op,
+                    path: clip.path,
+                    into,
+                    clash: Some(choice),
+                }];
             }
             Action::StopJob => {
-                let job = self.state.job.as_mut().expect("only work under way is stopped");
+                let job = self
+                    .state
+                    .job
+                    .as_mut()
+                    .expect("only work under way is stopped");
                 if job.outcome.is_none() && !job.stopping {
                     job.stopping = true;
                     self.refresh();
@@ -5329,7 +6683,11 @@ impl App {
                 }
             }
             Action::StopRelabel => {
-                let job = self.state.relabel.as_mut().expect("only work under way is stopped");
+                let job = self
+                    .state
+                    .relabel
+                    .as_mut()
+                    .expect("only work under way is stopped");
                 if job.outcome.is_none() && !job.stopping {
                     job.stopping = true;
                     self.refresh();
@@ -5342,7 +6700,9 @@ impl App {
                 self.open(Screen::Filesystem);
             }
             Action::ChooseFs(choice) => {
-                let row = self.fs_row().expect("the page of a partition shows one that was read");
+                let row = self
+                    .fs_row()
+                    .expect("the page of a partition shows one that was read");
                 let action = match choice {
                     FsChoice::Repair => FsAction::Repair,
                     FsChoice::Remake(k) => FsAction::Remake(row.others[k].clone()),
@@ -5352,6 +6712,10 @@ impl App {
             }
             Action::ScreenOff(k) => {
                 self.state.screen_off = k;
+                self.refresh();
+            }
+            Action::Panel(cover) => {
+                self.state.cover = cover;
                 self.refresh();
             }
             Action::TimeZone(k) => {
@@ -5380,12 +6744,20 @@ impl App {
                 self.open(Screen::RestoreBackup);
             }
             Action::RestorePart(k) => {
-                let (_, parts) = self.state.restore.as_mut().expect("the restore page shows a backup");
+                let (_, parts) = self
+                    .state
+                    .restore
+                    .as_mut()
+                    .expect("the restore page shows a backup");
                 parts[k] = !parts[k];
                 self.refresh();
             }
             Action::StopBackup => {
-                let job = self.state.backup_job.as_mut().expect("only work under way is stopped");
+                let job = self
+                    .state
+                    .backup_job
+                    .as_mut()
+                    .expect("only work under way is stopped");
                 if job.outcome.is_none() && !job.stopping {
                     job.stopping = true;
                     self.refresh();
@@ -5403,11 +6775,22 @@ impl App {
             Action::ExportLogs => {
                 let ([recovery, kernel], storage) = (self.state.logs, self.state.logs_to == 1);
                 if !recovery && !kernel {
-                    self.say(l.pick(["请选择要导出的日志", "請選擇要匯出的記錄", "Choose the logs to export"]), now);
+                    self.say(
+                        l.pick([
+                            "请选择要导出的日志",
+                            "請選擇要匯出的記錄",
+                            "Choose the logs to export",
+                        ]),
+                        now,
+                    );
                 } else if storage && !self.state.data.storage_open() {
                     self.say(l.pick(DECRYPT_FIRST), now);
                 } else {
-                    return vec![Effect::ExportLogs { recovery, kernel, storage }];
+                    return vec![Effect::ExportLogs {
+                        recovery,
+                        kernel,
+                        storage,
+                    }];
                 }
             }
             Action::PickSlot(slot) => {
@@ -5418,7 +6801,11 @@ impl App {
             Action::Type(cap) if self.screen() == Screen::Editor => self.edit_typed(cap),
             Action::Type(cap) => return self.type_key(cap, now),
             Action::TermKey(key) if self.screen() == Screen::Editor => {
-                let ed = self.state.editor.as_mut().expect("the editor page shows a file");
+                let ed = self
+                    .state
+                    .editor
+                    .as_mut()
+                    .expect("the editor page shows a file");
                 match key {
                     TermKey::Tab => ed.insert('\t'),
                     TermKey::Left => ed.left(),
@@ -5431,7 +6818,9 @@ impl App {
                 self.refresh_text();
             }
             Action::TermKey(key) => {
-                let Some(term) = self.term.as_mut() else { return Vec::new() };
+                let Some(term) = self.term.as_mut() else {
+                    return Vec::new();
+                };
                 let bytes = term.key(key);
                 let running = term.running;
                 self.refresh();
@@ -5452,7 +6841,12 @@ impl App {
                         self.state.files.leave(scroll);
                         return vec![Effect::ReadDir(self.state.files.inside(&entry.name))];
                     }
-                    FileKind::File if matches!(files::file_type(&entry.name), FileType::Text | FileType::Code) => {
+                    FileKind::File
+                        if matches!(
+                            files::file_type(&entry.name),
+                            FileType::Text | FileType::Code
+                        ) =>
+                    {
                         return vec![Effect::OpenText(self.state.files.inside(&entry.name))];
                     }
                     _ if installs(&entry) => {
@@ -5480,7 +6874,9 @@ impl App {
             }
             Action::ChooseEntry(i) => {
                 let screen = self.screen();
-                let Screen::Choose(place) = screen else { unreachable!("only a place's folder is chosen in") };
+                let Screen::Choose(place) = screen else {
+                    unreachable!("only a place's folder is chosen in")
+                };
                 let folder = self.state.folder(screen);
                 let entry = folder.entry(i).clone();
                 let path = folder.inside(&entry.name);
@@ -5490,7 +6886,9 @@ impl App {
                         self.state.folder_mut(screen).leave(scroll);
                         return vec![Effect::ReadPlace(place, path)];
                     }
-                    FileKind::File | FileKind::Link { folder: false, .. } => return self.install_file(place, path, entry.size, now),
+                    FileKind::File | FileKind::Link { folder: false, .. } => {
+                        return self.install_file(place, path, entry.size, now)
+                    }
                     FileKind::Special => unreachable!("a place lists no special files"),
                 }
             }
@@ -5504,17 +6902,35 @@ impl App {
                 }
             }
             Action::JoinNetwork(i) => {
-                let w = self.state.wlan.as_ref().expect("networks show on a phone whose WLAN is brought up");
+                let w = self
+                    .state
+                    .wlan
+                    .as_ref()
+                    .expect("networks show on a phone whose WLAN is brought up");
                 // A scan may have changed the list since the page was drawn.
-                let Some(network) = w.networks.get(i).cloned() else { return Vec::new() };
+                let Some(network) = w.networks.get(i).cloned() else {
+                    return Vec::new();
+                };
                 if w.joined.as_ref().is_some_and(|j| j.ssid == network.ssid) {
                     return self.act(Action::OpenJoined, now);
                 }
                 match network.security {
-                    Security::Wep => self.say(l.pick(["暂不支持 WEP 加密的网络", "尚不支援 WEP 加密的網路", "WEP networks aren't supported"]), now),
-                    Security::Enterprise => {
-                        self.say(l.pick(["暂不支持需要账号登录的网络", "尚不支援需要帳號登入的網路", "Networks that need an account sign-in aren't supported"]), now)
-                    }
+                    Security::Wep => self.say(
+                        l.pick([
+                            "暂不支持 WEP 加密的网络",
+                            "尚不支援 WEP 加密的網路",
+                            "WEP networks aren't supported",
+                        ]),
+                        now,
+                    ),
+                    Security::Enterprise => self.say(
+                        l.pick([
+                            "暂不支持需要账号登录的网络",
+                            "尚不支援需要帳號登入的網路",
+                            "Networks that need an account sign-in aren't supported",
+                        ]),
+                        now,
+                    ),
                     s if s.password() => self.ask_password(network),
                     _ => {
                         return vec![Effect::JoinWlan {
@@ -5527,14 +6943,26 @@ impl App {
                 }
             }
             Action::NetworkDetails(i) => {
-                let w = self.state.wlan.as_ref().expect("networks show on a phone whose WLAN is brought up");
-                let Some(network) = w.networks.get(i).cloned() else { return Vec::new() };
+                let w = self
+                    .state
+                    .wlan
+                    .as_ref()
+                    .expect("networks show on a phone whose WLAN is brought up");
+                let Some(network) = w.networks.get(i).cloned() else {
+                    return Vec::new();
+                };
                 self.state.details = Some(network);
                 self.open(Screen::WlanNetwork);
             }
             Action::OpenJoined => {
-                let w = self.state.wlan.as_ref().expect("a network is chosen on a phone whose WLAN is brought up");
-                let Some(j) = w.joined.clone() else { return Vec::new() };
+                let w = self
+                    .state
+                    .wlan
+                    .as_ref()
+                    .expect("a network is chosen on a phone whose WLAN is brought up");
+                let Some(j) = w.joined.clone() else {
+                    return Vec::new();
+                };
                 // As found, where it still is; as it was chosen otherwise.
                 let found = w.networks.iter().find(|n| n.ssid == j.ssid).cloned();
                 let network = found.unwrap_or(Network {
@@ -5559,28 +6987,45 @@ impl App {
             }
             Action::Rescan => return vec![Effect::ScanWlan],
             Action::AddNetwork => {
-                self.state.adding = Some(Adding { name: String::new(), security: Security::Open, field: Field::Name, choosing: false });
+                self.state.adding = Some(Adding {
+                    name: String::new(),
+                    security: Security::Open,
+                    field: Field::Name,
+                    choosing: false,
+                });
                 self.state.password.clear();
                 self.state.show_password = false;
                 self.state.layer = Layer::Letters;
                 self.open(Screen::WlanAdd);
             }
             Action::TypeInto(field) => {
-                let a = self.state.adding.as_mut().expect("the fields are on the page that adds a network");
+                let a = self
+                    .state
+                    .adding
+                    .as_mut()
+                    .expect("the fields are on the page that adds a network");
                 if a.field != field {
                     a.field = field;
                     self.refresh();
                 }
             }
             Action::ChooseSecurity => {
-                self.state.adding.as_mut().expect("the protection is on the page that adds a network").choosing = true;
+                self.state
+                    .adding
+                    .as_mut()
+                    .expect("the protection is on the page that adds a network")
+                    .choosing = true;
                 // The page draws the row held down while its list is open.
                 self.row_press = None;
                 self.row_art = None;
                 self.refresh();
             }
             Action::PickSecurity(security) => {
-                let a = self.state.adding.as_mut().expect("the protections open on the page that adds a network");
+                let a = self
+                    .state
+                    .adding
+                    .as_mut()
+                    .expect("the protections open on the page that adds a network");
                 a.security = security;
                 a.choosing = false;
                 // With no password to type, the keyboard types the name.
@@ -5590,7 +7035,11 @@ impl App {
                 self.refresh();
             }
             Action::CloseChoices => {
-                self.state.adding.as_mut().expect("the protections open on the page that adds a network").choosing = false;
+                self.state
+                    .adding
+                    .as_mut()
+                    .expect("the protections open on the page that adds a network")
+                    .choosing = false;
                 self.refresh();
             }
             // Asking takes a network, which the WLAN page joins.
@@ -5608,7 +7057,11 @@ impl App {
             // The package goes to internal storage, which the decrypt page
             // opens, over a network the WLAN page joins.
             Action::Download => {
-                let release = self.state.newest().expect("the download is offered for the newest system").clone();
+                let release = self
+                    .state
+                    .newest()
+                    .expect("the download is offered for the newest system")
+                    .clone();
                 if !self.state.data.storage_open() {
                     self.open(Screen::Decrypt);
                     return self.arrive_at(Screen::Decrypt);
@@ -5618,13 +7071,22 @@ impl App {
                     return self.arrive_at(Screen::Wlan);
                 }
                 if !self.state.downloading() {
-                    self.state.download = Some(DownloadJob { progress: None, rate: 0, outcome: None, stopping: false });
+                    self.state.download = Some(DownloadJob {
+                        progress: None,
+                        rate: 0,
+                        outcome: None,
+                        stopping: false,
+                    });
                     self.refresh();
                     return vec![Effect::Download(release)];
                 }
             }
             Action::StopDownload => {
-                let job = self.state.download.as_mut().expect("only a download under way is stopped");
+                let job = self
+                    .state
+                    .download
+                    .as_mut()
+                    .expect("only a download under way is stopped");
                 if job.outcome.is_none() && !job.stopping {
                     job.stopping = true;
                     self.refresh();
@@ -5632,8 +7094,15 @@ impl App {
                 }
             }
             Action::InstallDownloaded => {
-                let name = self.state.newest().expect("the package installed is the newest system's").name.clone();
-                let Have::Whole(size) = self.state.have else { unreachable!("only a whole package is offered to install") };
+                let name = self
+                    .state
+                    .newest()
+                    .expect("the package installed is the newest system's")
+                    .name
+                    .clone();
+                let Have::Whole(size) = self.state.have else {
+                    unreachable!("only a whole package is offered to install")
+                };
                 return self.install_file(Place::Storage, format!("{DOWNLOADS}/{name}"), size, now);
             }
             // Asking takes a network, which the WLAN page joins.
@@ -5651,7 +7120,11 @@ impl App {
             // The build goes into the recovery partitions an install may
             // write too, so one waits for the other.
             Action::UpdateSkyward => {
-                let build = self.state.skyward_newest().and_then(|n| n.build.clone()).expect("the update is offered for the newest release's build");
+                let build = self
+                    .state
+                    .skyward_newest()
+                    .and_then(|n| n.build.clone())
+                    .expect("the update is offered for the newest release's build");
                 if !self.state.online() {
                     self.open(Screen::Wlan);
                     return self.arrive_at(Screen::Wlan);
@@ -5661,7 +7134,12 @@ impl App {
                     return Vec::new();
                 }
                 if !self.state.updating_skyward() {
-                    self.state.skyward_job = Some(SkywardJob { stage: None, rate: 0, outcome: None, stopping: false });
+                    self.state.skyward_job = Some(SkywardJob {
+                        stage: None,
+                        rate: 0,
+                        outcome: None,
+                        stopping: false,
+                    });
                     self.refresh();
                     return vec![Effect::UpdateSkyward(build)];
                 }
@@ -5669,8 +7147,15 @@ impl App {
             // Only the download stops: writing, once begun, goes on to its
             // end.
             Action::StopSkywardUpdate => {
-                let job = self.state.skyward_job.as_mut().expect("only an update under way is stopped");
-                if job.outcome.is_none() && !job.stopping && !matches!(job.stage, Some(SkywardStage::Write { .. })) {
+                let job = self
+                    .state
+                    .skyward_job
+                    .as_mut()
+                    .expect("only an update under way is stopped");
+                if job.outcome.is_none()
+                    && !job.stopping
+                    && !matches!(job.stage, Some(SkywardStage::Write { .. }))
+                {
                     job.stopping = true;
                     self.refresh();
                     return vec![Effect::StopSkywardUpdate];
@@ -5701,7 +7186,11 @@ impl App {
 
     /// Where the entry the file page shows is.
     fn entry_path(&self) -> String {
-        let entry = self.state.file.as_ref().expect("the file page shows an entry");
+        let entry = self
+            .state
+            .file
+            .as_ref()
+            .expect("the file page shows an entry");
         self.state.files.inside(&entry.name)
     }
 
@@ -5709,13 +7198,21 @@ impl App {
     /// following how it goes; one install at a time.
     fn install_file(&mut self, place: Place, path: String, size: u64, now: u64) -> Vec<Effect> {
         let name = file_name(&path);
-        self.install_named(Source::File(place), name, size, Effect::InstallFile(place, path), now)
+        self.install_named(
+            Source::File(place),
+            name,
+            size,
+            Effect::InstallFile(place, path),
+            now,
+        )
     }
 
     /// Install the file of `size` bytes at the full `path`, opened in the
     /// file manager, as a file chosen in a place installs.
     fn install_opened(&mut self, path: String, size: u64, now: u64) -> Vec<Effect> {
-        let source = Source::Opened { drive: std::path::Path::new(&path).starts_with(USB_DRIVE) };
+        let source = Source::Opened {
+            drive: std::path::Path::new(&path).starts_with(USB_DRIVE),
+        };
         let name = file_name(&path);
         self.install_named(source, name, size, Effect::InstallPath(path), now)
     }
@@ -5723,7 +7220,14 @@ impl App {
     /// Install the file `name` of `size` bytes from `source`, `start` asking
     /// the runtime to, its page following how it goes; one install at a
     /// time.
-    fn install_named(&mut self, source: Source, name: Option<String>, size: u64, start: Effect, now: u64) -> Vec<Effect> {
+    fn install_named(
+        &mut self,
+        source: Source,
+        name: Option<String>,
+        size: u64,
+        start: Effect,
+        now: u64,
+    ) -> Vec<Effect> {
         match self.state.install {
             Install::Idle | Install::Finished { .. } => {
                 self.begin_install(Install::Checking { size, stage: None }, source, name);
@@ -5742,7 +7246,13 @@ impl App {
     /// has ended, Enter starts another.
     fn term_typed(&mut self, cap: Cap) -> Vec<Effect> {
         match cap {
-            Cap::Shift => self.state.layer = if self.state.layer == Layer::Shifted { Layer::Letters } else { Layer::Shifted },
+            Cap::Shift => {
+                self.state.layer = if self.state.layer == Layer::Shifted {
+                    Layer::Letters
+                } else {
+                    Layer::Shifted
+                }
+            }
             Cap::Show(layer) => self.state.layer = layer,
             _ => {}
         }
@@ -5751,9 +7261,15 @@ impl App {
             self.state.layer = Layer::Letters;
         }
         self.refresh();
-        let Some(term) = self.term.as_mut() else { return Vec::new() };
+        let Some(term) = self.term.as_mut() else {
+            return Vec::new();
+        };
         if !term.running {
-            return if cap == Cap::Enter { vec![Effect::StartShell(self.shell_folder.clone())] } else { Vec::new() };
+            return if cap == Cap::Enter {
+                vec![Effect::StartShell(self.shell_folder.clone())]
+            } else {
+                Vec::new()
+            };
         }
         let bytes = term.typed(cap, shifted);
         if bytes.is_empty() {
@@ -5767,8 +7283,14 @@ impl App {
     /// files wait. It is taken as it is sent, so the dots clear while it is
     /// checked, and nothing more is entered until it has been.
     fn unlock(&mut self, code: String) -> Vec<Effect> {
-        let Data::Locked { user, keys, .. } = self.state.data else { unreachable!("only a screen lock waiting takes what is entered") };
-        self.state.data = Data::Locked { user, keys, checking: true };
+        let Data::Locked { user, keys, .. } = self.state.data else {
+            unreachable!("only a screen lock waiting takes what is entered")
+        };
+        self.state.data = Data::Locked {
+            user,
+            keys,
+            checking: true,
+        };
         self.refresh();
         vec![Effect::Unlock { user, code }]
     }
@@ -5778,7 +7300,11 @@ impl App {
     /// takes away what is before it; the layer keys change the keyboard.
     fn edit_typed(&mut self, cap: Cap) {
         let layer = self.state.layer;
-        let ed = self.state.editor.as_mut().expect("the editor page shows a file");
+        let ed = self
+            .state
+            .editor
+            .as_mut()
+            .expect("the editor page shows a file");
         match cap {
             Cap::Char(ch) if layer == Layer::Shifted => {
                 ed.insert(ch.to_ascii_uppercase());
@@ -5788,7 +7314,13 @@ impl App {
             Cap::Space => ed.insert(' '),
             Cap::Backspace => ed.backspace(),
             Cap::Enter => ed.newline(),
-            Cap::Shift => self.state.layer = if layer == Layer::Shifted { Layer::Letters } else { Layer::Shifted },
+            Cap::Shift => {
+                self.state.layer = if layer == Layer::Shifted {
+                    Layer::Letters
+                } else {
+                    Layer::Shifted
+                }
+            }
             Cap::Show(shown) => self.state.layer = shown,
         }
         self.edits += 1;
@@ -5804,7 +7336,10 @@ impl App {
     /// keyboard, which stays as it was.
     fn refresh_text(&mut self) {
         let t = self.theme();
-        self.refresh_rows(0, (t.m.h as f32 - widgets::keyboard_height(&t)).floor() as u32);
+        self.refresh_rows(
+            0,
+            (t.m.h as f32 - widgets::keyboard_height(&t)).floor() as u32,
+        );
     }
 
     /// A tap at page `x`, `y` on the editor's card puts the cursor between
@@ -5814,7 +7349,11 @@ impl App {
         if !l.card.contains(x, y) {
             return;
         }
-        let ed = self.state.editor.as_mut().expect("the editor page shows a file");
+        let ed = self
+            .state
+            .editor
+            .as_mut()
+            .expect("the editor page shows a file");
         let row = (((y - l.y0) / l.pitch).floor().max(0.0) as usize).min(l.rows as usize - 1);
         ed.place(ed.top() + row, (x - l.x0) / l.cell);
         self.edits += 1;
@@ -5829,7 +7368,11 @@ impl App {
         if rows != 0.0 {
             self.scroll_rows(rows as isize);
         }
-        Drag::History { last: y, carry: carry - rows * pitch, pitch }
+        Drag::History {
+            last: y,
+            carry: carry - rows * pitch,
+            pitch,
+        }
     }
 
     /// Scroll as a finger going down `rows` rows' heights does, or up for
@@ -5837,7 +7380,11 @@ impl App {
     /// before, the editor's text to the lines before.
     fn scroll_rows(&mut self, rows: isize) {
         if self.screen() == Screen::Editor {
-            self.state.editor.as_mut().expect("the editor page shows a file").scroll(-rows);
+            self.state
+                .editor
+                .as_mut()
+                .expect("the editor page shows a file")
+                .scroll(-rows);
             self.refresh_text();
         } else if let Some(term) = self.term.as_mut() {
             term.scroll(rows);
@@ -5852,7 +7399,8 @@ impl App {
         match cap {
             Cap::Char(ch) => {
                 let shifted = self.state.layer == Layer::Shifted;
-                self.typing().push(if shifted { ch.to_ascii_uppercase() } else { ch });
+                self.typing()
+                    .push(if shifted { ch.to_ascii_uppercase() } else { ch });
                 self.edits += 1;
                 if shifted {
                     self.state.layer = Layer::Letters;
@@ -5867,16 +7415,30 @@ impl App {
                 self.edits += 1;
             }
             Cap::Shift => {
-                self.state.layer = if self.state.layer == Layer::Shifted { Layer::Letters } else { Layer::Shifted };
+                self.state.layer = if self.state.layer == Layer::Shifted {
+                    Layer::Letters
+                } else {
+                    Layer::Shifted
+                };
             }
             Cap::Show(layer) => self.state.layer = layer,
             Cap::Enter => match self.screen() {
                 Screen::Search => {
-                    if let Some(first) = search::find_on(&self.state.search, l, |screen| self.state.offers(screen)).first() {
+                    if let Some(first) =
+                        search::find_on(&self.state.search, l, |screen| self.state.offers(screen))
+                            .first()
+                    {
                         return self.act(Action::Open(first.screen), now);
                     }
                 }
-                Screen::Decrypt if self.state.code.is_empty() => self.say(l.pick(["请输入锁屏密码", "請輸入螢幕鎖定密碼", "Enter the screen lock"]), now),
+                Screen::Decrypt if self.state.code.is_empty() => self.say(
+                    l.pick([
+                        "请输入锁屏密码",
+                        "請輸入螢幕鎖定密碼",
+                        "Enter the screen lock",
+                    ]),
+                    now,
+                ),
                 Screen::Decrypt => {
                     let code = std::mem::take(&mut self.state.code);
                     return self.unlock(code);
@@ -5885,28 +7447,66 @@ impl App {
                 // the user's words; an unchanged one leaves the page.
                 Screen::Rename => {
                     let name = self.state.new_name.clone();
-                    let current = &self.state.file.as_ref().expect("the file page shows an entry").name;
-                    let taken = self.state.files.entries.as_ref().is_ok_and(|entries| entries.iter().any(|e| e.name == name));
+                    let current = &self
+                        .state
+                        .file
+                        .as_ref()
+                        .expect("the file page shows an entry")
+                        .name;
+                    let taken = self
+                        .state
+                        .files
+                        .entries
+                        .as_ref()
+                        .is_ok_and(|entries| entries.iter().any(|e| e.name == name));
                     match name.as_str() {
                         "" => self.say(l.pick(["请输入名称", "請輸入名稱", "Enter a name"]), now),
-                        "." | ".." => self.say(l.pick(["名称不能为\".\"或\"..\"", "名稱不能是「.」或「..」", "A name can't be “.” or “..”"]), now),
-                        _ if name.contains('/') => self.say(l.pick(["名称不能包含\"/\"", "名稱不能包含「/」", "A name can't hold “/”"]), now),
+                        "." | ".." => self.say(
+                            l.pick([
+                                "名称不能为\".\"或\"..\"",
+                                "名稱不能是「.」或「..」",
+                                "A name can't be “.” or “..”",
+                            ]),
+                            now,
+                        ),
+                        _ if name.contains('/') => self.say(
+                            l.pick([
+                                "名称不能包含\"/\"",
+                                "名稱不能包含「/」",
+                                "A name can't hold “/”",
+                            ]),
+                            now,
+                        ),
                         _ if name == *current => return self.back(now),
                         _ if taken => self.say_taken(now),
-                        _ => return vec![Effect::Rename { path: self.entry_path(), name }],
+                        _ => {
+                            return vec![Effect::Rename {
+                                path: self.entry_path(),
+                                name,
+                            }]
+                        }
                     }
                 }
                 // A password the network's protection cannot take is turned
                 // down here; one it can goes, and the WLAN page shows how
                 // joining goes.
                 Screen::WlanPassword => {
-                    let network = self.state.joining.clone().expect("the password page is for a network");
+                    let network = self
+                        .state
+                        .joining
+                        .clone()
+                        .expect("the password page is for a network");
                     match refused(l, network.security, &self.state.password) {
                         Some(why) => self.say(why, now),
                         None => {
                             let password = Secret(std::mem::take(&mut self.state.password));
                             let mut fx = self.back(now);
-                            fx.push(Effect::JoinWlan { ssid: network.ssid, name: network.name, security: network.security, password });
+                            fx.push(Effect::JoinWlan {
+                                ssid: network.ssid,
+                                name: network.name,
+                                security: network.security,
+                                password,
+                            });
                             return fx;
                         }
                     }
@@ -5916,12 +7516,30 @@ impl App {
                 Screen::WlanAdd => {
                     let a = self.state.adding.as_mut().expect("the page adds a network");
                     let (field, why) = match a.name.len() {
-                        0 => (Field::Name, Some(l.pick(["请输入网络名称", "請輸入網路名稱", "Enter the network's name"]).to_string())),
+                        0 => (
+                            Field::Name,
+                            Some(
+                                l.pick([
+                                    "请输入网络名称",
+                                    "請輸入網路名稱",
+                                    "Enter the network's name",
+                                ])
+                                .to_string(),
+                            ),
+                        ),
                         n if n > SSID_MAX => (
                             Field::Name,
-                            Some(tr!(l, "网络名称不能超过 {SSID_MAX} 个字符", "網路名稱不能超過 {SSID_MAX} 個字元", "A network's name can't be over {SSID_MAX} characters")),
+                            Some(tr!(
+                                l,
+                                "网络名称不能超过 {SSID_MAX} 个字符",
+                                "網路名稱不能超過 {SSID_MAX} 個字元",
+                                "A network's name can't be over {SSID_MAX} characters"
+                            )),
                         ),
-                        _ if a.security.password() => (Field::Password, refused(l, a.security, &self.state.password).map(str::to_string)),
+                        _ if a.security.password() => (
+                            Field::Password,
+                            refused(l, a.security, &self.state.password).map(str::to_string),
+                        ),
                         _ => (Field::Name, None),
                     };
                     match why {
@@ -5939,7 +7557,12 @@ impl App {
                                 false => Secret::default(),
                             };
                             let mut fx = self.back(now);
-                            fx.push(Effect::JoinWlan { ssid: name.clone().into_bytes(), name, security, password });
+                            fx.push(Effect::JoinWlan {
+                                ssid: name.clone().into_bytes(),
+                                name,
+                                security,
+                                password,
+                            });
                             return fx;
                         }
                     }
@@ -5951,7 +7574,10 @@ impl App {
         // while its keys do.
         if matches!(cap, Cap::Char(_) | Cap::Space | Cap::Backspace) && self.state.layer == layer {
             let t = self.theme();
-            self.refresh_rows(0, (t.m.h as f32 - widgets::keyboard_height(&t)).floor() as u32);
+            self.refresh_rows(
+                0,
+                (t.m.h as f32 - widgets::keyboard_height(&t)).floor() as u32,
+            );
         } else {
             self.refresh();
         }
@@ -6016,15 +7642,29 @@ impl App {
                 // doing: a finger landing there leaves a gliding or springing
                 // page alone until it drags the page, and presses nothing.
                 if at_edge.is_some() && self.in_motion(now) {
-                    self.drag = Drag::Press { x, y, action: None, edge: at_edge, at: now };
+                    self.drag = Drag::Press {
+                        x,
+                        y,
+                        action: None,
+                        edge: at_edge,
+                        at: now,
+                    };
                     return fx;
                 }
                 // A terminal's screen or the editor's text gliding stops
                 // under a finger landing on it, which holds it to scroll on.
                 let glided = self.glide.take().filter(|(glide, ..)| !glide.at(now).1);
-                let history = self.frame.as_ref().and_then(|fr| fr.scrollback).filter(|(r, _)| r.contains(x, y + scroll));
+                let history = self
+                    .frame
+                    .as_ref()
+                    .and_then(|fr| fr.scrollback)
+                    .filter(|(r, _)| r.contains(x, y + scroll));
                 if let (Some(_), Some((_, pitch))) = (glided, history) {
-                    self.drag = Drag::History { last: y, carry: 0.0, pitch };
+                    self.drag = Drag::History {
+                        last: y,
+                        carry: 0.0,
+                        pitch,
+                    };
                     return fx;
                 }
                 // Anywhere else it stops such a page and holds it; the
@@ -6037,34 +7677,83 @@ impl App {
                 // only it answers. A pinned strip answers where it shows,
                 // over the rows beneath it, and so does a docked one.
                 let back = widgets::back_rect(&t);
-                let strip = self.frame.as_ref().and_then(|fr| fr.pinned.as_ref()).map(|p| (p, pinned_top(&t, p, scroll)));
+                let strip = self
+                    .frame
+                    .as_ref()
+                    .and_then(|fr| fr.pinned.as_ref())
+                    .map(|p| (p, pinned_top(&t, p, scroll)));
                 let on_strip = strip.filter(|&(p, top)| y >= top && y < top + p.canvas.h as f32);
-                let dock = self.frame.as_ref().and_then(|fr| fr.dock.as_ref()).map(|d| (d, self.h as f32 - d.canvas.h as f32));
+                let dock = self
+                    .frame
+                    .as_ref()
+                    .and_then(|fr| fr.dock.as_ref())
+                    .map(|d| (d, self.h as f32 - d.canvas.h as f32));
                 let on_dock = dock.filter(|&(_, top)| y >= top);
-                let button = self.frame.as_ref().and_then(|fr| fr.button).map(|(_, a)| (a, widgets::button_rect(&t)));
+                let button = self
+                    .frame
+                    .as_ref()
+                    .and_then(|fr| fr.button)
+                    .map(|(_, a)| (a, widgets::button_rect(&t)));
                 let hit = if self.frame.as_ref().is_some_and(|fr| fr.back) && back.contains(x, y) {
                     Some((Action::Back, back))
                 } else if let Some(button) = button.filter(|(_, r)| r.contains(x, y)) {
                     Some(button)
                 } else if let Some((d, top)) = on_dock {
-                    d.hits.iter().find(|h| h.rect.contains(x, y - top)).map(|h| (h.action, Rect { y: h.rect.y + top, ..h.rect }))
+                    d.hits
+                        .iter()
+                        .find(|h| h.rect.contains(x, y - top))
+                        .map(|h| {
+                            (
+                                h.action,
+                                Rect {
+                                    y: h.rect.y + top,
+                                    ..h.rect
+                                },
+                            )
+                        })
                 } else if let Some((p, top)) = on_strip {
-                    p.hits.iter().find(|h| h.rect.contains(x, y - top)).map(|h| (h.action, Rect { y: h.rect.y + top, ..h.rect }))
+                    p.hits
+                        .iter()
+                        .find(|h| h.rect.contains(x, y - top))
+                        .map(|h| {
+                            (
+                                h.action,
+                                Rect {
+                                    y: h.rect.y + top,
+                                    ..h.rect
+                                },
+                            )
+                        })
                 } else if self.bar.on && y < widgets::bar_bottom(&t) {
                     None
                 } else {
                     // A search bar folding away answers only on what is
                     // left of it.
                     let fr = self.frame.as_ref();
-                    fr.and_then(|fr| fr.hit(x, y + scroll).filter(|h| fr.shown(h.rect, scroll).is_some_and(|r| r.contains(x, y))))
-                        .map(|h| (h.action, h.rect))
+                    fr.and_then(|fr| {
+                        fr.hit(x, y + scroll)
+                            .filter(|h| fr.shown(h.rect, scroll).is_some_and(|r| r.contains(x, y)))
+                    })
+                    .map(|h| (h.action, h.rect))
                 };
                 let action = hit.map(|h| h.0);
                 // A row of the page darkens behind its words a moment after
                 // the finger lands on it, if the finger stays.
                 let row = hit
-                    .filter(|&(a, r)| self.frame.as_ref().is_some_and(|fr| fr.hits.contains(&Hit { rect: r, action: a })))
-                    .filter(|&(a, r)| row_wide(&t, r) && !matches!(a, Action::Open(Screen::Search) | Action::Confirm(_) | Action::TypeInto(_)))
+                    .filter(|&(a, r)| {
+                        self.frame
+                            .as_ref()
+                            .is_some_and(|fr| fr.hits.contains(&Hit { rect: r, action: a }))
+                    })
+                    .filter(|&(a, r)| {
+                        row_wide(&t, r)
+                            && !matches!(
+                                a,
+                                Action::Open(Screen::Search)
+                                    | Action::Confirm(_)
+                                    | Action::TypeInto(_)
+                            )
+                    })
                     .map(|(_, r)| r);
                 self.drag = match hit {
                     Some((Action::Slider(which), track)) => {
@@ -6073,7 +7762,11 @@ impl App {
                     }
                     Some((Action::Confirm(which), track)) if self.on_knob(track, x) => {
                         let knob_x = track.x + (track.w - track.h) * self.state.confirm;
-                        Drag::Confirm { which, track, grab: x - knob_x }
+                        Drag::Confirm {
+                            which,
+                            track,
+                            grab: x - knob_x,
+                        }
                     }
                     Some((Action::Pattern, _)) => {
                         self.state.pattern.clear();
@@ -6082,24 +7775,50 @@ impl App {
                     }
                     _ => {
                         if let Some(rect) = row {
-                            self.row_press = Some(RowPress { rect, rise: now + ROW_PRESS_DELAY_MS, fall: None });
+                            self.row_press = Some(RowPress {
+                                rect,
+                                rise: now + ROW_PRESS_DELAY_MS,
+                                fall: None,
+                            });
                             self.row_art = None;
                         }
-                        Drag::Press { x, y, action, edge: at_edge, at: now }
+                        Drag::Press {
+                            x,
+                            y,
+                            action,
+                            edge: at_edge,
+                            at: now,
+                        }
                     }
                 };
             }
             Touch::Move(x, y) => match std::mem::replace(&mut self.drag, Drag::Idle) {
-                Drag::Press { x: x0, y: y0, action, edge: at_edge, at } => {
+                Drag::Press {
+                    x: x0,
+                    y: y0,
+                    action,
+                    edge: at_edge,
+                    at,
+                } => {
                     self.tracker.add(now, y);
                     let (dx, dy) = (x - x0, y - y0);
                     self.drag = match at_edge {
                         Some(from_left) if dx.abs() > slop && dx.abs() > dy.abs() => {
                             self.dirty = true;
-                            Drag::Edge { start: x0, from_left, armed: false, x, cy: y0 - m.dp(CUE_LIFT_DP) }
+                            Drag::Edge {
+                                start: x0,
+                                from_left,
+                                armed: false,
+                                x,
+                                cy: y0 - m.dp(CUE_LIFT_DP),
+                            }
                         }
                         _ if dy.abs() > slop => {
-                            let history = self.frame.as_ref().and_then(|fr| fr.scrollback).filter(|(r, _)| r.contains(x0, y0 + scroll));
+                            let history = self
+                                .frame
+                                .as_ref()
+                                .and_then(|fr| fr.scrollback)
+                                .filter(|(r, _)| r.contains(x0, y0 + scroll));
                             if let Some((_, pitch)) = history {
                                 self.scroll_history(y0, y, 0.0, pitch)
                             } else {
@@ -6112,7 +7831,13 @@ impl App {
                                 Drag::Scroll { last: y }
                             }
                         }
-                        _ => Drag::Press { x: x0, y: y0, action, edge: at_edge, at },
+                        _ => Drag::Press {
+                            x: x0,
+                            y: y0,
+                            action,
+                            edge: at_edge,
+                            at,
+                        },
                     };
                     if !matches!(self.drag, Drag::Press { .. }) {
                         self.let_row_go(now);
@@ -6123,7 +7848,13 @@ impl App {
                     self.drag_by(last - y);
                     self.drag = Drag::Scroll { last: y };
                 }
-                Drag::Edge { start, from_left, armed, cy, .. } => {
+                Drag::Edge {
+                    start,
+                    from_left,
+                    armed,
+                    cy,
+                    ..
+                } => {
                     let travel = if from_left { x - start } else { start - x };
                     let ready = travel > m.dp(BACK_SWIPE_DP);
                     // A tap of the motor as the `<` appears, as the system
@@ -6131,7 +7862,13 @@ impl App {
                     if ready && !armed && self.state.vibrate {
                         fx.push(Effect::Haptic);
                     }
-                    self.drag = Drag::Edge { start, from_left, armed: ready, x, cy };
+                    self.drag = Drag::Edge {
+                        start,
+                        from_left,
+                        armed: ready,
+                        x,
+                        cy,
+                    };
                     self.dirty = true;
                 }
                 Drag::Slider(which, track) => {
@@ -6157,25 +7894,38 @@ impl App {
                 Drag::Idle => {}
             },
             Touch::Up => match std::mem::replace(&mut self.drag, Drag::Idle) {
-                Drag::Press { action: Some(a), .. } => {
+                Drag::Press {
+                    action: Some(a), ..
+                } => {
                     if let Some(p) = &mut self.row_press {
                         p.lift(now);
                     }
                     fx.extend(self.act(a, now));
                 }
-                Drag::Press { x, y, action: None, .. } if self.screen() == Screen::Editor => self.place_caret(f, x, y + scroll),
+                Drag::Press {
+                    x, y, action: None, ..
+                } if self.screen() == Screen::Editor => self.place_caret(f, x, y + scroll),
                 Drag::History { pitch, .. } => {
                     // A finger lifted while still moving sends the rows
                     // gliding on.
                     let speed = self.tracker.velocity(now);
                     if speed.abs() >= m.dp(MIN_FLING_DP) {
                         let speed = speed.clamp(-m.dp(MAX_FLING_DP), m.dp(MAX_FLING_DP));
-                        self.glide = Some((Fling::new(now, 0.0, speed, self.px_per_dp * 160.0), pitch, 0));
+                        self.glide = Some((
+                            Fling::new(now, 0.0, speed, self.px_per_dp * 160.0),
+                            pitch,
+                            0,
+                        ));
                     }
                 }
                 Drag::Scroll { .. } if self.pull != 0.0 => {
                     // A page let go past its end springs back.
-                    self.bounce = Some(Spring::new(now, motion::rubber(self.pull, self.h as f32), 0.0, 0.4));
+                    self.bounce = Some(Spring::new(
+                        now,
+                        motion::rubber(self.pull, self.h as f32),
+                        0.0,
+                        0.4,
+                    ));
                     self.pull = 0.0;
                     self.dirty = true;
                 }
@@ -6192,12 +7942,20 @@ impl App {
                         Fling::new(now, scroll, speed, self.px_per_dp * 160.0)
                     });
                     match glide {
-                        Some(glide) if !(folding(scroll) && folding(glide.at(u64::MAX).0)) => self.fling = Some(glide),
+                        Some(glide) if !(folding(scroll) && folding(glide.at(u64::MAX).0)) => {
+                            self.fling = Some(glide)
+                        }
                         _ => self.settle_fold(now),
                     }
                 }
                 Drag::Edge { armed: true, .. } => fx.extend(self.back(now)),
-                Drag::Edge { start, from_left, x, cy, .. } => {
+                Drag::Edge {
+                    start,
+                    from_left,
+                    x,
+                    cy,
+                    ..
+                } => {
                     // Short of going back, the cue sinks back into the edge.
                     let travel = if from_left { x - start } else { start - x };
                     let depth = widgets::back_cue_depth(&t, travel);
@@ -6225,18 +7983,26 @@ impl App {
         // A key of the on-screen keyboard, or a choice of a list open over
         // the page, shows held down while the finger rests on it.
         let held = match self.drag {
-            Drag::Press { action: Some(a @ (Action::Type(_) | Action::PickSecurity(_))), .. } => Some(a),
+            Drag::Press {
+                action: Some(a @ (Action::Type(_) | Action::PickSecurity(_))),
+                ..
+            } => Some(a),
             _ => None,
         };
         if held != self.state.held {
             let was = std::mem::replace(&mut self.state.held, held);
             // Only the rows of what is let go and what is held change.
-            let rects: Option<Vec<Rect>> = self
-                .frame
-                .as_ref()
-                .and_then(|fr| [was, held].into_iter().flatten().map(|a| fr.hits.iter().find(|h| h.action == a).map(|h| h.rect)).collect());
+            let rects: Option<Vec<Rect>> = self.frame.as_ref().and_then(|fr| {
+                [was, held]
+                    .into_iter()
+                    .flatten()
+                    .map(|a| fr.hits.iter().find(|h| h.action == a).map(|h| h.rect))
+                    .collect()
+            });
             match rects {
-                Some(rects) => rects.into_iter().for_each(|r| self.refresh_rows(r.y.floor() as u32, (r.y + r.h).ceil() as u32)),
+                Some(rects) => rects
+                    .into_iter()
+                    .for_each(|r| self.refresh_rows(r.y.floor() as u32, (r.y + r.h).ceil() as u32)),
                 None => self.refresh(),
             }
         }
@@ -6248,8 +8014,14 @@ impl App {
     fn pressing(&self) -> Option<Action> {
         let button = self.frame.as_ref().and_then(|fr| fr.button).map(|(_, a)| a);
         match self.drag {
-            Drag::Press { action: Some(a @ (Action::Back | Action::CloseSearch | Action::Open(Screen::Search))), .. } => Some(a),
-            Drag::Press { action: Some(a), .. } if Some(a) == button => Some(a),
+            Drag::Press {
+                action:
+                    Some(a @ (Action::Back | Action::CloseSearch | Action::Open(Screen::Search))),
+                ..
+            } => Some(a),
+            Drag::Press {
+                action: Some(a), ..
+            } if Some(a) == button => Some(a),
             _ => None,
         }
     }
@@ -6262,7 +8034,10 @@ impl App {
             self.row_press = None;
             self.row_art = None;
         } else if p.fall.is_none() {
-            self.row_press = Some(RowPress { fall: Some(now), ..p });
+            self.row_press = Some(RowPress {
+                fall: Some(now),
+                ..p
+            });
         }
         self.dirty = true;
     }
@@ -6286,7 +8061,11 @@ impl App {
         self.fling = None;
         self.end_turn();
         if let Some((first, at)) = self.chord {
-            if matches!((first, key), (Key::Power, Key::VolumeDown) | (Key::VolumeDown, Key::Power)) && now < at + CHORD_MS {
+            if matches!(
+                (first, key),
+                (Key::Power, Key::VolumeDown) | (Key::VolumeDown, Key::Power)
+            ) && now < at + CHORD_MS
+            {
                 return self.screenshot(key, now);
             }
         }
@@ -6334,7 +8113,9 @@ impl App {
         if self.state.vibrate {
             fx.push(Effect::Haptic);
         }
-        fx.push(Effect::Screenshot { storage: self.state.place_open(Place::Storage) });
+        fx.push(Effect::Screenshot {
+            storage: self.state.place_open(Place::Storage),
+        });
         fx
     }
 
@@ -6357,7 +8138,13 @@ impl App {
             }
             Key::VolumeUp | Key::VolumeDown => {
                 let down = key == Key::VolumeDown;
-                self.button = Some((key, Press::Volume { down, next: at + REPEAT_DELAY_MS }));
+                self.button = Some((
+                    key,
+                    Press::Volume {
+                        down,
+                        next: at + REPEAT_DELAY_MS,
+                    },
+                ));
                 self.volume(down, at)
             }
             // A press before the page it lands on is drawn is lost, rather
@@ -6371,8 +8158,19 @@ impl App {
                 match self.keys.then(|| self.lit()).flatten() {
                     // Held on a swipe-to-confirm control, the key slides
                     // its knob along as a finger would.
-                    Some(Spot { stop: Stop::Hit(Action::Confirm(which)), rect, .. }) => {
-                        self.button = Some((key, Press::Slide { which, track: rect, at }))
+                    Some(Spot {
+                        stop: Stop::Hit(Action::Confirm(which)),
+                        rect,
+                        ..
+                    }) => {
+                        self.button = Some((
+                            key,
+                            Press::Slide {
+                                which,
+                                track: rect,
+                                at,
+                            },
+                        ))
                     }
                     Some(spot) => self.button = Some((key, Press::Power { spot, at })),
                     // Turning the screen off, the key ticks the motor.
@@ -6396,7 +8194,9 @@ impl App {
             Some((first, _)) if first == key => self.let_chord_go(now),
             _ => Vec::new(),
         };
-        let Some((down, press)) = self.button else { return fx };
+        let Some((down, press)) = self.button else {
+            return fx;
+        };
         if down != key {
             return fx;
         }
@@ -6410,7 +8210,14 @@ impl App {
                 if done {
                     fx.extend(self.confirmed(which, now));
                 } else {
-                    self.say(self.state.lang.pick(["请按住电源键", "請按住電源鍵", "Hold the power key"]), now);
+                    self.say(
+                        self.state.lang.pick([
+                            "请按住电源键",
+                            "請按住電源鍵",
+                            "Hold the power key",
+                        ]),
+                        now,
+                    );
                 }
             }
             Press::Volume { .. } | Press::Spent => {}
@@ -6421,7 +8228,9 @@ impl App {
     /// Whatever the button held down was doing comes to nothing until it is
     /// let go: a knob it slid goes back.
     fn drop_button(&mut self) {
-        let Some((key, press)) = self.button else { return };
+        let Some((key, press)) = self.button else {
+            return;
+        };
         if let Press::Slide { which, track, .. } = press {
             self.let_knob_go(which, track);
         }
@@ -6442,22 +8251,41 @@ impl App {
         match which {
             Confirm::Reboot => fx.push(Effect::Reboot(TARGETS[self.state.reboot])),
             Confirm::Wipe => {
-                let chosen: Vec<Wipe> = WIPES.iter().zip(self.state.wipe).filter(|(_, on)| *on).map(|(&w, _)| w).collect();
+                let chosen: Vec<Wipe> = WIPES
+                    .iter()
+                    .zip(self.state.wipe)
+                    .filter(|(_, on)| *on)
+                    .map(|(&w, _)| w)
+                    .collect();
                 match chosen.is_empty() {
-                    true => self.say(l.pick(["请选择要清除的内容", "請選擇要清除的內容", "Choose what to wipe"]), now),
+                    true => self.say(
+                        l.pick([
+                            "请选择要清除的内容",
+                            "請選擇要清除的內容",
+                            "Choose what to wipe",
+                        ]),
+                        now,
+                    ),
                     false => fx.push(Effect::Wipe(chosen)),
                 }
             }
             Confirm::Install | Confirm::InstallWipe => {
                 if let Install::Confirming { version, .. } = &self.state.install {
-                    self.state.install = Install::Updating { version: version.clone(), stage: None, overwriting: false };
+                    self.state.install = Install::Updating {
+                        version: version.clone(),
+                        stage: None,
+                        overwriting: false,
+                    };
                     fx.push(Effect::Install);
                     self.refresh();
                 }
             }
             Confirm::RunScript => {
                 if self.state.install == Install::ConfirmingScript {
-                    self.state.install = Install::Scripting { stage: None, running: false };
+                    self.state.install = Install::Scripting {
+                        stage: None,
+                        running: false,
+                    };
                     fx.push(Effect::Install);
                     self.refresh();
                 }
@@ -6465,9 +8293,17 @@ impl App {
             Confirm::Backup => {
                 let s = &self.state;
                 let refused = if !s.backup.contains(&true) {
-                    Some(["请选择要备份的内容", "請選擇要備份的內容", "Choose what to back up"])
+                    Some([
+                        "请选择要备份的内容",
+                        "請選擇要備份的內容",
+                        "Choose what to back up",
+                    ])
                 } else if s.backup[2] && s.data != Data::Open {
-                    Some(["备份 data 分区需先完成「解密」", "備份 data 分割區需先完成「解密」", "Decrypt before backing up the data partition"])
+                    Some([
+                        "备份 data 分区需先完成「解密」",
+                        "備份 data 分割區需先完成「解密」",
+                        "Decrypt before backing up the data partition",
+                    ])
                 } else if s.place_open(s.backup_to) {
                     None
                 } else {
@@ -6478,35 +8314,83 @@ impl App {
                         (Place::UsbDrive, _) => USB_DRIVE_WANTED,
                     })
                 };
-                let backup = Effect::Backup { parts: s.backup, place: s.backup_to, compress: s.compress, verify: s.verify };
+                let backup = Effect::Backup {
+                    parts: s.backup,
+                    place: s.backup_to,
+                    compress: s.compress,
+                    verify: s.verify,
+                };
                 match refused {
                     Some(why) => self.say(l.pick(why), now),
                     None => fx.push(backup),
                 }
             }
             Confirm::Restore => {
-                let (entry, parts) = self.state.restore.as_ref().expect("the restore page shows a backup");
-                let restore = Effect::Restore { place: entry.place, name: entry.name.clone(), parts: *parts };
+                let (entry, parts) = self
+                    .state
+                    .restore
+                    .as_ref()
+                    .expect("the restore page shows a backup");
+                let restore = Effect::Restore {
+                    place: entry.place,
+                    name: entry.name.clone(),
+                    parts: *parts,
+                };
                 if !parts.contains(&true) {
-                    self.say(l.pick(["请选择要恢复的内容", "請選擇要還原的內容", "Choose what to restore"]), now);
+                    self.say(
+                        l.pick([
+                            "请选择要恢复的内容",
+                            "請選擇要還原的內容",
+                            "Choose what to restore",
+                        ]),
+                        now,
+                    );
                 } else if parts[2] && self.state.data != Data::Open {
-                    self.say(l.pick(["恢复 data 分区需先完成「解密」", "還原 data 分割區需先完成「解密」", "Decrypt before restoring the data partition"]), now);
+                    self.say(
+                        l.pick([
+                            "恢复 data 分区需先完成「解密」",
+                            "還原 data 分割區需先完成「解密」",
+                            "Decrypt before restoring the data partition",
+                        ]),
+                        now,
+                    );
                 } else {
                     fx.push(restore);
                 }
             }
             Confirm::DeleteBackup => {
-                let (entry, _) = self.state.restore.as_ref().expect("the restore page shows a backup");
-                fx.push(Effect::DeleteBackup { place: entry.place, name: entry.name.clone() });
+                let (entry, _) = self
+                    .state
+                    .restore
+                    .as_ref()
+                    .expect("the restore page shows a backup");
+                fx.push(Effect::DeleteBackup {
+                    place: entry.place,
+                    name: entry.name.clone(),
+                });
             }
             Confirm::Slot => match (&self.state.boot_slots, self.state.next_slot) {
-                (Some(Ok(slots)), Some(pick)) if pick != slots.active => fx.push(Effect::SetSlot(pick)),
+                (Some(Ok(slots)), Some(pick)) if pick != slots.active => {
+                    fx.push(Effect::SetSlot(pick))
+                }
                 (Some(Ok(slots)), _) => {
                     let slot = slots.active.letter();
-                    let said = tr!(l, "下次已从槽位 {slot} 启动", "下次已從槽位 {slot} 啟動", "Slot {slot} already starts next");
+                    let said = tr!(
+                        l,
+                        "下次已从槽位 {slot} 启动",
+                        "下次已從槽位 {slot} 啟動",
+                        "Slot {slot} already starts next"
+                    );
                     self.say(&said, now);
                 }
-                _ => self.say(l.pick(["无法读取启动槽位", "無法讀取啟動槽位", "Couldn't read the boot slots"]), now),
+                _ => self.say(
+                    l.pick([
+                        "无法读取启动槽位",
+                        "無法讀取啟動槽位",
+                        "Couldn't read the boot slots",
+                    ]),
+                    now,
+                ),
             },
             Confirm::FactoryReset => fx.push(Effect::FactoryReset),
             Confirm::Merge => {
@@ -6523,31 +8407,49 @@ impl App {
                 Data::Open | Data::Locked { .. } => fx.push(Effect::Relabel),
                 Data::Opening => self.say(l.pick(DATA_OPENING), now),
                 Data::Erased => self.say(l.pick(DATA_ERASED), now),
-                Data::Closed | Data::Failed(_) => {
-                    self.say(l.pick(["请先在「解密」中打开 data 分区", "請先在「解密」中開啟 data 分割區", "Open the data partition in Decrypt first"]), now)
-                }
+                Data::Closed | Data::Failed(_) => self.say(
+                    l.pick([
+                        "请先在「解密」中打开 data 分区",
+                        "請先在「解密」中開啟 data 分割區",
+                        "Open the data partition in Decrypt first",
+                    ]),
+                    now,
+                ),
             },
             // The data partition is reached through its own key whether or
             // not it is open, but not while it is being opened or erased.
             Confirm::Filesystem => {
-                let row = self.fs_row().expect("the page of a partition shows one that was read");
+                let row = self
+                    .fs_row()
+                    .expect("the page of a partition shows one that was read");
                 let data = row.name == DATA_PARTITION;
                 match (&self.state.fs_action, &self.state.data) {
                     (_, Data::Opening) if data => self.say(l.pick(DATA_OPENING), now),
                     (FsAction::Repair, Data::Erased) if data => self.say(l.pick(DATA_ERASED), now),
-                    (action, _) => fx.push(Effect::Filesystem { name: row.name.clone(), action: action.clone() }),
+                    (action, _) => fx.push(Effect::Filesystem {
+                        name: row.name.clone(),
+                        action: action.clone(),
+                    }),
                 }
             }
             Confirm::Flash => {
                 if let Install::Choosing(choice) = &self.state.install {
                     let partition = choice.partitions[choice.partition];
-                    fx.push(Effect::Flash { partition, pick: choice.pick });
-                    self.state.install = Install::Flashing { partition, stage: None };
+                    fx.push(Effect::Flash {
+                        partition,
+                        pick: choice.pick,
+                    });
+                    self.state.install = Install::Flashing {
+                        partition,
+                        stage: None,
+                    };
                     self.refresh();
                 }
             }
             Confirm::SwitchSystem => {
-                if let (Some(Ok(systems)), Some(pick)) = (&self.state.systems, self.state.system_pick) {
+                if let (Some(Ok(systems)), Some(pick)) =
+                    (&self.state.systems, self.state.system_pick)
+                {
                     if pick != starting(systems) {
                         fx.push(Effect::SwitchSystem(pick));
                         self.state.systems_work = Some(SystemsWork::Switching(pick));
@@ -6565,8 +8467,13 @@ impl App {
             }
             Confirm::InstallSystem => {
                 if let Install::SystemChoosing(choice) = &self.state.install {
-                    fx.push(Effect::InstallSystem { size: choice.sizes[choice.size] });
-                    self.state.install = Install::Systeming { name: choice.name.clone(), stage: None };
+                    fx.push(Effect::InstallSystem {
+                        size: choice.sizes[choice.size],
+                    });
+                    self.state.install = Install::Systeming {
+                        name: choice.name.clone(),
+                        stage: None,
+                    };
                     self.refresh();
                 }
             }
@@ -6587,10 +8494,16 @@ impl App {
                 self.adjusting = !self.adjusting;
                 if self.adjusting {
                     let said = match which {
-                        Slider::Brightness => ["按音量键调节亮度，按电源键完成", "按音量鍵調整亮度，按電源鍵完成", "Set the brightness with the volume keys, then press the power key"],
-                        Slider::Vibration => {
-                            ["按音量键调节振动强度，按电源键完成", "按音量鍵調整震動強度，按電源鍵完成", "Set the vibration with the volume keys, then press the power key"]
-                        }
+                        Slider::Brightness => [
+                            "按音量键调节亮度，按电源键完成",
+                            "按音量鍵調整亮度，按電源鍵完成",
+                            "Set the brightness with the volume keys, then press the power key",
+                        ],
+                        Slider::Vibration => [
+                            "按音量键调节振动强度，按电源键完成",
+                            "按音量鍵調整震動強度，按電源鍵完成",
+                            "Set the vibration with the volume keys, then press the power key",
+                        ],
                     };
                     self.say(l.pick(said), now);
                 }
@@ -6600,7 +8513,14 @@ impl App {
             Stop::Dot(i) if self.state.pattern.last() == Some(&i) => self.drawn(now),
             Stop::Dot(i) => {
                 if self.state.pattern.is_empty() {
-                    self.say(l.pick(["连接完成后，在最后一个点上再按一次电源键", "連接完成後，在最後一個點上再按一次電源鍵", "When the pattern is done, press the power key again on its last dot"]), now);
+                    self.say(
+                        l.pick([
+                            "连接完成后，在最后一个点上再按一次电源键",
+                            "連接完成後，在最後一個點上再按一次電源鍵",
+                            "When the pattern is done, press the power key again on its last dot",
+                        ]),
+                        now,
+                    );
                 }
                 self.join(&self.theme(), i);
                 Vec::new()
@@ -6615,7 +8535,14 @@ impl App {
         let drawn = std::mem::take(&mut self.state.pattern);
         self.repaint_pattern(&self.theme());
         if drawn.len() < 4 {
-            self.say(self.state.lang.pick(["请至少连接 4 个点", "請至少連接 4 個點", "Connect at least 4 dots"]), now);
+            self.say(
+                self.state.lang.pick([
+                    "请至少连接 4 个点",
+                    "請至少連接 4 個點",
+                    "Connect at least 4 dots",
+                ]),
+                now,
+            );
             return Vec::new();
         }
         self.unlock(drawn.iter().map(|i| (b'1' + *i as u8) as char).collect())
@@ -6630,7 +8557,12 @@ impl App {
             return Vec::new();
         }
         if self.adjusting {
-            if let Some(Spot { stop: Stop::Hit(Action::Slider(which)), rect, .. }) = self.lit() {
+            if let Some(Spot {
+                stop: Stop::Hit(Action::Slider(which)),
+                rect,
+                ..
+            }) = self.lit()
+            {
                 let level = self.level(which) + if down { -SLIDER_STEP } else { SLIDER_STEP };
                 self.set_level(&self.theme(), which, rect, level);
                 if which == Slider::Vibration && self.state.vibrate {
@@ -6672,8 +8604,14 @@ impl App {
         let held = |k: usize| matches!(spots[k].group, Group::Fixed | Group::Strip);
         let docked = |k: usize| spots[k].group == Group::Dock;
         // The page's own controls not wholly above the band, or below it.
-        let from_top = |k: usize| page(k) && self.place(&spots[k], scroll).is_some_and(|r| r.y + r.h > top);
-        let from_bottom = |k: usize| page(k) && self.place(&spots[k], scroll).is_some_and(|r| r.y < bottom);
+        let from_top = |k: usize| {
+            page(k)
+                && self
+                    .place(&spots[k], scroll)
+                    .is_some_and(|r| r.y + r.h > top)
+        };
+        let from_bottom =
+            |k: usize| page(k) && self.place(&spots[k], scroll).is_some_and(|r| r.y < bottom);
         enum To {
             Spot(usize),
             Scroll,
@@ -6691,8 +8629,13 @@ impl App {
             };
             match cur {
                 Some(i) if page(i) => (i + 1..n).find(|&k| page(k)).map_or_else(past, To::Spot),
-                Some(i) if docked(i) => (i + 1..n).find(|&k| docked(k)).map_or(if scroll < max { To::Scroll } else { To::Round }, To::Spot),
-                Some(i) => (i + 1..n).find(|&k| held(k)).or_else(|| (0..n).find(|&k| from_top(k))).map_or_else(past, To::Spot),
+                Some(i) if docked(i) => (i + 1..n)
+                    .find(|&k| docked(k))
+                    .map_or(if scroll < max { To::Scroll } else { To::Round }, To::Spot),
+                Some(i) => (i + 1..n)
+                    .find(|&k| held(k))
+                    .or_else(|| (0..n).find(|&k| from_top(k)))
+                    .map_or_else(past, To::Spot),
                 None => (0..n).find(|&k| from_top(k)).map_or_else(past, To::Spot),
             }
         } else {
@@ -6706,10 +8649,23 @@ impl App {
                 }
             };
             match cur {
-                Some(i) if page(i) => (0..i).rev().find(|&k| page(k)).map_or_else(before, To::Spot),
-                Some(i) if docked(i) => (0..i).rev().find(|&k| docked(k)).or_else(|| (0..n).rev().find(|&k| from_bottom(k))).map_or_else(before, To::Spot),
-                Some(i) => (0..i).rev().find(|&k| held(k)).map_or(if scroll > 0.0 { To::Scroll } else { To::Round }, To::Spot),
-                None => (0..n).rev().find(|&k| from_bottom(k)).map_or_else(before, To::Spot),
+                Some(i) if page(i) => (0..i)
+                    .rev()
+                    .find(|&k| page(k))
+                    .map_or_else(before, To::Spot),
+                Some(i) if docked(i) => (0..i)
+                    .rev()
+                    .find(|&k| docked(k))
+                    .or_else(|| (0..n).rev().find(|&k| from_bottom(k)))
+                    .map_or_else(before, To::Spot),
+                Some(i) => (0..i)
+                    .rev()
+                    .find(|&k| held(k))
+                    .map_or(if scroll > 0.0 { To::Scroll } else { To::Round }, To::Spot),
+                None => (0..n)
+                    .rev()
+                    .find(|&k| from_bottom(k))
+                    .map_or_else(before, To::Spot),
             }
         };
         match to {
@@ -6731,7 +8687,11 @@ impl App {
             To::Round => {
                 let s = spots[if down { 0 } else { n - 1 }];
                 let end = if down { 0.0 } else { max };
-                let target = if self.shows(&s, end) { end } else { self.reveal(&s, end) };
+                let target = if self.shows(&s, end) {
+                    end
+                } else {
+                    self.reveal(&s, end)
+                };
                 self.seek_to(target, now);
                 self.top_mut().2 = Focus::On(s);
             }
@@ -6746,7 +8706,11 @@ impl App {
         let scroll = self.resting();
         let (top, bottom) = self.band(scroll);
         let half = (bottom - top) / 2.0;
-        let target = if down { (scroll + half).min(self.max_scroll()) } else { (scroll - half).max(0.0) };
+        let target = if down {
+            (scroll + half).min(self.max_scroll())
+        } else {
+            (scroll - half).max(0.0)
+        };
         // A page coming to rest with its search bar part folded folds it
         // whole or not at all, as one let go there does.
         let target = self.frame.as_ref().map_or(target, |fr| fr.settle(target));
@@ -6755,8 +8719,17 @@ impl App {
             return;
         }
         let band = self.band(target);
-        let in_view = |k: &usize| spots[*k].group == Group::Page && self.place(&spots[*k], target).is_some_and(|r| within(r, band));
-        let next = if down { (0..spots.len()).find(in_view) } else { (0..spots.len()).rev().find(in_view) };
+        let in_view = |k: &usize| {
+            spots[*k].group == Group::Page
+                && self
+                    .place(&spots[*k], target)
+                    .is_some_and(|r| within(r, band))
+        };
+        let next = if down {
+            (0..spots.len()).find(in_view)
+        } else {
+            (0..spots.len()).rev().find(in_view)
+        };
         self.top_mut().2 = next.map_or(Focus::Off, |k| Focus::On(spots[k]));
     }
 
@@ -6783,7 +8756,10 @@ impl App {
             Focus::Unset => None,
         };
         let spot = spots[found.or_else(|| self.first_in_view(spots, scroll))?];
-        self.stack.last_mut().expect("the page stack always holds a page").2 = Focus::On(spot);
+        self.stack
+            .last_mut()
+            .expect("the page stack always holds a page")
+            .2 = Focus::On(spot);
         Some(spot)
     }
 
@@ -6791,22 +8767,45 @@ impl App {
     /// the bottom strip's first, or else the `<` or the top strip's first.
     fn first_in_view(&self, spots: &[Spot], scroll: f32) -> Option<usize> {
         let band = self.band(scroll);
-        let k = spots.iter().position(|s| s.group == Group::Page && self.place(s, scroll).is_some_and(|r| within(r, band)));
+        let k = spots.iter().position(|s| {
+            s.group == Group::Page && self.place(s, scroll).is_some_and(|r| within(r, band))
+        });
         k.or_else(|| spots.iter().position(|s| s.group == Group::Dock))
-            .or_else(|| spots.iter().position(|s| matches!(s.group, Group::Fixed | Group::Strip)))
+            .or_else(|| {
+                spots
+                    .iter()
+                    .position(|s| matches!(s.group, Group::Fixed | Group::Strip))
+            })
     }
 
     /// Where on screen `s` is with the page `offset` pixels down; nowhere
     /// for a search bar folded away.
     fn place(&self, s: &Spot, offset: f32) -> Option<Rect> {
-        let fr = self.frame.as_ref().expect("a control is placed on the page drawn");
+        let fr = self
+            .frame
+            .as_ref()
+            .expect("a control is placed on the page drawn");
         let dy = match s.group {
             Group::Fixed => 0.0,
-            Group::Strip => pinned_top(&self.theme(), fr.pinned.as_ref().expect("the strip holds its controls"), offset),
+            Group::Strip => pinned_top(
+                &self.theme(),
+                fr.pinned.as_ref().expect("the strip holds its controls"),
+                offset,
+            ),
             Group::Page => return fr.shown(s.rect, offset),
-            Group::Dock => self.h as f32 - fr.dock.as_ref().expect("the dock holds its controls").canvas.h as f32,
+            Group::Dock => {
+                self.h as f32
+                    - fr.dock
+                        .as_ref()
+                        .expect("the dock holds its controls")
+                        .canvas
+                        .h as f32
+            }
         };
-        Some(Rect { y: s.rect.y + dy, ..s.rect })
+        Some(Rect {
+            y: s.rect.y + dy,
+            ..s.rect
+        })
     }
 
     /// The band of the screen the page's own controls show in with the page
@@ -6819,12 +8818,18 @@ impl App {
             Some(p) => pinned_top(&t, p, scroll) + p.canvas.h as f32,
             None => widgets::bar_bottom(&t),
         };
-        (top, self.h as f32 - fr.dock.as_ref().map_or(0.0, |d| d.canvas.h as f32))
+        (
+            top,
+            self.h as f32 - fr.dock.as_ref().map_or(0.0, |d| d.canvas.h as f32),
+        )
     }
 
     /// Whether `s` shows, in part at least, with the page at `scroll`.
     fn shows(&self, s: &Spot, scroll: f32) -> bool {
-        s.group != Group::Page || self.place(s, scroll).is_some_and(|r| within(r, self.band(scroll)))
+        s.group != Group::Page
+            || self
+                .place(s, scroll)
+                .is_some_and(|r| within(r, self.band(scroll)))
     }
 
     /// How far down to scroll the page from `scroll` to show `s` whole, a
@@ -6833,7 +8838,10 @@ impl App {
     /// the page's top, and a page scrolled down to show any other control
     /// goes on to fold the bar away whole.
     fn reveal(&self, s: &Spot, scroll: f32) -> f32 {
-        let fr = self.frame.as_ref().expect("a control is revealed on the page drawn");
+        let fr = self
+            .frame
+            .as_ref()
+            .expect("a control is revealed on the page drawn");
         let fold = fr.fold.filter(|_| s.group == Group::Page);
         if fold.is_some_and(|f| f.bar == s.rect) {
             return 0.0;
@@ -6841,7 +8849,9 @@ impl App {
         let margin = self.theme().m.margin;
         let (top, bottom) = self.band(scroll);
         let (top, bottom) = (top + margin, bottom - margin);
-        let r = self.place(s, scroll).expect("only a search bar folded away has no place");
+        let r = self
+            .place(s, scroll)
+            .expect("only a search bar folded away has no place");
         let d = if r.y < top {
             r.y - top
         } else if r.y + r.h > bottom {
@@ -6850,7 +8860,13 @@ impl App {
             0.0
         };
         let target = scroll + d;
-        let target = fold.map_or(target, |f| if target > 0.0 && target < f.span { f.span } else { target });
+        let target = fold.map_or(target, |f| {
+            if target > 0.0 && target < f.span {
+                f.span
+            } else {
+                target
+            }
+        });
         target.clamp(0.0, self.max_scroll())
     }
 
@@ -6863,7 +8879,9 @@ impl App {
     /// A page come to rest with its search bar part folded eases on from
     /// there to fold the bar away or unfold it whole, whichever is nearer.
     fn settle_fold(&mut self, now: u64) {
-        let Some(fr) = self.frame.as_ref() else { return };
+        let Some(fr) = self.frame.as_ref() else {
+            return;
+        };
         let at = self.top().1;
         let rest = fr.settle(at).min(self.max_scroll());
         if rest != at {
@@ -6876,7 +8894,8 @@ impl App {
     fn seek_to(&mut self, target: f32, now: u64) {
         let at = self.top().1;
         self.fling = None;
-        self.seek = (target != at).then(|| (target, Spring::new(now, at - target, 0.0, SEEK_PERIOD)));
+        self.seek =
+            (target != at).then(|| (target, Spring::new(now, at - target, 0.0, SEEK_PERIOD)));
         self.dirty = true;
     }
 
@@ -6890,17 +8909,33 @@ impl App {
         }
         let spot = self.lit()?;
         let t = self.theme();
-        let keypad = self.screen() == Screen::Decrypt && matches!(self.state.data, Data::Locked { keys: Keys::Digits, .. });
+        let keypad = self.screen() == Screen::Decrypt
+            && matches!(
+                self.state.data,
+                Data::Locked {
+                    keys: Keys::Digits,
+                    ..
+                }
+            );
         let (r, radius) = focus::lit(&t, spot.stop, self.place(&spot, offset)?, keypad);
-        let held = matches!(self.button, Some((_, Press::Power { .. } | Press::Slide { .. })));
-        let alpha = if held || self.adjusting { LIGHT_HELD_ALPHA } else { LIGHT_ALPHA };
+        let held = matches!(
+            self.button,
+            Some((_, Press::Power { .. } | Press::Slide { .. }))
+        );
+        let alpha = if held || self.adjusting {
+            LIGHT_HELD_ALPHA
+        } else {
+            LIGHT_ALPHA
+        };
         Some((spot.group, r, radius, t.pal.accent.with_alpha(alpha)))
     }
 
     /// Whether the page is gliding, springing back, or easing on of its own
     /// accord at `now`.
     fn in_motion(&self, now: u64) -> bool {
-        self.fling.is_some_and(|fl| !fl.at(now).1) || self.bounce.is_some_and(|b| !b.at(now).1) || self.seek.is_some_and(|(_, s)| !s.at(now).1)
+        self.fling.is_some_and(|fl| !fl.at(now).1)
+            || self.bounce.is_some_and(|b| !b.at(now).1)
+            || self.seek.is_some_and(|(_, s)| !s.at(now).1)
     }
 
     /// Stop a page gliding, springing back or easing on of its own accord,
@@ -6909,7 +8944,11 @@ impl App {
     fn catch(&mut self, now: u64) -> bool {
         let glide = self.fling.take().is_some_and(|fl| !fl.at(now).1);
         let seeking = self.seek.take().is_some_and(|(_, s)| !s.at(now).1);
-        let spring = self.bounce.take().map(|b| b.at(now)).filter(|&(_, done)| !done);
+        let spring = self
+            .bounce
+            .take()
+            .map(|b| b.at(now))
+            .filter(|&(_, done)| !done);
         if let Some((offset, _)) = spring {
             self.pull = motion::unrubber(offset, self.h as f32);
         }
@@ -6963,10 +9002,18 @@ impl App {
             Slider::Brightness => &mut self.state.brightness,
             Slider::Vibration => &mut self.state.vibration,
         };
-        *value = level.clamp(if which == Slider::Brightness { MIN_BRIGHTNESS } else { 0.0 }, 1.0);
+        *value = level.clamp(
+            if which == Slider::Brightness {
+                MIN_BRIGHTNESS
+            } else {
+                0.0
+            },
+            1.0,
+        );
         let value = *value;
         if let Some(fr) = self.frame.as_mut() {
-            fr.canvas.fill_rect(track.x, track.y, track.w, track.h, t.pal.card);
+            fr.canvas
+                .fill_rect(track.x, track.y, track.w, track.h, t.pal.card);
             widgets::slider(&mut fr.canvas, t, track.x, track.y, track.w, value);
         }
         self.layer = None;
@@ -6983,18 +9030,32 @@ impl App {
     fn paint_knob(&mut self, t: &Theme, f: &Fonts, which: Confirm, track: Rect) {
         let (label, danger) = pages::confirm_label(which, &self.state);
         if let Some(fr) = self.frame.as_mut() {
-            fr.canvas.fill_rect(track.x, track.y, track.w, track.h, t.pal.bg);
-            widgets::confirm(&mut fr.canvas, t, f, track.y, label, danger, self.state.confirm);
+            fr.canvas
+                .fill_rect(track.x, track.y, track.w, track.h, t.pal.bg);
+            widgets::confirm(
+                &mut fr.canvas,
+                t,
+                f,
+                track.y,
+                label,
+                danger,
+                self.state.confirm,
+            );
         }
         self.layer = None;
     }
 
     /// Add the dot under the finger to the pattern being drawn.
     fn trace(&mut self, t: &Theme, x: f32, y: f32) {
-        let Some((cx, cy, span)) = self.frame.as_ref().and_then(|fr| fr.pattern) else { return };
+        let Some((cx, cy, span)) = self.frame.as_ref().and_then(|fr| fr.pattern) else {
+            return;
+        };
         let reach = t.m.dp(widgets::PATTERN_REACH_DP);
         let dots = widgets::pattern_dots(cx, cy, span);
-        if let Some(i) = dots.iter().position(|&(dx, dy)| (dx - x).hypot(dy - y) < reach) {
+        if let Some(i) = dots
+            .iter()
+            .position(|&(dx, dy)| (dx - x).hypot(dy - y) < reach)
+        {
             self.join(t, i);
         }
     }
@@ -7011,8 +9072,16 @@ impl App {
             let (row, col) = ((last / 3) as i32, (last % 3) as i32);
             let (rows, cols) = ((i / 3) as i32 - row, (i % 3) as i32 - col);
             // Two rows or columns away, and not a knight's move.
-            let row = if rows.abs() == 2 && cols.abs() != 1 { row + rows.signum() } else { row };
-            let col = if cols.abs() == 2 && rows.abs() != 1 { col + cols.signum() } else { col };
+            let row = if rows.abs() == 2 && cols.abs() != 1 {
+                row + rows.signum()
+            } else {
+                row
+            };
+            let col = if cols.abs() == 2 && rows.abs() != 1 {
+                col + cols.signum()
+            } else {
+                col
+            };
             let over = (row * 3 + col) as usize;
             if !drawn.contains(&over) {
                 drawn.push(over);
@@ -7023,10 +9092,15 @@ impl App {
     }
 
     fn repaint_pattern(&mut self, t: &Theme) {
-        let Some(fr) = self.frame.as_mut() else { return };
-        let Some((cx, cy, span)) = fr.pattern else { return };
+        let Some(fr) = self.frame.as_mut() else {
+            return;
+        };
+        let Some((cx, cy, span)) = fr.pattern else {
+            return;
+        };
         let r = span / 2.0 + t.m.dp(16.0);
-        fr.canvas.fill_rect(cx - r, cy - r, r * 2.0, r * 2.0, t.pal.bg);
+        fr.canvas
+            .fill_rect(cx - r, cy - r, r * 2.0, r * 2.0, t.pal.bg);
         widgets::pattern_lock(&mut fr.canvas, t, cx, cy, span, &self.state.pattern);
         self.layer = None;
         self.dirty = true;
@@ -7057,7 +9131,10 @@ mod tests {
             model: "Xiaomi 13 Ultra".into(),
             codename: "ishtar".into(),
             soc: None,
-            cpu: Cpu { cores: 8, max_khz: Some(3_187_200) },
+            cpu: Cpu {
+                cores: 8,
+                max_khz: Some(3_187_200),
+            },
             ram_kib: 15_556_972,
             panel: Some((W, H)),
             screen: Some(6.73),
@@ -7066,11 +9143,17 @@ mod tests {
             locale: None,
             security_patch: None,
             kernel: "5.15.178".into(),
-            storage: Storage { total: 496_550_785_024, free: None },
+            storage: Storage {
+                total: 496_550_785_024,
+                free: None,
+            },
             battery: None,
             slot: None,
             snapshot: SnapshotState::None,
-            boot: Boot { unlocked: None, verified: None },
+            boot: Boot {
+                unlocked: None,
+                verified: None,
+            },
         }
     }
 
@@ -7111,18 +9194,43 @@ mod tests {
         ];
         for t in [Theme::light(W, H, PPD), Theme::dark(W, H, PPD).pressed()] {
             for screen in screens {
-                let cx = |band| Ctx { t: &t, f: &f, info: &i, state: &state, term: None, band };
+                let cx = |band| Ctx {
+                    t: &t,
+                    f: &f,
+                    info: &i,
+                    state: &state,
+                    term: None,
+                    band,
+                };
                 let whole = pages::render(screen, &cx(None)).canvas;
                 let row = whole.w as usize * 4;
-                let differs = |c: &Canvas| c.data.chunks(row).zip(whole.data.chunks(row)).position(|(a, b)| a != b);
+                let differs = |c: &Canvas| {
+                    c.data
+                        .chunks(row)
+                        .zip(whole.data.chunks(row))
+                        .position(|(a, b)| a != b)
+                };
                 // Cuts through cards, text and icons, and a band one row
                 // tall, the bands joined one under another.
-                let mut cuts: Vec<u32> = [0, 1, 377, 1201, 3000, 3001, 4444, u32::MAX].map(|k| k.min(whole.h)).to_vec();
+                let mut cuts: Vec<u32> = [0, 1, 377, 1201, 3000, 3001, 4444, u32::MAX]
+                    .map(|k| k.min(whole.h))
+                    .to_vec();
                 cuts.dedup();
                 let mut joined: Option<Canvas> = None;
                 for rows in cuts.windows(2) {
-                    let part = pages::render(screen, &cx(Some(Band { rows: (rows[0], rows[1]), cols: (0, W) }))).canvas;
-                    assert_eq!((part.h, part.held()), (whole.h, rows[0]..rows[1]), "{screen:?}: a band is laid out as the whole");
+                    let part = pages::render(
+                        screen,
+                        &cx(Some(Band {
+                            rows: (rows[0], rows[1]),
+                            cols: (0, W),
+                        })),
+                    )
+                    .canvas;
+                    assert_eq!(
+                        (part.h, part.held()),
+                        (whole.h, rows[0]..rows[1]),
+                        "{screen:?}: a band is laid out as the whole"
+                    );
                     match &mut joined {
                         Some(c) => c.join(&part),
                         None => joined = Some(part),
@@ -7130,17 +9238,36 @@ mod tests {
                 }
                 let joined = joined.expect("a page has rows");
                 assert!(joined.whole(), "{screen:?}: the bands make the whole");
-                assert_eq!(differs(&joined), None, "{screen:?}: the first row drawn otherwise in bands");
+                assert_eq!(
+                    differs(&joined),
+                    None,
+                    "{screen:?}: the first row drawn otherwise in bands"
+                );
                 // The page drawn across a part at a time, as one sliding
                 // in, into a canvas holding all of it: cuts through cards
                 // and text, and a part one column wide.
                 let mut across = Canvas::unfilled(W, whole.h, 0..whole.h);
                 for cols in [0, 1, 333, 720, W - 1, W].windows(2) {
-                    let part = pages::render(screen, &cx(Some(Band { rows: (0, whole.h), cols: (cols[0], cols[1]) }))).canvas;
-                    assert_eq!(part.cols(), cols[0]..cols[1], "{screen:?}: a part across holds its columns");
+                    let part = pages::render(
+                        screen,
+                        &cx(Some(Band {
+                            rows: (0, whole.h),
+                            cols: (cols[0], cols[1]),
+                        })),
+                    )
+                    .canvas;
+                    assert_eq!(
+                        part.cols(),
+                        cols[0]..cols[1],
+                        "{screen:?}: a part across holds its columns"
+                    );
                     across.replace(&part);
                 }
-                assert_eq!(differs(&across), None, "{screen:?}: the first row drawn otherwise across");
+                assert_eq!(
+                    differs(&across),
+                    None,
+                    "{screen:?}: the first row drawn otherwise across"
+                );
             }
         }
     }
@@ -7150,16 +9277,37 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
         app.compose(&mut Canvas::new(W, H), &f, &i, "12:00", 0);
-        assert_eq!(app.frame.as_ref().unwrap().canvas.held(), 0..H, "the page shown has the rows on screen drawn");
+        assert_eq!(
+            app.frame.as_ref().unwrap().canvas.held(),
+            0..H,
+            "the page shown has the rows on screen drawn"
+        );
         let mut bands = 1;
         while app.draw_ahead(&f, &i) {
             bands += 1;
         }
         let t = app.theme();
-        let whole = pages::render(Screen::Settings, &Ctx { t: &t, f: &f, info: &i, state: &app.state, term: None, band: None }).canvas;
+        let whole = pages::render(
+            Screen::Settings,
+            &Ctx {
+                t: &t,
+                f: &f,
+                info: &i,
+                state: &app.state,
+                term: None,
+                band: None,
+            },
+        )
+        .canvas;
         let page = &app.frame.as_ref().unwrap().canvas;
-        assert!(whole.h > H + H / 4, "a page well over a screen long, drawn in {bands} more bands");
-        assert!(page.whole() && page.data == whole.data, "the page drawn a band at a time is the page drawn whole");
+        assert!(
+            whole.h > H + H / 4,
+            "a page well over a screen long, drawn in {bands} more bands"
+        );
+        assert!(
+            page.whole() && page.data == whole.data,
+            "the page drawn a band at a time is the page drawn whole"
+        );
     }
 
     #[test]
@@ -7170,19 +9318,46 @@ mod tests {
         app.compose(&mut out, &f, &i, "12:00", 0);
         let anew = |app: &App| {
             let t = app.theme();
-            pages::render(Screen::Search, &Ctx { t: &t, f: &f, info: &i, state: &app.state, term: None, band: None })
+            pages::render(
+                Screen::Search,
+                &Ctx {
+                    t: &t,
+                    f: &f,
+                    info: &i,
+                    state: &app.state,
+                    term: None,
+                    band: None,
+                },
+            )
         };
-        for cap in [Cap::Char('b'), Cap::Char('f'), Cap::Space, Cap::Backspace, Cap::Shift, Cap::Char('q')] {
+        for cap in [
+            Cap::Char('b'),
+            Cap::Char('f'),
+            Cap::Space,
+            Cap::Backspace,
+            Cap::Shift,
+            Cap::Char('q'),
+        ] {
             let (x, y) = spot(&mut app, &f, &i, Action::Type(cap));
             app.touch(Touch::Down(x, y), &f, 0);
-            assert!(app.frame.is_some() && !app.stale.is_empty() || cap == Cap::Shift, "{cap:?}: the key held is drawn again on its own");
+            assert!(
+                app.frame.is_some() && !app.stale.is_empty() || cap == Cap::Shift,
+                "{cap:?}: the key held is drawn again on its own"
+            );
             app.compose(&mut out, &f, &i, "12:00", 0);
-            assert!(app.frame.as_ref().unwrap().canvas.data == anew(&app).canvas.data, "{cap:?} held down");
+            assert!(
+                app.frame.as_ref().unwrap().canvas.data == anew(&app).canvas.data,
+                "{cap:?} held down"
+            );
             app.touch(Touch::Up, &f, 0);
             app.compose(&mut out, &f, &i, "12:00", 0);
             let (drawn, fresh) = (app.frame.as_ref().unwrap(), anew(&app));
             assert!(drawn.canvas.data == fresh.canvas.data, "{cap:?} typed");
-            assert_eq!(drawn.hits.iter().map(|h| h.action).collect::<Vec<_>>(), fresh.hits.iter().map(|h| h.action).collect::<Vec<_>>(), "{cap:?} typed");
+            assert_eq!(
+                drawn.hits.iter().map(|h| h.action).collect::<Vec<_>>(),
+                fresh.hits.iter().map(|h| h.action).collect::<Vec<_>>(),
+                "{cap:?} typed"
+            );
         }
         assert_eq!(app.state.search, "bfQ");
     }
@@ -7211,7 +9386,9 @@ mod tests {
         }
         let rows = fr.rows.as_ref().expect("control on the page");
         let answer = rows.action.expect("control on the page");
-        let k = (0..rows.count()).find(|&k| answer(k) == action).expect("control on the page");
+        let k = (0..rows.count())
+            .find(|&k| answer(k) == action)
+            .expect("control on the page");
         let (x, y) = rows.rect(k, fr.canvas.w as f32).centre();
         (x, y - scroll)
     }
@@ -7244,7 +9421,6 @@ mod tests {
         fx
     }
 
-
     #[test]
     fn rows_open_pages_and_back_returns() {
         let (f, i) = (fonts(), info());
@@ -7254,7 +9430,11 @@ mod tests {
         tap_back(&mut app, &f, &i, 0);
         assert_eq!(app.screen(), Screen::Home);
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::Home, "back on the first page stays there");
+        assert_eq!(
+            app.screen(),
+            Screen::Home,
+            "back on the first page stays there"
+        );
     }
 
     #[test]
@@ -7284,7 +9464,11 @@ mod tests {
     fn home_opens_the_mount_page() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Mount)), vec![Effect::ReadMounts], "the page shows the partitions as they are now");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Mount)),
+            vec![Effect::ReadMounts],
+            "the page shows the partitions as they are now"
+        );
         assert_eq!(app.screen(), Screen::Mount);
     }
 
@@ -7292,7 +9476,18 @@ mod tests {
     /// unless it discharges.
     fn battery_at(level: u8, charge: Charge) -> skyward_info::Battery {
         let plugged = charge != Charge::Discharging;
-        skyward_info::Battery { level, charge, temp: Some(352), health: None, cycles: None, design: None, full: None, voltage: None, quick: false, plugged }
+        skyward_info::Battery {
+            level,
+            charge,
+            temp: Some(352),
+            health: None,
+            cycles: None,
+            design: None,
+            full: None,
+            voltage: None,
+            quick: false,
+            plugged,
+        }
     }
 
     #[test]
@@ -7302,50 +9497,146 @@ mod tests {
         // taller with a notice in it.
         let under = |i: &DeviceInfo| {
             let mut app = App::new(Screen::Home, W, H, PPD);
-            app.frame(&f, i).hits.iter().find(|h| h.action == Action::Open(Screen::Install)).expect("an install row").rect.y
+            app.frame(&f, i)
+                .hits
+                .iter()
+                .find(|h| h.action == Action::Open(Screen::Install))
+                .expect("an install row")
+                .rect
+                .y
         };
         let plain = under(&info());
-        assert!(under(&DeviceInfo { battery: Some(battery_at(19, Charge::Discharging)), ..info() }) > plain, "short of 20% unplugged");
-        assert_eq!(under(&DeviceInfo { battery: Some(battery_at(20, Charge::Discharging)), ..info() }), plain);
-        assert!(under(&DeviceInfo { battery: Some(battery_at(14, Charge::Charging)), ..info() }) > plain, "short of 15% charging");
-        assert_eq!(under(&DeviceInfo { battery: Some(battery_at(16, Charge::Charging)), ..info() }), plain);
+        assert!(
+            under(&DeviceInfo {
+                battery: Some(battery_at(19, Charge::Discharging)),
+                ..info()
+            }) > plain,
+            "short of 20% unplugged"
+        );
+        assert_eq!(
+            under(&DeviceInfo {
+                battery: Some(battery_at(20, Charge::Discharging)),
+                ..info()
+            }),
+            plain
+        );
+        assert!(
+            under(&DeviceInfo {
+                battery: Some(battery_at(14, Charge::Charging)),
+                ..info()
+            }) > plain,
+            "short of 15% charging"
+        );
+        assert_eq!(
+            under(&DeviceInfo {
+                battery: Some(battery_at(16, Charge::Charging)),
+                ..info()
+            }),
+            plain
+        );
         let (title, note) = fmt::battery_low(Lang::Hans, 14, true);
-        assert_eq!((title.as_str(), note.as_str()), ("电量仅剩 14%", "充电至 15% 以上才能安装"));
+        assert_eq!(
+            (title.as_str(), note.as_str()),
+            ("电量仅剩 14%", "充电至 15% 以上才能安装")
+        );
     }
 
     #[test]
     fn the_home_card_tells_of_a_restart_into_the_other_slot_and_opens_the_slot_page() {
         let f = fonts();
-        let i = DeviceInfo { slot: Some(Slot::B), ..info() };
+        let i = DeviceInfo {
+            slot: Some(Slot::B),
+            ..info()
+        };
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let slots = |active| BootSlots { active, bootable: [true, true], successful: [true, true] };
+        let slots = |active| BootSlots {
+            active,
+            bootable: [true, true],
+            successful: [true, true],
+        };
         app.set_boot_slots(Ok(slots(Slot::B)));
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::Open(Screen::Slot)), "the slot it runs from starts next");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| h.action != Action::Open(Screen::Slot)),
+            "the slot it runs from starts next"
+        );
         app.set_boot_slots(Ok(slots(Slot::A)));
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Slot)), vec![Effect::ReadSlots]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Slot)),
+            vec![Effect::ReadSlots]
+        );
         assert_eq!(app.screen(), Screen::Slot);
-        assert_eq!(fmt::next_boot(Lang::Hans, Slot::A, Slot::B), ("重启后从 A 槽位启动".into(), "当前运行的是 B 槽位".into()));
+        assert_eq!(
+            fmt::next_boot(Lang::Hans, Slot::A, Slot::B),
+            ("重启后从 A 槽位启动".into(), "当前运行的是 B 槽位".into())
+        );
     }
 
     #[test]
     fn the_status_bar_carries_the_slot_the_data_partitions_lock_and_the_temperature() {
-        let i = DeviceInfo { slot: Some(Slot::B), battery: Some(battery_at(64, Charge::Charging)), ..info() };
+        let i = DeviceInfo {
+            slot: Some(Slot::B),
+            battery: Some(battery_at(64, Charge::Charging)),
+            ..info()
+        };
         let mut app = App::new(Screen::Home, W, H, PPD);
         let bar = app.bar("12:00", &i);
-        assert_eq!((bar.slot, bar.temp, bar.battery), (Some("B"), Some(352), Some((64, Some(Bolt::Charging)))), "the temperature to the tenth");
-        let quick = DeviceInfo { battery: Some(skyward_info::Battery { quick: true, ..battery_at(64, Charge::Charging) }), ..info() };
-        assert_eq!(app.bar("12:00", &quick).battery, Some((64, Some(Bolt::Quick))), "a quick charger draws the stock bar's quick bolt");
-        let out = DeviceInfo { battery: Some(battery_at(64, Charge::Discharging)), ..info() };
-        assert_eq!(app.bar("12:00", &out).battery, Some((64, None)), "no bolt with the cable out");
+        assert_eq!(
+            (bar.slot, bar.temp, bar.battery),
+            (Some("B"), Some(352), Some((64, Some(Bolt::Charging)))),
+            "the temperature to the tenth"
+        );
+        let quick = DeviceInfo {
+            battery: Some(skyward_info::Battery {
+                quick: true,
+                ..battery_at(64, Charge::Charging)
+            }),
+            ..info()
+        };
+        assert_eq!(
+            app.bar("12:00", &quick).battery,
+            Some((64, Some(Bolt::Quick))),
+            "a quick charger draws the stock bar's quick bolt"
+        );
+        let out = DeviceInfo {
+            battery: Some(battery_at(64, Charge::Discharging)),
+            ..info()
+        };
+        assert_eq!(
+            app.bar("12:00", &out).battery,
+            Some((64, None)),
+            "no bolt with the cable out"
+        );
         let lock = |app: &mut App, data: Data| {
             app.state.data = data;
             app.bar("12:00", &i).data
         };
-        assert_eq!(lock(&mut app, Data::Locked { user: 0, keys: Keys::Digits, checking: false }), Some(false), "shut while its files are out of reach");
+        assert_eq!(
+            lock(
+                &mut app,
+                Data::Locked {
+                    user: 0,
+                    keys: Keys::Digits,
+                    checking: false
+                }
+            ),
+            Some(false),
+            "shut while its files are out of reach"
+        );
         assert_eq!(lock(&mut app, Data::Open), Some(true));
-        assert_eq!(lock(&mut app, Data::Erased), None, "nothing to open once wiped");
+        assert_eq!(
+            lock(&mut app, Data::Erased),
+            None,
+            "nothing to open once wiped"
+        );
         let none = app.bar("12:00", &info());
-        assert_eq!((none.slot, none.temp), (None, None), "a phone without slots or a fuel gauge");
+        assert_eq!(
+            (none.slot, none.temp),
+            (None, None),
+            "a phone without slots or a fuel gauge"
+        );
     }
 
     /// A screen the home page's rows fit on with a little room to spare.
@@ -7357,14 +9648,36 @@ mod tests {
         let plain = info();
         let mut app = App::new(Screen::Home, W, SNUG, PPD);
         let fr = app.frame(&f, &plain);
-        let reboot = fr.hits.iter().find(|h| h.action == Action::Open(Screen::Reboot)).expect("a reboot row").rect;
-        assert!(reboot.y + reboot.h <= SNUG as f32, "without the notice the rows fit the screen");
-        let i = DeviceInfo { snapshot: SnapshotState::Snapshotted, ..info() };
+        let reboot = fr
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Open(Screen::Reboot))
+            .expect("a reboot row")
+            .rect;
+        assert!(
+            reboot.y + reboot.h <= SNUG as f32,
+            "without the notice the rows fit the screen"
+        );
+        let i = DeviceInfo {
+            snapshot: SnapshotState::Snapshotted,
+            ..info()
+        };
         let mut app = App::new(Screen::Home, W, SNUG, PPD);
         let fr = app.frame(&f, &i);
-        let reboot = fr.hits.iter().find(|h| h.action == Action::Open(Screen::Reboot)).expect("a reboot row").rect;
-        assert!(reboot.y + reboot.h > SNUG as f32, "the notice pushes the last row below the screen");
-        assert!(reboot.y + reboot.h <= fr.canvas.h as f32, "the page is drawn down to it");
+        let reboot = fr
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Open(Screen::Reboot))
+            .expect("a reboot row")
+            .rect;
+        assert!(
+            reboot.y + reboot.h > SNUG as f32,
+            "the notice pushes the last row below the screen"
+        );
+        assert!(
+            reboot.y + reboot.h <= fr.canvas.h as f32,
+            "the page is drawn down to it"
+        );
         app.touch(Touch::Down(700.0, 2800.0), &f, 0);
         app.touch(Touch::Move(700.0, 2000.0), &f, 0);
         app.touch(Touch::Move(700.0, 1200.0), &f, 0);
@@ -7388,17 +9701,31 @@ mod tests {
             app.caret_shown
         };
         assert!(shows(&mut app, 1000), "it comes up whole on the page");
-        assert_eq!(app.deadline(1200), Some(1500), "the loop wakes when it turns");
+        assert_eq!(
+            app.deadline(1200),
+            Some(1500),
+            "the loop wakes when it turns"
+        );
         assert!(!shows(&mut app, 1500), "half a second on it hides");
         assert!(shows(&mut app, 2000));
         assert!(!shows(&mut app, 2600));
         tap(&mut app, &f, &i, Action::Type(Cap::Char('b')));
-        assert!(shows(&mut app, 2700), "an edit brings it back whole at once");
+        assert!(
+            shows(&mut app, 2700),
+            "an edit brings it back whole at once"
+        );
         assert!(!shows(&mut app, 3200));
         tap(&mut app, &f, &i, Action::CloseSearch);
-        assert_eq!(app.screen(), Screen::Home, "the round button leaves the search");
+        assert_eq!(
+            app.screen(),
+            Screen::Home,
+            "the round button leaves the search"
+        );
         assert!(!shows(&mut app, 3300), "no cursor off the page");
-        assert!(app.deadline(3300).is_none_or(|d| d > 10_000), "nor a wake for it, only for the screen going off");
+        assert!(
+            app.deadline(3300).is_none_or(|d| d > 10_000),
+            "nor a wake for it, only for the screen going off"
+        );
     }
 
     #[test]
@@ -7412,7 +9739,9 @@ mod tests {
         // the placeholder: the first row in the field's grey.
         let x = m.dp(300.0) as u32;
         let top = |screen: &Canvas| {
-            (m.dp(40.0) as u32..H).find(|&y| screen.data[((y * W + x) * 4) as usize] == t.pal.search.r).map(|y| y as f32)
+            (m.dp(40.0) as u32..H)
+                .find(|&y| screen.data[((y * W + x) * 4) as usize] == t.pal.search.r)
+                .map(|y| y as f32)
         };
         let grey = |screen: &Canvas, y: f32| screen.data[((y as u32 * W + W / 2) * 4) as usize];
         let (home, field) = (m.content_top, widgets::search_layout(&t).0.y);
@@ -7428,10 +9757,20 @@ mod tests {
         let along = crate::motion::settle(67, MORPH_PERIOD);
         let expected = home + (field - home) * along;
         let at = top(&screen).expect("the bar is on screen");
-        assert!((at - expected).abs() <= 2.0, "up {along} of the way after 67 ms: at {at}, not {expected}");
-        assert_eq!(grey(&screen, card), t.pal.bg.r, "the home page's cards go at once");
+        assert!(
+            (at - expected).abs() <= 2.0,
+            "up {along} of the way after 67 ms: at {at}, not {expected}"
+        );
+        assert_eq!(
+            grey(&screen, card),
+            t.pal.bg.r,
+            "the home page's cards go at once"
+        );
         app.compose(&mut screen, &f, &i, "12:00", 2500);
-        assert!(app.morph.is_none(), "settled, the search page shows as itself");
+        assert!(
+            app.morph.is_none(),
+            "settled, the search page shows as itself"
+        );
         assert_eq!(top(&screen), Some(field.ceil()));
 
         tap_at(&mut app, &f, &i, Action::CloseSearch, 3000);
@@ -7439,8 +9778,15 @@ mod tests {
         app.compose(&mut screen, &f, &i, "12:00", 3067);
         let expected = field + (home - field) * along;
         let at = top(&screen).expect("the bar is on screen");
-        assert!((at - expected).abs() <= 2.0, "down {along} of the way after 67 ms: at {at}, not {expected}");
-        assert_eq!(grey(&screen, card + (at - home)), t.pal.card.r, "the cards come down under the bar");
+        assert!(
+            (at - expected).abs() <= 2.0,
+            "down {along} of the way after 67 ms: at {at}, not {expected}"
+        );
+        assert_eq!(
+            grey(&screen, card + (at - home)),
+            t.pal.card.r,
+            "the cards come down under the bar"
+        );
         app.compose(&mut screen, &f, &i, "12:00", 4500);
         assert!(app.morph.is_none());
         assert_eq!(top(&screen), Some(home.ceil()));
@@ -7456,42 +9802,77 @@ mod tests {
         let t = Theme::light(W, SHORT, PPD);
         let m = t.m;
         let mut app = App::new(Screen::Home, W, SHORT, PPD);
-        let fold = app.frame(&f, &i).fold.expect("the home page's search bar folds");
-        assert!((fold.span - (m.search_h + m.after_search)).abs() < 1e-3, "the bar and the gap under it");
+        let fold = app
+            .frame(&f, &i)
+            .fold
+            .expect("the home page's search bar folds");
+        assert!(
+            (fold.span - (m.search_h + m.after_search)).abs() < 1e-3,
+            "the bar and the gap under it"
+        );
         let mut screen = Canvas::new(W, SHORT);
         // Down a column through the bar clear of its words: the rows in the
         // bar's grey, and the first row of the device card's white.
         let x = m.dp(300.0) as u32;
         let px = |screen: &Canvas, y: u32| screen.data[((y * W + x) * 4) as usize];
-        let bar = |screen: &Canvas| (0..SHORT).filter(|&y| px(screen, y) == t.pal.search.r).collect::<Vec<_>>();
-        let card = |screen: &Canvas| (fold.bar.y as u32..SHORT).find(|&y| px(screen, y) == t.pal.card.r).expect("the card shows");
+        let bar = |screen: &Canvas| {
+            (0..SHORT)
+                .filter(|&y| px(screen, y) == t.pal.search.r)
+                .collect::<Vec<_>>()
+        };
+        let card = |screen: &Canvas| {
+            (fold.bar.y as u32..SHORT)
+                .find(|&y| px(screen, y) == t.pal.card.r)
+                .expect("the card shows")
+        };
         // The large title's band.
         let (top, bottom) = ((m.title_top - m.dp(14.0)) as u32, fold.bar.y as u32);
         let title = |screen: &Canvas| screen.crop(0, top, W, bottom - top).data.clone();
 
         app.compose(&mut screen, &f, &i, "12:00", 0);
         let (whole, still, first) = (bar(&screen), title(&screen), card(&screen));
-        assert_eq!((whole[0], *whole.last().expect("the bar shows")), (fold.bar.y.ceil() as u32, (fold.bar.y + fold.bar.h).floor() as u32 - 1));
+        assert_eq!(
+            (whole[0], *whole.last().expect("the bar shows")),
+            (
+                fold.bar.y.ceil() as u32,
+                (fold.bar.y + fold.bar.h).floor() as u32 - 1
+            )
+        );
 
         let half = (fold.bar.h / 2.0).round();
         scroll_to(&mut app, &f, half, 1000);
         app.compose(&mut screen, &f, &i, "12:00", 1800);
         let rows = bar(&screen);
         assert_eq!(rows[0], whole[0], "its top stays");
-        assert_eq!(*rows.last().expect("half the bar shows"), (fold.bar.y + fold.bar.h - half).floor() as u32 - 1, "its foot rises with the page");
-        assert_eq!(card(&screen), first - half as u32, "the content follows the finger");
+        assert_eq!(
+            *rows.last().expect("half the bar shows"),
+            (fold.bar.y + fold.bar.h - half).floor() as u32 - 1,
+            "its foot rises with the page"
+        );
+        assert_eq!(
+            card(&screen),
+            first - half as u32,
+            "the content follows the finger"
+        );
         assert!(title(&screen) == still, "the title holds still");
 
         scroll_to(&mut app, &f, fold.span, 3000);
         app.compose(&mut screen, &f, &i, "12:00", 3800);
         assert!(bar(&screen).is_empty(), "folded away");
-        assert_eq!(card(&screen), first - fold.span.round() as u32, "the gap under it closed");
+        assert_eq!(
+            card(&screen),
+            first - fold.span.round() as u32,
+            "the gap under it closed"
+        );
         assert!(title(&screen) == still, "the title holds still till then");
 
         scroll_to(&mut app, &f, fold.span + m.dp(10.0), 5000);
         app.compose(&mut screen, &f, &i, "12:00", 5800);
         assert!(title(&screen) != still, "then it goes up with the page");
-        assert!(!app.title.on, "the bar's title waits for the large one to fade");
+        assert!(
+            !app.title.on,
+            "the bar's title waits for the large one to fade"
+        );
         scroll_to(&mut app, &f, fold.span + m.dp(TITLE_FADE_DP) + 2.0, 7000);
         assert!(app.title.on);
     }
@@ -7500,7 +9881,11 @@ mod tests {
     fn a_home_page_let_go_with_its_search_bar_part_folded_folds_it_whole_or_not_at_all() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, SHORT, PPD);
-        let span = app.frame(&f, &i).fold.expect("the home page's search bar folds").span;
+        let span = app
+            .frame(&f, &i)
+            .fold
+            .expect("the home page's search bar folds")
+            .span;
         let settle = |app: &mut App, from: u64| {
             for ms in (from..from + 2000).step_by(8) {
                 app.tick(ms);
@@ -7512,7 +9897,11 @@ mod tests {
         scroll_to(&mut app, &f, span * (FOLD_SETTLE + 0.1), 3000);
         assert_eq!(settle(&mut app, 3800), span, "past it it folds away");
         scroll_to(&mut app, &f, span + 50.0, 6000);
-        assert_eq!(settle(&mut app, 6800), span + 50.0, "a page scrolled past the fold stays");
+        assert_eq!(
+            settle(&mut app, 6800),
+            span + 50.0,
+            "a page scrolled past the fold stays"
+        );
 
         // A light flick down, a thousand pixels a second, let go past the
         // fold, that glides to rest with the bar part folded.
@@ -7524,31 +9913,54 @@ mod tests {
         app.touch(Touch::Up, &f, 9056);
         let glide = app.fling.expect("it glides");
         let (rest, _) = glide.at(u64::MAX);
-        assert!(rest > 0.0 && rest < span, "this one comes to rest in the fold: {rest}");
+        assert!(
+            rest > 0.0 && rest < span,
+            "this one comes to rest in the fold: {rest}"
+        );
         let folded = if rest < span * FOLD_SETTLE { 0.0 } else { span };
-        assert_eq!(settle(&mut app, 9056), folded, "it settles there the same way");
+        assert_eq!(
+            settle(&mut app, 9056),
+            folded,
+            "it settles there the same way"
+        );
 
         // Let go in the fold while still moving, too slowly to glide out of
         // it: the bar settles at once from where it was let go.
         scroll_to(&mut app, &f, 0.0, 12_000);
         app.touch(Touch::Down(10.0, 1000.0), &f, 13_000);
         for k in 1..=5u64 {
-            app.touch(Touch::Move(10.0, 1000.0 - 30.0 * k as f32), &f, 13_000 + 8 * k);
+            app.touch(
+                Touch::Move(10.0, 1000.0 - 30.0 * k as f32),
+                &f,
+                13_000 + 8 * k,
+            );
         }
         for k in 1..=14u64 {
-            app.touch(Touch::Move(10.0, 850.0 + 2.0 * k as f32), &f, 13_040 + 8 * k);
+            app.touch(
+                Touch::Move(10.0, 850.0 + 2.0 * k as f32),
+                &f,
+                13_040 + 8 * k,
+            );
         }
         app.touch(Touch::Up, &f, 13_152);
         assert_eq!(app.top().1, 122.0);
         assert!(app.fling.is_none(), "no glide");
-        assert_eq!(app.seek.map(|(rest, _)| rest), Some(span), "it was let go past the mark");
+        assert_eq!(
+            app.seek.map(|(rest, _)| rest),
+            Some(span),
+            "it was let go past the mark"
+        );
         assert_eq!(settle(&mut app, 13_152), span);
 
         // A flick that carries the page out of the fold glides on.
         scroll_to(&mut app, &f, 0.0, 16_000);
         app.touch(Touch::Down(10.0, 1000.0), &f, 17_000);
         for k in 1..=4u64 {
-            app.touch(Touch::Move(10.0, 1000.0 - 30.0 * k as f32), &f, 17_000 + 8 * k);
+            app.touch(
+                Touch::Move(10.0, 1000.0 - 30.0 * k as f32),
+                &f,
+                17_000 + 8 * k,
+            );
         }
         app.touch(Touch::Up, &f, 17_032);
         let (end, _) = app.fling.expect("it glides").at(u64::MAX);
@@ -7559,7 +9971,10 @@ mod tests {
     fn a_search_bar_folded_away_answers_no_touch() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let fold = app.frame(&f, &i).fold.expect("the home page's search bar folds");
+        let fold = app
+            .frame(&f, &i)
+            .fold
+            .expect("the home page's search bar folds");
         scroll_to(&mut app, &f, fold.span, 0);
         app.tick(3000);
         // Where the page carried the bar's middle had the bar scrolled with
@@ -7575,13 +9990,24 @@ mod tests {
     fn the_keys_unfold_the_search_bar_to_light_it() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let span = app.frame(&f, &i).fold.expect("the home page's search bar folds").span;
+        let span = app
+            .frame(&f, &i)
+            .fold
+            .expect("the home page's search bar folds")
+            .span;
         scroll_to(&mut app, &f, span, 0);
         app.tick(3000);
         press(&mut app, Key::VolumeDown, 3000);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::About))), "a bar folded away is not in view");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::About))),
+            "a bar folded away is not in view"
+        );
         press(&mut app, Key::VolumeUp, 3000);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search)))
+        );
         for ms in (3000..5000).step_by(8) {
             app.tick(ms);
         }
@@ -7592,10 +10018,20 @@ mod tests {
 
     #[test]
     fn a_search_bar_pulled_down_past_the_top_comes_down_whole_with_its_title() {
-        let fold = Fold { bar: Rect::new(36.0, 503.0, 1128.0, 131.0), hint: "", span: 169.0 };
-        assert_eq!(fold.shown(-30.0), Some(Rect::new(36.0, 533.0, 1128.0, 131.0)));
+        let fold = Fold {
+            bar: Rect::new(36.0, 503.0, 1128.0, 131.0),
+            hint: "",
+            span: 169.0,
+        };
+        assert_eq!(
+            fold.shown(-30.0),
+            Some(Rect::new(36.0, 533.0, 1128.0, 131.0))
+        );
         assert_eq!(fold.lift(-30.0), -30.0);
-        assert_eq!(fold.shown(31.0), Some(Rect::new(36.0, 503.0, 1128.0, 100.0)));
+        assert_eq!(
+            fold.shown(31.0),
+            Some(Rect::new(36.0, 503.0, 1128.0, 100.0))
+        );
         assert_eq!(fold.shown(131.0), None);
         assert_eq!((fold.lift(150.0), fold.lift(200.0)), (0.0, 31.0));
     }
@@ -7607,8 +10043,16 @@ mod tests {
 
     /// The darkest grey of the screen within `r`.
     fn darkest(c: &Canvas, r: Rect) -> u8 {
-        let (x0, y0, x1, y1) = (r.x as u32, r.y as u32, (r.x + r.w) as u32, (r.y + r.h) as u32);
-        (y0..y1).flat_map(|y| (x0..x1).map(move |x| c.data[((y * c.w + x) * 4) as usize])).min().expect("a part of the screen")
+        let (x0, y0, x1, y1) = (
+            r.x as u32,
+            r.y as u32,
+            (r.x + r.w) as u32,
+            (r.y + r.h) as u32,
+        );
+        (y0..y1)
+            .flat_map(|y| (x0..x1).map(move |x| c.data[((y * c.w + x) * 4) as usize]))
+            .min()
+            .expect("a part of the screen")
     }
 
     /// A copy of the screen.
@@ -7620,7 +10064,12 @@ mod tests {
     /// where the page in front stands, how far left the page behind is, and
     /// how much of its light the page behind keeps, in 256ths.
     fn slid(back: bool, ms: u64) -> (u32, u32, u32) {
-        let (x, _) = if back { Spring::new(0, -1000.0, 0.0, BACK_PERIOD) } else { Spring::new(0, 1000.0, -OPEN_SPEED * 1000.0, OPEN_PERIOD) }.at(ms);
+        let (x, _) = if back {
+            Spring::new(0, -1000.0, 0.0, BACK_PERIOD)
+        } else {
+            Spring::new(0, 1000.0, -OPEN_SPEED * 1000.0, OPEN_PERIOD)
+        }
+        .at(ms);
         let along = if back { 1.0 + x / 1000.0 } else { x / 1000.0 };
         let front = (along * W as f32).round() as u32;
         let behind = (BEHIND_SHIFT * W as f32 * (1.0 - along)).round() as u32;
@@ -7631,12 +10080,25 @@ mod tests {
     /// Check row `y` of `mid`: the page `ahead` from `front` on, and left of
     /// it the page `under`, `behind` pixels left of rest and keeping `keep`
     /// 256ths of its light.
-    fn check_slide(mid: &Canvas, ahead: &Canvas, under: &Canvas, y: u32, (front, behind, keep): (u32, u32, u32)) {
+    fn check_slide(
+        mid: &Canvas,
+        ahead: &Canvas,
+        under: &Canvas,
+        y: u32,
+        (front, behind, keep): (u32, u32, u32),
+    ) {
         for x in 0..W {
             let at = |c: &Canvas, x: u32| c.data[((y * W + x) * 4) as usize] as u32;
-            let want = if x >= front { at(ahead, x - front) } else { (at(under, x + behind) * keep) >> 8 };
+            let want = if x >= front {
+                at(ahead, x - front)
+            } else {
+                (at(under, x + behind) * keep) >> 8
+            };
             let got = at(mid, x);
-            assert!(got.abs_diff(want) <= 1, "column {x} of row {y}: {got}, not {want} (front {front}, behind {behind})");
+            assert!(
+                got.abs_diff(want) <= 1,
+                "column {x} of row {y}: {got}, not {want} (front {front}, behind {behind})"
+            );
         }
     }
 
@@ -7665,7 +10127,10 @@ mod tests {
             check_slide(&mid, &mount, &home, y, slid(false, 50));
         }
         let (front, _, _) = slid(false, 50);
-        assert!((front as f32 / W as f32 - 0.728).abs() < 0.01, "about three quarters of the way in after 50 ms: {front}");
+        assert!(
+            (front as f32 / W as f32 - 0.728).abs() < 0.01,
+            "about three quarters of the way in after 50 ms: {front}"
+        );
 
         tap_back(&mut app, &f, &i, 4000);
         assert_eq!(app.screen(), Screen::Home);
@@ -7677,7 +10142,13 @@ mod tests {
         assert!(app.turn.is_none());
         let home = shot(&c);
         for y in [H / 3, H / 2, H - 200] {
-            check_slide(&first, &mount, &home, y, (0, W / 4, ((1.0 - BEHIND_DIM) * 256.0).round() as u32));
+            check_slide(
+                &first,
+                &mount,
+                &home,
+                y,
+                (0, W / 4, ((1.0 - BEHIND_DIM) * 256.0).round() as u32),
+            );
             check_slide(&mid, &mount, &home, y, slid(true, 60));
         }
     }
@@ -7699,9 +10170,21 @@ mod tests {
         let (front, behind, keep) = slid(false, 50);
         let at = |c: &Canvas, x: u32, y: u32| c.data[((y * W + x) * 4) as usize] as u32;
         let y = H - 3;
-        assert_eq!(at(&mid, front + 5, y), (at(&home, front + 5 + behind, y) * keep) >> 8, "the corner's tip shows the page behind");
-        assert_eq!(at(&mid, front + 140, y), at(&mount, 140, y), "past the corner's curve the page in front is whole");
-        assert_eq!(at(&mid, front + 5, H / 2), at(&mount, 5, H / 2), "between the corners its edge is straight");
+        assert_eq!(
+            at(&mid, front + 5, y),
+            (at(&home, front + 5 + behind, y) * keep) >> 8,
+            "the corner's tip shows the page behind"
+        );
+        assert_eq!(
+            at(&mid, front + 140, y),
+            at(&mount, 140, y),
+            "past the corner's curve the page in front is whole"
+        );
+        assert_eq!(
+            at(&mid, front + 5, H / 2),
+            at(&mount, 5, H / 2),
+            "between the corners its edge is straight"
+        );
     }
 
     #[test]
@@ -7730,7 +10213,13 @@ mod tests {
         let t = Theme::light(W, H, PPD);
         let mut app = App::new(Screen::Home, W, H, PPD);
         let mut c = Canvas::new(W, H);
-        let row = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Open(Screen::Backup)).expect("on the home page").rect;
+        let row = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Open(Screen::Backup))
+            .expect("on the home page")
+            .rect;
         // The card between the row's words and its arrow.
         let (x, y) = (W as f32 * 0.6, row.y + row.h / 2.0);
         app.compose(&mut c, &f, &i, "12:00", 0);
@@ -7739,16 +10228,30 @@ mod tests {
 
         app.touch(Touch::Down(x, y), &f, 1000);
         let rise = 1000 + ROW_PRESS_DELAY_MS;
-        assert_eq!(app.deadline(1000), Some(rise), "nothing moves until the row starts darkening");
+        assert_eq!(
+            app.deadline(1000),
+            Some(rise),
+            "nothing moves until the row starts darkening"
+        );
         app.compose(&mut c, &f, &i, "12:00", 1000);
-        assert!(app.row_art.is_none(), "a finger that may yet scroll does not wait for the row drawn held down");
+        assert!(
+            app.row_art.is_none(),
+            "a finger that may yet scroll does not wait for the row drawn held down"
+        );
         app.compose(&mut c, &f, &i, "12:00", rise);
         assert_eq!(grey_at(&c, x, y), t.pal.card.r, "it has not started yet");
         app.compose(&mut c, &f, &i, "12:00", rise + 30);
         let partway = grey_at(&c, x, y);
-        assert!(partway < 255 && partway > 225, "darkening after 30 ms: {partway}");
+        assert!(
+            partway < 255 && partway > 225,
+            "darkening after 30 ms: {partway}"
+        );
         app.compose(&mut c, &f, &i, "12:00", 2000);
-        assert_eq!(grey_at(&c, x, y), 225, "as dark as the stock settings' row held down");
+        assert_eq!(
+            grey_at(&c, x, y),
+            225,
+            "as dark as the stock settings' row held down"
+        );
         assert_eq!(darkest(&c, row), ink, "its words keep their ink");
         assert_ne!(app.deadline(2000), Some(0), "held still, nothing moves");
 
@@ -7757,7 +10260,10 @@ mod tests {
         assert_eq!(app.deadline(2100), Some(0));
         app.touch(Touch::Up, &f, 2200);
         app.tick(3000);
-        assert!(app.row_press.is_none() && app.row_art.is_none(), "faded, it is let go");
+        assert!(
+            app.row_press.is_none() && app.row_art.is_none(),
+            "faded, it is let go"
+        );
         assert_eq!(app.screen(), Screen::Home, "a scroll opens nothing");
     }
 
@@ -7766,7 +10272,13 @@ mod tests {
         let (f, i) = (fonts(), info());
         let t = Theme::light(W, H, PPD);
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let row = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Open(Screen::Backup)).expect("on the home page").rect;
+        let row = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Open(Screen::Backup))
+            .expect("on the home page")
+            .rect;
         let (x, y) = (W as f32 * 0.6, row.y + row.h / 2.0);
         app.touch(Touch::Down(x, y), &f, 1000);
         app.touch(Touch::Move(x, y + t.m.dp(30.0)), &f, 1050);
@@ -7779,7 +10291,13 @@ mod tests {
         let t = Theme::light(W, H, PPD);
         let mut app = App::new(Screen::Settings, W, H, PPD);
         let mut c = Canvas::new(W, H);
-        let row = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Toggle(Switch::Vibrate)).expect("on the settings page").rect;
+        let row = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Toggle(Switch::Vibrate))
+            .expect("on the settings page")
+            .rect;
         let (x, y) = (W as f32 * 0.6, row.y + row.h / 2.0);
         tap_at(&mut app, &f, &i, Action::Toggle(Switch::Vibrate), 1000);
         assert!(!app.state.vibrate, "the tap worked the switch");
@@ -7811,7 +10329,10 @@ mod tests {
         let disc = over(t.pal.button_press, t.pal.bg).r;
         assert_eq!(grey_at(&c, cx + r * 0.6, cy), disc, "darker at once");
         let arrow = darkest(&c, around);
-        assert!(arrow.abs_diff(85) <= 2, "the stock `<` held down is 85, not {arrow}");
+        assert!(
+            arrow.abs_diff(85) <= 2,
+            "the stock `<` held down is 85, not {arrow}"
+        );
         // A finger moving off lets it go.
         app.touch(Touch::Move(bx, by + t.m.dp(40.0)), &f, 6050);
         app.compose(&mut c, &f, &i, "12:00", 6050);
@@ -7826,13 +10347,25 @@ mod tests {
         let (x, y) = button.centre();
         app.touch(Touch::Down(x, y), &f, 1000);
         app.compose(&mut c, &f, &i, "12:00", 1000);
-        assert_eq!(grey_at(&c, x, y + button.h * 0.35), over(t.pal.button_press, t.pal.search).r);
+        assert_eq!(
+            grey_at(&c, x, y + button.h * 0.35),
+            over(t.pal.button_press, t.pal.search).r
+        );
         let cross = darkest(&c, button);
-        assert!(cross.abs_diff(70) <= 2, "the stock cross held down is 70, not {cross}");
+        assert!(
+            cross.abs_diff(70) <= 2,
+            "the stock cross held down is 70, not {cross}"
+        );
 
         // The home page's search bar, clear of its words.
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let bar = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Open(Screen::Search)).expect("on the home page").rect;
+        let bar = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Open(Screen::Search))
+            .expect("on the home page")
+            .rect;
         let (x, y) = (bar.x + bar.w * 0.8, bar.y + bar.h / 2.0);
         app.touch(Touch::Down(x, y), &f, 1000);
         app.compose(&mut c, &f, &i, "12:00", 1000);
@@ -7843,7 +10376,9 @@ mod tests {
     fn an_unreadable_partition_table_leaves_nothing_to_toggle() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Mount, &f, &i);
-        app.set_mounts(Err("read the metadata in super: Input/output error (os error 5)".into()));
+        app.set_mounts(Err(
+            "read the metadata in super: Input/output error (os error 5)".into(),
+        ));
         assert!(app.frame(&f, &i).hits.is_empty());
     }
 
@@ -7853,12 +10388,29 @@ mod tests {
         i.snapshot = SnapshotState::Snapshotted;
         let mut app = opened(Screen::Mount, &f, &i);
         app.set_mounts(Ok(vec![
-            MountRow { base: "vendor".into(), point: "/vendor".into(), mounted: false, holders: Vec::new() },
-            MountRow { base: "odm".into(), point: "/odm".into(), mounted: true, holders: Vec::new() },
+            MountRow {
+                base: "vendor".into(),
+                point: "/vendor".into(),
+                mounted: false,
+                holders: Vec::new(),
+            },
+            MountRow {
+                base: "odm".into(),
+                point: "/odm".into(),
+                mounted: true,
+                holders: Vec::new(),
+            },
         ]));
         let frame = app.frame(&f, &i);
-        assert_eq!(frame.hits.iter().map(|h| h.action).collect::<Vec<_>>(), [Action::MountToggle(0), Action::MountToggle(1)]);
-        assert_eq!(tap(&mut app, &f, &i, Action::MountToggle(0)), vec![Effect::Mount("vendor".into())], "through its snapshot");
+        assert_eq!(
+            frame.hits.iter().map(|h| h.action).collect::<Vec<_>>(),
+            [Action::MountToggle(0), Action::MountToggle(1)]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::MountToggle(0)),
+            vec![Effect::Mount("vendor".into())],
+            "through its snapshot"
+        );
     }
 
     #[test]
@@ -7866,20 +10418,37 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         app.set_update(Standing::Waiting);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Update)), vec![Effect::ReadUpdate], "the page reads where the update stands");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Update)),
+            vec![Effect::ReadUpdate],
+            "the page reads where the update stands"
+        );
         assert_eq!(app.screen(), Screen::Update);
         assert_eq!(swipe(&mut app, &f, &i, Confirm::Merge), vec![Effect::Merge]);
-        assert_eq!(app.state.update, Standing::Merging(0.0), "the page turns to the merge at once");
-        assert!(app.frame(&f, &i).hits.is_empty(), "nothing to swipe while it merges");
+        assert_eq!(
+            app.state.update,
+            Standing::Merging(0.0),
+            "the page turns to the merge at once"
+        );
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "nothing to swipe while it merges"
+        );
         app.set_update(Standing::Merging(0.5));
         assert!(app.frame(&f, &i).hits.is_empty());
         app.set_update(Standing::Merged);
-        assert!(app.frame(&f, &i).hits.is_empty(), "merged, nothing is left to do here");
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "merged, nothing is left to do here"
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::Advanced);
         app.set_update(Standing::Installed(Slot::A));
         tap(&mut app, &f, &i, Action::Open(Screen::Update));
-        assert!(app.frame(&f, &i).hits.is_empty(), "an update in the other slot merges once that slot has started");
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "an update in the other slot merges once that slot has started"
+        );
     }
 
     #[test]
@@ -7887,7 +10456,10 @@ mod tests {
         let (f, mut i) = (fonts(), info());
         i.snapshot = SnapshotState::Snapshotted;
         let mut app = App::new(Screen::Home, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Update)), vec![Effect::ReadUpdate]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Update)),
+            vec![Effect::ReadUpdate]
+        );
         assert_eq!(app.screen(), Screen::Update);
     }
 
@@ -7896,16 +10468,50 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Mount, &f, &i);
         app.set_mounts(Ok(vec![
-            MountRow { base: "system".into(), point: "/mnt/system".into(), mounted: true, holders: Vec::new() },
-            MountRow { base: "vendor".into(), point: "/vendor".into(), mounted: false, holders: Vec::new() },
+            MountRow {
+                base: "system".into(),
+                point: "/mnt/system".into(),
+                mounted: true,
+                holders: Vec::new(),
+            },
+            MountRow {
+                base: "vendor".into(),
+                point: "/vendor".into(),
+                mounted: false,
+                holders: Vec::new(),
+            },
         ]));
         let frame = app.frame(&f, &i);
-        assert!(frame.hits.iter().any(|h| h.action == Action::MountToggle(0)), "the first partition has a toggle");
-        assert!(frame.hits.iter().any(|h| h.action == Action::MountToggle(1)), "the second partition has a toggle");
-        assert!(!frame.hits.iter().any(|h| matches!(h.action, Action::Toggle(_))), "partitions mount read-only");
+        assert!(
+            frame
+                .hits
+                .iter()
+                .any(|h| h.action == Action::MountToggle(0)),
+            "the first partition has a toggle"
+        );
+        assert!(
+            frame
+                .hits
+                .iter()
+                .any(|h| h.action == Action::MountToggle(1)),
+            "the second partition has a toggle"
+        );
+        assert!(
+            !frame
+                .hits
+                .iter()
+                .any(|h| matches!(h.action, Action::Toggle(_))),
+            "partitions mount read-only"
+        );
         // A mounted partition unmounts, an unmounted one mounts.
-        assert_eq!(app.act(Action::MountToggle(0), 0), vec![Effect::Unmount("system".into())]);
-        assert_eq!(app.act(Action::MountToggle(1), 0), vec![Effect::Mount("vendor".into())]);
+        assert_eq!(
+            app.act(Action::MountToggle(0), 0),
+            vec![Effect::Unmount("system".into())]
+        );
+        assert_eq!(
+            app.act(Action::MountToggle(1), 0),
+            vec![Effect::Mount("vendor".into())]
+        );
     }
 
     #[test]
@@ -7914,11 +10520,24 @@ mod tests {
         let mut app = opened(Screen::Mount, &f, &i);
         let held = vec!["touch_report".to_string(), "touchsensor".to_string()];
         app.set_mounts(Ok(vec![
-            MountRow { base: "odm".into(), point: "/odm".into(), mounted: true, holders: held },
-            MountRow { base: "vendor".into(), point: "/vendor".into(), mounted: true, holders: Vec::new() },
+            MountRow {
+                base: "odm".into(),
+                point: "/odm".into(),
+                mounted: true,
+                holders: held,
+            },
+            MountRow {
+                base: "vendor".into(),
+                point: "/vendor".into(),
+                mounted: true,
+                holders: Vec::new(),
+            },
         ]));
         let frame = app.frame(&f, &i);
-        assert!(matches!(frame.hits[0].action, Action::Unavailable(_)), "the programs using odm keep it");
+        assert!(
+            matches!(frame.hits[0].action, Action::Unavailable(_)),
+            "the programs using odm keep it"
+        );
         assert_eq!(frame.hits[1].action, Action::MountToggle(1));
         let busy = frame.hits[0].action;
         assert!(tap(&mut app, &f, &i, busy).is_empty());
@@ -7930,11 +10549,23 @@ mod tests {
     fn a_failed_mount_stays_on_the_page_until_the_next_try() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Mount, &f, &i);
-        app.set_mounts(Ok(vec![MountRow { base: "vendor".into(), point: "/vendor".into(), mounted: false, holders: Vec::new() }]));
-        let failure = MountFailure { mounting: true, base: "vendor".into(), detail: "mount vendor_b: no filesystem".into() };
+        app.set_mounts(Ok(vec![MountRow {
+            base: "vendor".into(),
+            point: "/vendor".into(),
+            mounted: false,
+            holders: Vec::new(),
+        }]));
+        let failure = MountFailure {
+            mounting: true,
+            base: "vendor".into(),
+            detail: "mount vendor_b: no filesystem".into(),
+        };
         app.mount_failed(failure.clone());
         assert_eq!(app.state.mount_failure, Some(failure.clone()));
-        assert_eq!(app.act(Action::MountToggle(0), 0), vec![Effect::Mount("vendor".into())]);
+        assert_eq!(
+            app.act(Action::MountToggle(0), 0),
+            vec![Effect::Mount("vendor".into())]
+        );
         assert_eq!(app.state.mount_failure, None, "trying again clears it");
         app.mount_failed(failure);
         app.key(Key::Back, 0);
@@ -7947,7 +10578,10 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Mount, &f, &i);
         let frame = app.frame(&f, &i);
-        assert!(frame.hits.is_empty(), "no partition rows, and nothing else to touch");
+        assert!(
+            frame.hits.is_empty(),
+            "no partition rows, and nothing else to touch"
+        );
     }
 
     #[test]
@@ -7977,11 +10611,18 @@ mod tests {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.touch(Touch::Down(10.0, 1600.0), &f, 0);
         app.touch(Touch::Move(80.0, 1600.0), &f, 8);
-        assert!(app.touch(Touch::Move(400.0, 1600.0), &f, 16).is_empty(), "no tap of the motor");
+        assert!(
+            app.touch(Touch::Move(400.0, 1600.0), &f, 16).is_empty(),
+            "no tap of the motor"
+        );
         assert!(!matches!(app.drag, Drag::Edge { .. }), "no cue");
         app.touch(Touch::Up, &f, 24);
         assert_eq!(app.screen(), Screen::Home);
-        assert_eq!(app.deadline(24), app.idle_due(), "nothing left on screen to settle");
+        assert_eq!(
+            app.deadline(24),
+            app.idle_due(),
+            "nothing left on screen to settle"
+        );
     }
 
     #[test]
@@ -7991,11 +10632,22 @@ mod tests {
         let ready = app.theme().m.dp(BACK_SWIPE_DP);
         app.touch(Touch::Down(10.0, 1600.0), &f, 0);
         assert!(app.touch(Touch::Move(80.0, 1600.0), &f, 8).is_empty());
-        assert_eq!(app.touch(Touch::Move(20.0 + ready, 1600.0), &f, 16), vec![Effect::Haptic]);
-        assert!(app.touch(Touch::Move(60.0 + ready, 1600.0), &f, 24).is_empty(), "one tap while armed");
+        assert_eq!(
+            app.touch(Touch::Move(20.0 + ready, 1600.0), &f, 16),
+            vec![Effect::Haptic]
+        );
+        assert!(
+            app.touch(Touch::Move(60.0 + ready, 1600.0), &f, 24)
+                .is_empty(),
+            "one tap while armed"
+        );
         app.touch(Touch::Move(40.0, 1600.0), &f, 32);
         app.touch(Touch::Up, &f, 40);
-        assert_eq!(app.screen(), Screen::Reboot, "pulled back in, it does not go back");
+        assert_eq!(
+            app.screen(),
+            Screen::Reboot,
+            "pulled back in, it does not go back"
+        );
         assert_eq!(app.deadline(40), Some(0), "the cue is sinking back");
         app.tick(1000);
         assert_eq!(app.deadline(1000), app.idle_due());
@@ -8020,11 +10672,17 @@ mod tests {
         app.touch(Touch::Move(80.0, 1610.0), &f, 8);
         app.touch(Touch::Move(200.0, 1300.0), &f, 16);
         app.touch(Touch::Move(150.0, 1900.0), &f, 24);
-        let Drag::Edge { cy, .. } = app.drag else { panic!("still swiping in from the edge") };
+        let Drag::Edge { cy, .. } = app.drag else {
+            panic!("still swiping in from the edge")
+        };
         assert_eq!(cy, at, "the finger wandered up and down");
         app.touch(Touch::Move(40.0, 2100.0), &f, 32);
         app.touch(Touch::Up, &f, 40);
-        assert_eq!(app.cue.as_ref().map(|c| c.1), Some(at), "it sinks back where it was");
+        assert_eq!(
+            app.cue.as_ref().map(|c| c.1),
+            Some(at),
+            "it sinks back where it was"
+        );
     }
 
     #[test]
@@ -8035,7 +10693,10 @@ mod tests {
         app.touch(Touch::Move(700.0, 1300.0), &f, 100);
         app.touch(Touch::Move(700.0, 1800.0), &f, 600);
         let shown = app.overscroll(600);
-        assert!(shown < 0.0 && shown > -700.0, "the page follows less than the finger: {shown}");
+        assert!(
+            shown < 0.0 && shown > -700.0,
+            "the page follows less than the finger: {shown}"
+        );
         assert_eq!(app.top().1, 0.0);
         // Dragging back first undoes the pull.
         app.touch(Touch::Move(700.0, 1400.0), &f, 1000);
@@ -8044,7 +10705,10 @@ mod tests {
         assert!(app.overscroll(1400) < 0.0);
         assert_eq!(app.deadline(1400), Some(0));
         app.tick(1500);
-        assert!(app.overscroll(1500) > app.overscroll(1400), "on its way back");
+        assert!(
+            app.overscroll(1500) > app.overscroll(1400),
+            "on its way back"
+        );
         app.tick(3000);
         assert_eq!(app.overscroll(3000), 0.0);
         assert_eq!(app.deadline(3000), app.idle_due());
@@ -8061,7 +10725,10 @@ mod tests {
         let held = app.overscroll(1050);
         app.touch(Touch::Down(700.0, 1200.0), &f, 1050);
         app.tick(1500);
-        assert!((app.overscroll(1500) - held).abs() < 1.0, "the finger holds it where it was");
+        assert!(
+            (app.overscroll(1500) - held).abs() < 1.0,
+            "the finger holds it where it was"
+        );
         app.touch(Touch::Up, &f, 1600);
         app.tick(4000);
         assert_eq!(app.overscroll(4000), 0.0);
@@ -8077,7 +10744,10 @@ mod tests {
         assert_eq!(app.top().1, 300.0);
         app.touch(Touch::Move(700.0, 2100.0), &f, 500);
         assert_eq!(app.top().1, 0.0);
-        assert!(app.overscroll(500) < 0.0, "the last 100 px pull the page down");
+        assert!(
+            app.overscroll(500) < 0.0,
+            "the last 100 px pull the page down"
+        );
     }
 
     #[test]
@@ -8103,9 +10773,15 @@ mod tests {
         if y > H as f32 * 0.9 {
             scroll_to(&mut app, &f, y - H as f32 * 0.8, 0);
         }
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Toggle(Switch::FileTransfer), 2000), [Effect::FileTransfer(false)]);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Toggle(Switch::FileTransfer), 2000),
+            [Effect::FileTransfer(false)]
+        );
         assert!(!app.state.file_transfer);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Toggle(Switch::FileTransfer), 3000), [Effect::FileTransfer(true)]);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Toggle(Switch::FileTransfer), 3000),
+            [Effect::FileTransfer(true)]
+        );
         app.file_transfer_failed(false, "无法开启文件传输", 4000);
         assert!(!app.state.file_transfer, "the switch shows how it stands");
     }
@@ -8116,7 +10792,11 @@ mod tests {
     fn flick(app: &mut App, f: &Fonts, start: u64, step: f32) -> u64 {
         app.touch(Touch::Down(700.0, 2400.0), f, start);
         for k in 1..=5u64 {
-            app.touch(Touch::Move(700.0, 2400.0 - step * k as f32), f, start + 8 * k);
+            app.touch(
+                Touch::Move(700.0, 2400.0 - step * k as f32),
+                f,
+                start + 8 * k,
+            );
         }
         let lift = start + 48;
         app.touch(Touch::Up, f, lift);
@@ -8150,13 +10830,21 @@ mod tests {
         let lift = flick(&mut app, &f, 1000, 20.0);
         let lifted = app.top().1;
         assert_eq!(lifted, 100.0);
-        assert_eq!(app.deadline(lift), Some(0), "the page moves on after the lift");
+        assert_eq!(
+            app.deadline(lift),
+            Some(0),
+            "the page moves on after the lift"
+        );
         app.tick(lift + 50);
         assert!(app.top().1 > lifted);
         for ms in (100..5000).step_by(8) {
             app.tick(lift + ms);
         }
-        assert_eq!(app.deadline(lift + 5000), app.idle_due(), "the glide comes to rest");
+        assert_eq!(
+            app.deadline(lift + 5000),
+            app.idle_due(),
+            "the glide comes to rest"
+        );
         let rest = app.top().1;
         assert!(rest > lifted + 300.0 && rest < app.max_scroll(), "{rest}");
     }
@@ -8167,7 +10855,12 @@ mod tests {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.backup_started(false, Place::Storage, true);
         app.backup_plan((0..20).map(|k| (format!("part{k}"), 1_000_000)).collect());
-        let at = |done| BackupAt { item: 0, done, of: 1_000_000, checking: false };
+        let at = |done| BackupAt {
+            item: 0,
+            done,
+            of: 1_000_000,
+            checking: false,
+        };
         app.backup_at(at(0));
         app.frame(&f, &i);
         // A finger drags the page up while the work tells how far it has
@@ -8180,13 +10873,24 @@ mod tests {
         assert!(dragged > 0.0);
         app.backup_at(at(500_000));
         app.touch(Touch::Move(700.0, 1400.0), &f, 40);
-        assert_eq!((app.top().1, app.pull), (dragged + 200.0, 0.0), "the page goes on from where it was");
+        assert_eq!(
+            (app.top().1, app.pull),
+            (dragged + 200.0, 0.0),
+            "the page goes on from where it was"
+        );
         app.touch(Touch::Up, &f, 48);
         let lifted = app.top().1;
         app.backup_at(at(600_000));
         app.tick(98);
-        assert!(app.top().1 > lifted, "a glide goes on through the page being drawn again");
-        assert_eq!(app.overscroll(98), 0.0, "and does not spring back from the top");
+        assert!(
+            app.top().1 > lifted,
+            "a glide goes on through the page being drawn again"
+        );
+        assert_eq!(
+            app.overscroll(98),
+            0.0,
+            "and does not spring back from the top"
+        );
     }
 
     #[test]
@@ -8201,7 +10905,10 @@ mod tests {
             furthest = furthest.max(app.overscroll(lift + ms));
         }
         assert_eq!(app.top().1, app.max_scroll());
-        assert!(furthest > app.theme().m.dp(8.0), "it ran on past the end: {furthest}");
+        assert!(
+            furthest > app.theme().m.dp(8.0),
+            "it ran on past the end: {furthest}"
+        );
         assert_eq!(app.overscroll(lift + 2000), 0.0);
         assert_eq!(app.deadline(lift + 2000), app.idle_due());
     }
@@ -8264,12 +10971,19 @@ mod tests {
         app.tick(lift + 30);
         app.touch(Touch::Down(10.0, 1600.0), &f, lift + 40);
         app.tick(lift + 48);
-        assert!(app.fling.is_some(), "landing at the edge leaves the glide going");
+        assert!(
+            app.fling.is_some(),
+            "landing at the edge leaves the glide going"
+        );
         app.touch(Touch::Move(12.0, 1500.0), &f, lift + 56);
         assert!(app.fling.is_none(), "dragging the page catches it");
         let held = app.top().1;
         app.touch(Touch::Move(12.0, 1450.0), &f, lift + 64);
-        assert_eq!(app.top().1, held + 50.0, "and it follows the finger from there");
+        assert_eq!(
+            app.top().1,
+            held + 50.0,
+            "and it follows the finger from there"
+        );
     }
 
     #[test]
@@ -8310,7 +11024,10 @@ mod tests {
         scroll_to(&mut app, &f, m.dp(TITLE_FADE_DP) + 2.0, 1000);
         assert!(app.title.on, "the large title is gone");
         assert!(!app.bar.on, "the content is not under the bar yet");
-        assert!(app.title.level(1900) < 1.0 && app.title.level(1900) > 0.0, "it eases in");
+        assert!(
+            app.title.level(1900) < 1.0 && app.title.level(1900) > 0.0,
+            "it eases in"
+        );
         assert_eq!(app.title.level(3000), 1.0);
         let under = content_top - widgets::bar_bottom(&app.theme()) - m.dp(20.0);
         scroll_to(&mut app, &f, under + 10.0, 4000);
@@ -8331,7 +11048,10 @@ mod tests {
         assert!(!app.title.on && !app.bar.on);
         scroll_to(&mut app, &f, gone + 4.0, 1000);
         assert!(app.title.on && app.bar.on);
-        assert!((app.bar.level(1800 + 75) - 0.5).abs() < 0.01, "a straight 150 ms fade");
+        assert!(
+            (app.bar.level(1800 + 75) - 0.5).abs() < 0.01,
+            "a straight 150 ms fade"
+        );
     }
 
     #[test]
@@ -8343,7 +11063,11 @@ mod tests {
         let end = app.max_scroll();
         scroll_to(&mut app, &f, end, 0);
         app.tick(2000);
-        assert_eq!((app.title.level(2000), app.bar.level(2000)), (1.0, 1.0), "scrolled down, the bar is up");
+        assert_eq!(
+            (app.title.level(2000), app.bar.level(2000)),
+            (1.0, 1.0),
+            "scrolled down, the bar is up"
+        );
         tap_at(&mut app, &f, &i, Action::Open(Screen::Language), 3000);
         assert_eq!(app.screen(), Screen::Language);
         tap_back(&mut app, &f, &i, 4000);
@@ -8352,7 +11076,11 @@ mod tests {
         app.tick(4008);
         app.compose(&mut c, &f, &i, "12:00", 4008);
         assert_eq!(app.top().1, end, "the page is where it was left");
-        assert_eq!((app.title.level(4008), app.bar.level(4008)), (1.0, 1.0), "its bar is up from the first frame");
+        assert_eq!(
+            (app.title.level(4008), app.bar.level(4008)),
+            (1.0, 1.0),
+            "its bar is up from the first frame"
+        );
     }
 
     #[test]
@@ -8370,13 +11098,26 @@ mod tests {
     fn dragging_the_track_sets_brightness() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Slider(Slider::Brightness)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Slider(Slider::Brightness))
+            .unwrap()
+            .rect;
         let y = track.centre().1 - app.top().1;
-        assert!(app.touch(Touch::Down(track.x + track.w * 0.25, y), &f, 0).is_empty());
+        assert!(app
+            .touch(Touch::Down(track.x + track.w * 0.25, y), &f, 0)
+            .is_empty());
         assert_eq!(app.panel(0), Some(0.25));
-        assert!(app.touch(Touch::Move(track.x + track.w * 0.75, y + 40.0), &f, 0).is_empty());
+        assert!(app
+            .touch(Touch::Move(track.x + track.w * 0.75, y + 40.0), &f, 0)
+            .is_empty());
         assert_eq!(app.panel(0), Some(0.75));
-        assert!(app.touch(Touch::Up, &f, 0).is_empty(), "the panel shows the brightness");
+        assert!(
+            app.touch(Touch::Up, &f, 0).is_empty(),
+            "the panel shows the brightness"
+        );
         assert_eq!(app.state.brightness, 0.75);
     }
 
@@ -8384,18 +11125,43 @@ mod tests {
     fn the_strength_slider_taps_the_motor_as_strongly_as_it_is_let_go() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Slider(Slider::Vibration)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Slider(Slider::Vibration))
+            .unwrap()
+            .rect;
         let y = track.centre().1 - app.top().1;
-        assert!(app.touch(Touch::Down(track.x + track.w * 0.25, y), &f, 0).is_empty());
-        assert!(app.touch(Touch::Move(track.x + track.w * 0.8, y + 40.0), &f, 0).is_empty(), "nothing taps while the finger moves");
-        assert_eq!(app.touch(Touch::Up, &f, 0), vec![Effect::Haptic], "let go, the motor taps");
+        assert!(app
+            .touch(Touch::Down(track.x + track.w * 0.25, y), &f, 0)
+            .is_empty());
+        assert!(
+            app.touch(Touch::Move(track.x + track.w * 0.8, y + 40.0), &f, 0)
+                .is_empty(),
+            "nothing taps while the finger moves"
+        );
+        assert_eq!(
+            app.touch(Touch::Up, &f, 0),
+            vec![Effect::Haptic],
+            "let go, the motor taps"
+        );
         assert!((app.state.vibration - 0.8).abs() < 1e-5);
         assert!(app.touch(Touch::Down(track.x - 50.0, y), &f, 0).is_empty());
-        assert!(app.touch(Touch::Up, &f, 0).is_empty(), "touched beside the track, the slider stays");
+        assert!(
+            app.touch(Touch::Up, &f, 0).is_empty(),
+            "touched beside the track, the slider stays"
+        );
         app.state.vibrate = false;
         app.touch(Touch::Down(track.x, y), &f, 0);
-        assert!(app.touch(Touch::Up, &f, 0).is_empty(), "with touch vibration off, the motor stays still");
-        assert_eq!(app.state.vibration, 0.0, "the strength still moves, down to the slider's left end");
+        assert!(
+            app.touch(Touch::Up, &f, 0).is_empty(),
+            "with touch vibration off, the motor stays still"
+        );
+        assert_eq!(
+            app.state.vibration, 0.0,
+            "the strength still moves, down to the slider's left end"
+        );
     }
 
     #[test]
@@ -8403,7 +11169,13 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Reboot, W, H, PPD);
         tap(&mut app, &f, &i, Action::RebootTarget(3));
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::Reboot)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::Reboot))
+            .unwrap()
+            .rect;
         let y = track.centre().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 0);
         app.touch(Touch::Move(track.x + track.w / 2.0, y), &f, 0);
@@ -8417,7 +11189,13 @@ mod tests {
     fn letting_go_halfway_does_not_reboot() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Reboot, W, H, PPD);
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::Reboot)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::Reboot))
+            .unwrap()
+            .rect;
         let y = track.centre().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 0);
         app.touch(Touch::Move(track.x + track.w / 2.0, y), &f, 0);
@@ -8428,9 +11206,22 @@ mod tests {
     fn a_control_that_cannot_work_explains_itself() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Mount, W, H, PPD);
-        app.set_mounts(Ok(vec![MountRow { base: "odm".into(), point: "/odm".into(), mounted: true, holders: vec!["qseecomd".into()] }]));
-        tap(&mut app, &f, &i, Action::Unavailable("无法卸载正在使用的分区"));
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("无法卸载正在使用的分区"));
+        app.set_mounts(Ok(vec![MountRow {
+            base: "odm".into(),
+            point: "/odm".into(),
+            mounted: true,
+            holders: vec!["qseecomd".into()],
+        }]));
+        tap(
+            &mut app,
+            &f,
+            &i,
+            Action::Unavailable("无法卸载正在使用的分区"),
+        );
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("无法卸载正在使用的分区")
+        );
         // Once the row tapped has faded back, only the message waits.
         app.tick(1000);
         assert_eq!(app.deadline(1000), Some(TOAST_MS));
@@ -8445,14 +11236,27 @@ mod tests {
         tap(&mut app, &f, &i, Action::Open(Screen::Language));
         assert_eq!(app.frame(&f, &i).title, "语言");
         tap(&mut app, &f, &i, Action::Language(Lang::En));
-        assert_eq!((app.state.lang, app.screen()), (Lang::En, Screen::Language), "the page stays");
+        assert_eq!(
+            (app.state.lang, app.screen()),
+            (Lang::En, Screen::Language),
+            "the page stays"
+        );
         assert_eq!(app.frame(&f, &i).title, "Language");
         tap(&mut app, &f, &i, Action::Language(Lang::Hant));
         assert_eq!(app.frame(&f, &i).title, "語言");
         tap_back(&mut app, &f, &i, 0);
         app.tick(1000);
-        assert_eq!((app.screen(), app.frame(&f, &i).title), (Screen::Settings, "設定"), "and so does the page gone back to");
-        app.set_mounts(Ok(vec![MountRow { base: "odm".into(), point: "/odm".into(), mounted: true, holders: vec!["qseecomd".into()] }]));
+        assert_eq!(
+            (app.screen(), app.frame(&f, &i).title),
+            (Screen::Settings, "設定"),
+            "and so does the page gone back to"
+        );
+        app.set_mounts(Ok(vec![MountRow {
+            base: "odm".into(),
+            point: "/odm".into(),
+            mounted: true,
+            holders: vec!["qseecomd".into()],
+        }]));
         tap(&mut app, &f, &i, Action::Open(Screen::Language));
         tap(&mut app, &f, &i, Action::Language(Lang::En));
         tap_back(&mut app, &f, &i, 0);
@@ -8460,8 +11264,17 @@ mod tests {
         tap_back(&mut app, &f, &i, 2000);
         app.tick(3000);
         tap(&mut app, &f, &i, Action::Open(Screen::Mount));
-        tap(&mut app, &f, &i, Action::Unavailable("A partition in use can't be unmounted"));
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("A partition in use can't be unmounted"), "as do its messages");
+        tap(
+            &mut app,
+            &f,
+            &i,
+            Action::Unavailable("A partition in use can't be unmounted"),
+        );
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("A partition in use can't be unmounted"),
+            "as do its messages"
+        );
     }
 
     #[test]
@@ -8469,7 +11282,11 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Settings, &f, &i);
         app.take_settings(None, Some(Lang::Hant));
-        assert_eq!((app.state.lang, app.settings().language), (Lang::Hant, None), "the system's, until one is chosen");
+        assert_eq!(
+            (app.state.lang, app.settings().language),
+            (Lang::Hant, None),
+            "the system's, until one is chosen"
+        );
         tap(&mut app, &f, &i, Action::Open(Screen::Language));
         tap(&mut app, &f, &i, Action::Language(Lang::En));
         let kept = app.settings();
@@ -8477,22 +11294,37 @@ mod tests {
 
         let mut next = App::new(Screen::Home, W, H, PPD);
         next.take_settings(Some(&kept), Some(Lang::Hans));
-        assert_eq!(next.state.lang, Lang::En, "the next start speaks the language chosen");
+        assert_eq!(
+            next.state.lang,
+            Lang::En,
+            "the next start speaks the language chosen"
+        );
         assert_eq!(next.settings(), kept, "and keeps it chosen");
     }
 
     #[test]
     fn with_no_language_chosen_a_start_speaks_the_system_s_or_else_the_one_last_spoken() {
-        let spoke_english = Settings { spoken: Some("en".into()), ..Settings::default() };
+        let spoke_english = Settings {
+            spoken: Some("en".into()),
+            ..Settings::default()
+        };
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.take_settings(Some(&spoke_english), Some(Lang::Hant));
         assert_eq!(app.state.lang, Lang::Hant, "the one the system names");
         let mut fastboot = App::new(Screen::Fastboot, W, H, PPD);
         fastboot.take_settings(Some(&spoke_english), None);
-        assert_eq!(fastboot.state.lang, Lang::En, "a start that names none, as fastboot's");
+        assert_eq!(
+            fastboot.state.lang,
+            Lang::En,
+            "a start that names none, as fastboot's"
+        );
         let mut first = App::new(Screen::Fastboot, W, H, PPD);
         first.take_settings(None, None);
-        assert_eq!(first.state.lang, State::default().lang, "and with nothing kept, the pages' own");
+        assert_eq!(
+            first.state.lang,
+            State::default().lang,
+            "and with nothing kept, the pages' own"
+        );
     }
 
     #[test]
@@ -8507,14 +11339,20 @@ mod tests {
         let mut next = App::new(Screen::Home, W, H, PPD);
         next.take_settings(Some(&kept), None);
         assert!(!next.state.vibrate && next.state.check_signature);
-        assert_eq!((next.state.backup_to, next.state.logs_to), (Place::UsbDrive, 1));
+        assert_eq!(
+            (next.state.backup_to, next.state.logs_to),
+            (Place::UsbDrive, 1)
+        );
     }
 
     /// The installing page, opened from the install page, with the
     /// installer started and waiting for the computer.
     fn sideloading(f: &Fonts, i: &DeviceInfo) -> App {
         let mut app = opened(Screen::Install, f, i);
-        assert_eq!(tap(&mut app, f, i, Action::Sideload), vec![Effect::Sideload]);
+        assert_eq!(
+            tap(&mut app, f, i, Action::Sideload),
+            vec![Effect::Sideload]
+        );
         assert_eq!(app.screen(), Screen::Installing);
         assert_eq!(app.state.install, Install::Starting);
         app.install(Event::Waiting, 0);
@@ -8537,7 +11375,11 @@ mod tests {
         app.install(Event::Checking { size: 4096 }, 0);
         assert_eq!(app.state.install, Install::Ending);
         tap(&mut app, &f, &i, Action::Sideload);
-        assert_eq!(app.screen(), Screen::Install, "no second installer while the first is ending");
+        assert_eq!(
+            app.screen(),
+            Screen::Install,
+            "no second installer while the first is ending"
+        );
         app.install(Event::Finished(Outcome::Cancelled), 0);
         assert_eq!(app.state.install, Install::Idle);
     }
@@ -8547,25 +11389,84 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
         app.install(Event::Checking { size: 201_326_592 }, 0);
-        let kind = ImageKind::Boot { kernel: true, ramdisk: skyward_install::Ramdisk::Recovery };
-        app.install(Event::Image { kind, size: 201_326_592, partitions: vec!["recovery", "boot"] }, 0);
+        let kind = ImageKind::Boot {
+            kernel: true,
+            ramdisk: skyward_install::Ramdisk::Recovery,
+        };
+        app.install(
+            Event::Image {
+                kind,
+                size: 201_326_592,
+                partitions: vec!["recovery", "boot"],
+            },
+            0,
+        );
         // The image lit the panel, so the user looks and taps past the wake
         // guard.
         tap_at(&mut app, &f, &i, Action::FlashPartition(1), 1000);
         tap_at(&mut app, &f, &i, Action::FlashSlots(Pick::Both), 1000);
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::Flash)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::Flash))
+            .unwrap()
+            .rect;
         let y = track.centre().1 - app.top().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 1000);
         app.touch(Touch::Move(track.x + track.w, y), &f, 1000);
-        assert_eq!(app.touch(Touch::Up, &f, 1000), vec![Effect::Flash { partition: "boot", pick: Pick::Both }]);
-        assert_eq!(app.state.install, Install::Flashing { partition: "boot", stage: None });
-        app.install(Event::Progress(Stage::Flashing { done: 10, total: 40 }), 1000);
-        assert_eq!(app.state.install, Install::Flashing { partition: "boot", stage: Some(Stage::Flashing { done: 10, total: 40 }) });
+        assert_eq!(
+            app.touch(Touch::Up, &f, 1000),
+            vec![Effect::Flash {
+                partition: "boot",
+                pick: Pick::Both
+            }]
+        );
+        assert_eq!(
+            app.state.install,
+            Install::Flashing {
+                partition: "boot",
+                stage: None
+            }
+        );
+        app.install(
+            Event::Progress(Stage::Flashing {
+                done: 10,
+                total: 40,
+            }),
+            1000,
+        );
+        assert_eq!(
+            app.state.install,
+            Install::Flashing {
+                partition: "boot",
+                stage: Some(Stage::Flashing {
+                    done: 10,
+                    total: 40
+                })
+            }
+        );
         app.key(Key::Back, 1000);
-        assert_eq!(app.screen(), Screen::Installing, "a partition being written keeps the page");
-        app.install(Event::Finished(Outcome::Flashed { partition: "boot", slots: vec![Slot::A, Slot::B] }), 1000);
-        assert!(matches!(app.state.install, Install::Finished { damage: None, .. }), "a flash that worked broke nothing");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 2000), vec![Effect::Reboot(Target::System)]);
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "a partition being written keeps the page"
+        );
+        app.install(
+            Event::Finished(Outcome::Flashed {
+                partition: "boot",
+                slots: vec![Slot::A, Slot::B],
+            }),
+            1000,
+        );
+        assert!(
+            matches!(app.state.install, Install::Finished { damage: None, .. }),
+            "a flash that worked broke nothing"
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 2000),
+            vec![Effect::Reboot(Target::System)]
+        );
         app.key(Key::Back, 2000);
         assert_eq!(app.screen(), Screen::Install);
         assert_eq!(app.state.install, Install::Idle);
@@ -8575,20 +11476,52 @@ mod tests {
     fn an_update_shows_its_steps_and_cannot_be_left() {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
-        app.install(Event::Checking { size: 7_103_043_868 }, 0);
-        app.install(Event::Installing { version: Some("OS3.0.306.0.WMACNXM".into()) }, 0);
+        app.install(
+            Event::Checking {
+                size: 7_103_043_868,
+            },
+            0,
+        );
+        app.install(
+            Event::Installing {
+                version: Some("OS3.0.306.0.WMACNXM".into()),
+            },
+            0,
+        );
         app.install(Event::Overwriting, 0);
-        app.install(Event::Progress(Stage::Writing { done: 1 << 30, total: 7 << 30 }), 0);
-        assert!(matches!(app.state.install, Install::Updating { overwriting: true, stage: Some(_), .. }));
+        app.install(
+            Event::Progress(Stage::Writing {
+                done: 1 << 30,
+                total: 7 << 30,
+            }),
+            0,
+        );
+        assert!(matches!(
+            app.state.install,
+            Install::Updating {
+                overwriting: true,
+                stage: Some(_),
+                ..
+            }
+        ));
         let shown = app.frame(&f, &i).hits.len();
         assert_eq!(shown, 0, "nothing on the page to tap while installing");
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::Installing);
         assert_eq!(app.deadline(0), Some(TOAST_MS), "it says why");
         app.install(Event::Finished(Outcome::Failed(Failure::Engine(9))), 0);
-        assert!(matches!(app.state.install, Install::Finished { damage: Some(Damage::System), .. }));
+        assert!(matches!(
+            app.state.install,
+            Install::Finished {
+                damage: Some(Damage::System),
+                ..
+            }
+        ));
         // Sending again starts over on the same page, past the wake guard.
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Sideload, 1000), vec![Effect::Sideload]);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Sideload, 1000),
+            vec![Effect::Sideload]
+        );
         assert_eq!(app.state.install, Install::Starting);
         assert_eq!(app.screen(), Screen::Installing);
     }
@@ -8599,23 +11532,54 @@ mod tests {
         let mut app = sideloading(&f, &i);
         app.install(Event::Checking { size: 10 }, 0);
         app.install(Event::Finished(Outcome::Refused(Refusal::Unknown)), 0);
-        assert_eq!(app.state.install, Install::Finished { outcome: Outcome::Refused(Refusal::Unknown), damage: None });
+        assert_eq!(
+            app.state.install,
+            Install::Finished {
+                outcome: Outcome::Refused(Refusal::Unknown),
+                damage: None
+            }
+        );
         tap_at(&mut app, &f, &i, Action::Sideload, 1000);
         app.install(Event::Waiting, 1000);
         app.install(Event::Installing { version: None }, 1000);
         app.install(Event::Finished(Outcome::Failed(Failure::Engine(21))), 1000);
-        assert!(matches!(app.state.install, Install::Finished { damage: None, .. }));
+        assert!(matches!(
+            app.state.install,
+            Install::Finished { damage: None, .. }
+        ));
     }
 
     #[test]
     fn an_image_that_failed_part_way_names_its_partition() {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
-        app.install(Event::Image { kind: ImageKind::Dtbo, size: 1 << 20, partitions: vec!["dtbo"] }, 0);
-        app.state.install = Install::Flashing { partition: "dtbo", stage: None };
-        app.install(Event::Progress(Stage::Flashing { done: 1 << 20, total: 4 << 20 }), 0);
+        app.install(
+            Event::Image {
+                kind: ImageKind::Dtbo,
+                size: 1 << 20,
+                partitions: vec!["dtbo"],
+            },
+            0,
+        );
+        app.state.install = Install::Flashing {
+            partition: "dtbo",
+            stage: None,
+        };
+        app.install(
+            Event::Progress(Stage::Flashing {
+                done: 1 << 20,
+                total: 4 << 20,
+            }),
+            0,
+        );
         app.install(Event::Finished(Outcome::Failed(Failure::Disconnected)), 0);
-        assert!(matches!(app.state.install, Install::Finished { damage: Some(Damage::Partition("dtbo")), .. }));
+        assert!(matches!(
+            app.state.install,
+            Install::Finished {
+                damage: Some(Damage::Partition("dtbo")),
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -8625,7 +11589,10 @@ mod tests {
         let fastboot = TARGETS.iter().position(|t| *t == Target::Fastboot).unwrap();
         tap(&mut app, &f, &i, Action::RebootTarget(fastboot));
         assert_eq!(app.state.reboot, fastboot);
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Reboot), vec![Effect::Reboot(Target::Fastboot)]);
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Reboot),
+            vec![Effect::Reboot(Target::Fastboot)]
+        );
     }
 
     /// Press `key` and let it go.
@@ -8655,7 +11622,10 @@ mod tests {
     #[test]
     fn the_keys_reach_the_last_row_of_a_home_page_grown_by_an_update_notice() {
         let f = fonts();
-        let i = DeviceInfo { snapshot: SnapshotState::Snapshotted, ..info() };
+        let i = DeviceInfo {
+            snapshot: SnapshotState::Snapshotted,
+            ..info()
+        };
         let mut app = App::new(Screen::Home, W, SNUG, PPD);
         let (_, y) = spot(&mut app, &f, &i, Action::Open(Screen::Reboot));
         assert!(y > SNUG as f32, "below the screen to start with");
@@ -8674,19 +11644,45 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Fastboot, W, H, PPD);
         let choice = |k: usize| Some(Stop::Hit(FASTBOOT_CHOICES[k].1));
-        assert_eq!(lit(&mut app, &f, &i), choice(0), "the first choice is lit as the page opens");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            choice(0),
+            "the first choice is lit as the page opens"
+        );
         assert!(press(&mut app, Key::VolumeDown, 0).is_empty());
-        assert_eq!(lit(&mut app, &f, &i), choice(1), "down moves to the next choice");
-        assert!(app.key(Key::Power, 0).is_empty(), "power takes it as it comes up");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            choice(1),
+            "down moves to the next choice"
+        );
+        assert!(
+            app.key(Key::Power, 0).is_empty(),
+            "power takes it as it comes up"
+        );
         assert_eq!(app.key_up(Key::Power, 0), vec![Effect::EnterRecovery]);
         assert!(app.display_on(), "power leaves the panel on here");
         press(&mut app, Key::VolumeUp, 0);
         press(&mut app, Key::VolumeUp, 0);
-        assert_eq!(lit(&mut app, &f, &i), choice(FASTBOOT_CHOICES.len() - 1), "up from the first goes round to the last");
-        assert_eq!(press(&mut app, Key::Power, 0), vec![Effect::Reboot(Target::PowerOff)]);
-        assert_eq!(tap(&mut app, &f, &i, Action::RebootTo(Target::Bootloader)), vec![Effect::Reboot(Target::Bootloader)], "a touch takes a choice too");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            choice(FASTBOOT_CHOICES.len() - 1),
+            "up from the first goes round to the last"
+        );
+        assert_eq!(
+            press(&mut app, Key::Power, 0),
+            vec![Effect::Reboot(Target::PowerOff)]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::RebootTo(Target::Bootloader)),
+            vec![Effect::Reboot(Target::Bootloader)],
+            "a touch takes a choice too"
+        );
         assert!(press(&mut app, Key::Back, 0).is_empty());
-        assert_eq!(app.screen(), Screen::Fastboot, "there is nothing to go back to");
+        assert_eq!(
+            app.screen(),
+            Screen::Fastboot,
+            "there is nothing to go back to"
+        );
     }
 
     #[test]
@@ -8698,11 +11694,18 @@ mod tests {
         assert_eq!(app.screen(), Screen::Home);
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::Home, "fastboot is not behind it");
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))), "the keys go on working the pages");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search))),
+            "the keys go on working the pages"
+        );
         app.touch(Touch::Down(W as f32 / 2.0, 200.0), &f, 0);
         app.touch(Touch::Up, &f, 0);
         assert_eq!(press(&mut app, Key::Power, 0), vec![Effect::Ticks]);
-        assert!(!app.display_on(), "with the light put out, power turns the panel off");
+        assert!(
+            !app.display_on(),
+            "with the light put out, power turns the panel off"
+        );
     }
 
     #[test]
@@ -8712,7 +11715,10 @@ mod tests {
         app.frame(&f, &i);
         assert_eq!(app.light(0.0), None, "a page opens to the touch");
         app.touchscreen_missing();
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search)))
+        );
         assert!(app.light(0.0).is_some(), "lit before any key is pressed");
         assert!(app.take_dirty(), "and shown");
     }
@@ -8724,21 +11730,42 @@ mod tests {
         app.frame(&f, &i);
         assert!(!app.keys, "a page opens to the touch");
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))), "the first press lights the first control in view");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search))),
+            "the first press lights the first control in view"
+        );
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::About))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::About)))
+        );
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Install))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Install)))
+        );
         press(&mut app, Key::VolumeUp, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::About))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::About)))
+        );
         press(&mut app, Key::VolumeUp, 0);
         press(&mut app, Key::VolumeUp, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Reboot))), "up from the first goes round to the last");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Reboot))),
+            "up from the first goes round to the last"
+        );
         app.tick(5000);
         let reboot = app.lit().expect("lit");
         assert!(app.shows(&reboot, app.top().1), "scrolled into view");
         press(&mut app, Key::VolumeDown, 6000);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))), "down from the last goes round to the first");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search))),
+            "down from the last goes round to the first"
+        );
         app.tick(10_000);
         assert_eq!(app.top().1, 0.0, "at the top of the page again");
     }
@@ -8750,19 +11777,38 @@ mod tests {
         app.frame(&f, &i);
         light_on(&mut app, &f, &i, Stop::Hit(Action::Open(Screen::Settings)));
         assert!(app.key(Key::Power, 0).is_empty());
-        assert_eq!(app.screen(), Screen::Home, "nothing happens as the key goes down");
+        assert_eq!(
+            app.screen(),
+            Screen::Home,
+            "nothing happens as the key goes down"
+        );
         app.key_up(Key::Power, 0);
-        assert_eq!(app.screen(), Screen::Settings, "the row opens its page as the key comes up");
+        assert_eq!(
+            app.screen(),
+            Screen::Settings,
+            "the row opens its page as the key comes up"
+        );
         let first = lit(&mut app, &f, &i);
-        assert!(first.is_some() && first != Some(Stop::Back), "the page's first control is lit, not the `<`: {first:?}");
+        assert!(
+            first.is_some() && first != Some(Stop::Back),
+            "the page's first control is lit, not the `<`: {first:?}"
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::Home);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Settings))), "back on the page, the keys are where they left it");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Settings))),
+            "back on the page, the keys are where they left it"
+        );
         light_on(&mut app, &f, &i, Stop::Hit(Action::Open(Screen::Settings)));
         press(&mut app, Key::Power, 0);
         assert_eq!(lit(&mut app, &f, &i), first);
         press(&mut app, Key::VolumeUp, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Back), "up from the page's first control comes to the `<`");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Back),
+            "up from the page's first control comes to the `<`"
+        );
         press(&mut app, Key::Power, 0);
         assert_eq!(app.screen(), Screen::Home, "the `<` goes back");
     }
@@ -8771,13 +11817,23 @@ mod tests {
     fn past_the_last_control_the_keys_scroll_on_half_a_screen_a_press() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Installing, W, H, PPD);
-        app.state.install = Install::Finished { outcome: Outcome::Ran { wipe_cache: false }, damage: None };
+        app.state.install = Install::Finished {
+            outcome: Outcome::Ran { wipe_cache: false },
+            damage: None,
+        };
         app.state.script_output = (0..300).map(|k| format!("- line {k}")).collect();
         app.frame(&f, &i);
         let (max, (top, bottom)) = (app.max_scroll(), app.band(0.0));
         let half = (bottom - top) / 2.0;
-        assert!(max > half * 4.0, "the script's output runs on below the controls: {max}");
-        let last = *app.spots().expect("drawn").last().expect("controls on the page");
+        assert!(
+            max > half * 4.0,
+            "the script's output runs on below the controls: {max}"
+        );
+        let last = *app
+            .spots()
+            .expect("drawn")
+            .last()
+            .expect("controls on the page");
         light_on(&mut app, &f, &i, last.stop);
         let mut at = app.resting();
         let mut presses = 0;
@@ -8788,14 +11844,26 @@ mod tests {
             presses += 1;
             assert!(presses < 40);
             if !app.shows(&last, at) {
-                assert_eq!(lit(&mut app, &f, &i), None, "with no control in view, nothing is lit");
+                assert_eq!(
+                    lit(&mut app, &f, &i),
+                    None,
+                    "with no control in view, nothing is lit"
+                );
             }
         }
         press(&mut app, Key::VolumeDown, 0);
         let first = app.spots().expect("drawn")[0].stop;
-        assert_eq!((lit(&mut app, &f, &i), app.resting()), (Some(first), 0.0), "past the end the light goes round to the top");
+        assert_eq!(
+            (lit(&mut app, &f, &i), app.resting()),
+            (Some(first), 0.0),
+            "past the end the light goes round to the top"
+        );
         press(&mut app, Key::VolumeUp, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(last.stop), "and up from it round to the last control");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(last.stop),
+            "and up from it round to the last control"
+        );
         assert!(app.shows(&last, app.resting()), "which shows");
         let resting = app.resting();
         app.tick(5000);
@@ -8807,27 +11875,58 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Reboot, W, H, PPD);
         app.frame(&f, &i);
-        light_on(&mut app, &f, &i, Stop::Hit(Action::Confirm(Confirm::Reboot)));
+        light_on(
+            &mut app,
+            &f,
+            &i,
+            Stop::Hit(Action::Confirm(Confirm::Reboot)),
+        );
         assert!(press(&mut app, Key::Power, 0).is_empty());
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("请按住电源键"), "a short press says how");
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("请按住电源键"),
+            "a short press says how"
+        );
         app.key(Key::Power, 1000);
-        assert_eq!(app.deadline(1000), Some(1000 + CHORD_MS), "it waits for volume down first");
+        assert_eq!(
+            app.deadline(1000),
+            Some(1000 + CHORD_MS),
+            "it waits for volume down first"
+        );
         app.tick(1000 + CHORD_MS);
-        assert_eq!(app.deadline(1000 + CHORD_MS), Some(0), "then the knob moves while the key is held");
+        assert_eq!(
+            app.deadline(1000 + CHORD_MS),
+            Some(0),
+            "then the knob moves while the key is held"
+        );
         app.tick(1000 + SLIDE_MS / 2);
-        assert!((app.state.confirm - 0.5).abs() < 0.01, "half way after half the time: {}", app.state.confirm);
-        assert!(app.key_up(Key::Power, 1000 + SLIDE_MS / 2).is_empty(), "let go short of the end, nothing happens");
+        assert!(
+            (app.state.confirm - 0.5).abs() < 0.01,
+            "half way after half the time: {}",
+            app.state.confirm
+        );
+        assert!(
+            app.key_up(Key::Power, 1000 + SLIDE_MS / 2).is_empty(),
+            "let go short of the end, nothing happens"
+        );
         assert_eq!(app.state.confirm, 0.0, "and the knob goes back");
         app.key(Key::Power, 3000);
         app.tick(3000 + SLIDE_MS * 2);
         assert_eq!(app.state.confirm, 1.0, "the knob stops at the end");
-        assert_eq!(app.key_up(Key::Power, 3000 + SLIDE_MS * 2), vec![Effect::Reboot(TARGETS[0])], "let go there, it confirms");
+        assert_eq!(
+            app.key_up(Key::Power, 3000 + SLIDE_MS * 2),
+            vec![Effect::Reboot(TARGETS[0])],
+            "let go there, it confirms"
+        );
         assert_eq!(app.state.confirm, 0.0);
         app.key(Key::Power, 6000);
         app.tick(6000 + SLIDE_MS);
         app.touch(Touch::Down(W as f32 / 2.0, 200.0), &f, 6000 + SLIDE_MS);
         assert_eq!(app.state.confirm, 0.0, "a touch lets the knob go");
-        assert!(app.key_up(Key::Power, 6000 + SLIDE_MS).is_empty(), "and the key comes up to nothing");
+        assert!(
+            app.key_up(Key::Power, 6000 + SLIDE_MS).is_empty(),
+            "and the key comes up to nothing"
+        );
     }
 
     #[test]
@@ -8835,21 +11934,55 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
         app.frame(&f, &i);
-        light_on(&mut app, &f, &i, Stop::Hit(Action::Slider(Slider::Brightness)));
-        assert_eq!(app.state.brightness, SLIDER_START, "it starts a step from its left end");
+        light_on(
+            &mut app,
+            &f,
+            &i,
+            Stop::Hit(Action::Slider(Slider::Brightness)),
+        );
+        assert_eq!(
+            app.state.brightness, SLIDER_START,
+            "it starts a step from its left end"
+        );
         press(&mut app, Key::Power, 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("按音量键调节亮度，按电源键完成"));
-        assert!(press(&mut app, Key::VolumeUp, 0).is_empty(), "the panel shows the brightness");
-        assert!((app.state.brightness - (SLIDER_START + SLIDER_STEP)).abs() < 1e-5, "up turns it up");
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("按音量键调节亮度，按电源键完成")
+        );
+        assert!(
+            press(&mut app, Key::VolumeUp, 0).is_empty(),
+            "the panel shows the brightness"
+        );
+        assert!(
+            (app.state.brightness - (SLIDER_START + SLIDER_STEP)).abs() < 1e-5,
+            "up turns it up"
+        );
         press(&mut app, Key::VolumeDown, 0);
-        assert!((app.state.brightness - SLIDER_START).abs() < 1e-5, "down turns it down");
+        assert!(
+            (app.state.brightness - SLIDER_START).abs() < 1e-5,
+            "down turns it down"
+        );
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(app.state.brightness, MIN_BRIGHTNESS, "no lower than the slider's floor");
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Slider(Slider::Brightness))), "the light stays on the slider");
+        assert_eq!(
+            app.state.brightness, MIN_BRIGHTNESS,
+            "no lower than the slider's floor"
+        );
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Slider(Slider::Brightness))),
+            "the light stays on the slider"
+        );
         press(&mut app, Key::Power, 0);
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(app.state.brightness, MIN_BRIGHTNESS, "let go, the slider keeps its level");
-        assert_ne!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Slider(Slider::Brightness))), "and the keys move the light again");
+        assert_eq!(
+            app.state.brightness, MIN_BRIGHTNESS,
+            "let go, the slider keeps its level"
+        );
+        assert_ne!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Slider(Slider::Brightness))),
+            "and the keys move the light again"
+        );
     }
 
     #[test]
@@ -8857,17 +11990,38 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
         app.frame(&f, &i);
-        light_on(&mut app, &f, &i, Stop::Hit(Action::Slider(Slider::Vibration)));
+        light_on(
+            &mut app,
+            &f,
+            &i,
+            Stop::Hit(Action::Slider(Slider::Vibration)),
+        );
         press(&mut app, Key::Power, 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("按音量键调节振动强度，按电源键完成"));
-        assert_eq!(press(&mut app, Key::VolumeDown, 0), vec![Effect::Haptic], "each step taps at the strength reached");
-        assert_eq!(app.state.vibration, 0.0, "it starts a step from its left end, the lightest");
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("按音量键调节振动强度，按电源键完成")
+        );
+        assert_eq!(
+            press(&mut app, Key::VolumeDown, 0),
+            vec![Effect::Haptic],
+            "each step taps at the strength reached"
+        );
+        assert_eq!(
+            app.state.vibration, 0.0,
+            "it starts a step from its left end, the lightest"
+        );
         for _ in 0..20 {
             press(&mut app, Key::VolumeUp, 0);
         }
-        assert_eq!(app.state.vibration, 1.0, "up to its right end, the strongest");
+        assert_eq!(
+            app.state.vibration, 1.0,
+            "up to its right end, the strongest"
+        );
         press(&mut app, Key::Power, 0);
-        assert!(press(&mut app, Key::VolumeDown, 0).is_empty(), "let go, the keys move the light");
+        assert!(
+            press(&mut app, Key::VolumeDown, 0).is_empty(),
+            "let go, the keys move the light"
+        );
         assert_eq!(app.state.vibration, 1.0);
     }
 
@@ -8878,19 +12032,36 @@ mod tests {
         app.data_waiting(Some((0, Keys::Pattern)));
         app.frame(&f, &i);
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Dot(0)), "the grid's first dot is lit first");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Dot(0)),
+            "the grid's first dot is lit first"
+        );
         assert!(press(&mut app, Key::Power, 0).is_empty());
         assert_eq!(app.state.pattern, [0]);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("连接完成后，在最后一个点上再按一次电源键"));
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("连接完成后，在最后一个点上再按一次电源键")
+        );
         press(&mut app, Key::Power, 0);
-        assert!(app.state.pattern.is_empty(), "ended at one dot, the pattern is wiped");
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("请至少连接 4 个点"));
+        assert!(
+            app.state.pattern.is_empty(),
+            "ended at one dot, the pattern is wiped"
+        );
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("请至少连接 4 个点")
+        );
         press(&mut app, Key::Power, 0);
         press(&mut app, Key::VolumeDown, 0);
         press(&mut app, Key::VolumeDown, 0);
         assert_eq!(lit(&mut app, &f, &i), Some(Stop::Dot(2)));
         press(&mut app, Key::Power, 0);
-        assert_eq!(app.state.pattern, [0, 1, 2], "the dot passed straight over is joined on the way");
+        assert_eq!(
+            app.state.pattern,
+            [0, 1, 2],
+            "the dot passed straight over is joined on the way"
+        );
         for _ in 0..6 {
             press(&mut app, Key::VolumeDown, 0);
         }
@@ -8900,11 +12071,25 @@ mod tests {
         press(&mut app, Key::VolumeUp, 0);
         press(&mut app, Key::VolumeUp, 0);
         press(&mut app, Key::Power, 0);
-        assert_eq!(app.state.pattern, [0, 1, 2, 5, 8, 7, 6], "two along the row joins the one between first");
+        assert_eq!(
+            app.state.pattern,
+            [0, 1, 2, 5, 8, 7, 6],
+            "two along the row joins the one between first"
+        );
         press(&mut app, Key::VolumeDown, 0);
-        assert!(press(&mut app, Key::Power, 0).is_empty(), "a dot joined already is not joined again");
+        assert!(
+            press(&mut app, Key::Power, 0).is_empty(),
+            "a dot joined already is not joined again"
+        );
         press(&mut app, Key::VolumeUp, 0);
-        assert_eq!(press(&mut app, Key::Power, 0), vec![Effect::Unlock { user: 0, code: "1236987".into() }], "the last one joined ends it");
+        assert_eq!(
+            press(&mut app, Key::Power, 0),
+            vec![Effect::Unlock {
+                user: 0,
+                code: "1236987".into()
+            }],
+            "the last one joined ends it"
+        );
     }
 
     #[test]
@@ -8919,7 +12104,13 @@ mod tests {
         }
         assert_eq!(app.state.code, "2580");
         light_on(&mut app, &f, &i, Stop::Hit(Action::Type(Cap::Enter)));
-        assert_eq!(press(&mut app, Key::Power, 0), vec![Effect::Unlock { user: 0, code: "2580".into() }]);
+        assert_eq!(
+            press(&mut app, Key::Power, 0),
+            vec![Effect::Unlock {
+                user: 0,
+                code: "2580".into()
+            }]
+        );
     }
 
     #[test]
@@ -8927,22 +12118,52 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         tap(&mut app, &f, &i, Action::Open(Screen::Files));
-        app.set_files("/".into(), Ok(vec![entry("vendor", folder(12)), entry("init.rc", FileKind::File)]), LISTED);
+        app.set_files(
+            "/".into(),
+            Ok(vec![
+                entry("vendor", folder(12)),
+                entry("init.rc", FileKind::File),
+            ]),
+            LISTED,
+        );
         app.frame(&f, &i);
         press(&mut app, Key::VolumeDown, 0);
         assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::OpenEntry(0))));
         assert!(app.key(Key::Power, 1000).is_empty());
-        assert_eq!(app.deadline(1000), Some(1000 + CHORD_MS), "it waits for volume down first");
+        assert_eq!(
+            app.deadline(1000),
+            Some(1000 + CHORD_MS),
+            "it waits for volume down first"
+        );
         assert!(app.tick(1000 + CHORD_MS).is_empty());
-        assert_eq!(app.deadline(1000 + CHORD_MS), Some(1000 + LONG_PRESS_MS), "the press is timed from when it went down");
+        assert_eq!(
+            app.deadline(1000 + CHORD_MS),
+            Some(1000 + LONG_PRESS_MS),
+            "the press is timed from when it went down"
+        );
         assert!(app.tick(1000 + LONG_PRESS_MS - 1).is_empty());
-        assert_eq!(app.tick(1000 + LONG_PRESS_MS), vec![Effect::Haptic], "held long enough, the folder's page opens");
+        assert_eq!(
+            app.tick(1000 + LONG_PRESS_MS),
+            vec![Effect::Haptic],
+            "held long enough, the folder's page opens"
+        );
         assert_eq!(app.screen(), Screen::FileInfo);
-        assert_eq!(app.state.file.as_ref().map(|e| e.name.as_str()), Some("vendor"));
-        assert!(app.key_up(Key::Power, 1000 + LONG_PRESS_MS + 100).is_empty(), "and the key comes up to nothing");
+        assert_eq!(
+            app.state.file.as_ref().map(|e| e.name.as_str()),
+            Some("vendor")
+        );
+        assert!(
+            app.key_up(Key::Power, 1000 + LONG_PRESS_MS + 100)
+                .is_empty(),
+            "and the key comes up to nothing"
+        );
         app.key(Key::Back, 2000);
         assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::OpenEntry(0))));
-        assert_eq!(press(&mut app, Key::Power, 3000), vec![Effect::ReadDir("/vendor".into())], "a short press goes into the folder");
+        assert_eq!(
+            press(&mut app, Key::Power, 3000),
+            vec![Effect::ReadDir("/vendor".into())],
+            "a short press goes into the folder"
+        );
     }
 
     #[test]
@@ -8958,11 +12179,18 @@ mod tests {
         app.touch(Touch::Up, &f, 0);
         assert!(app.light(0.0).is_none(), "a touch puts the light out");
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::About))), "the keys come back where they were");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::About))),
+            "the keys come back where they were"
+        );
         app.touch(Touch::Down(W as f32 / 2.0, 200.0), &f, 0);
         app.touch(Touch::Up, &f, 0);
         press(&mut app, Key::Power, 0);
-        assert!(!app.display_on(), "with the light out, power turns the panel off");
+        assert!(
+            !app.display_on(),
+            "with the light out, power turns the panel off"
+        );
         press(&mut app, Key::VolumeDown, 1000);
         assert!(!app.display_on(), "a volume key leaves the panel dark");
         press(&mut app, Key::Power, 1100);
@@ -8976,19 +12204,44 @@ mod tests {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.frame(&f, &i);
         app.key(Key::VolumeDown, 0);
-        assert_eq!(app.deadline(0), Some(CHORD_MS), "it waits for the power key first");
+        assert_eq!(
+            app.deadline(0),
+            Some(CHORD_MS),
+            "it waits for the power key first"
+        );
         app.tick(CHORD_MS);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))));
-        assert_eq!(app.deadline(CHORD_MS), Some(REPEAT_DELAY_MS), "and repeats as from when it went down");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search)))
+        );
+        assert_eq!(
+            app.deadline(CHORD_MS),
+            Some(REPEAT_DELAY_MS),
+            "and repeats as from when it went down"
+        );
         app.tick(REPEAT_DELAY_MS - 1);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))), "not held long enough yet");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search))),
+            "not held long enough yet"
+        );
         app.tick(REPEAT_DELAY_MS);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::About))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::About)))
+        );
         app.tick(REPEAT_DELAY_MS + REPEAT_MS);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Install))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Install)))
+        );
         app.key_up(Key::VolumeDown, REPEAT_DELAY_MS + REPEAT_MS + 10);
         app.tick(REPEAT_DELAY_MS + REPEAT_MS * 5);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Install))), "let go, it stops");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Install))),
+            "let go, it stops"
+        );
     }
 
     #[test]
@@ -8996,37 +12249,77 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         tap(&mut app, &f, &i, Action::Open(Screen::Files));
-        let folders: Vec<FileRow> = (0..300).map(|k| entry(&format!("dir{k:03}"), folder(k))).collect();
+        let folders: Vec<FileRow> = (0..300)
+            .map(|k| entry(&format!("dir{k:03}"), folder(k)))
+            .collect();
         app.set_files("/".into(), Ok(folders.clone()), LISTED);
         app.frame(&f, &i);
         press(&mut app, Key::VolumeDown, 0);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::OpenEntry(0))), "the first entry, below the path");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::OpenEntry(0))),
+            "the first entry, below the path"
+        );
         for _ in 0..40 {
             press(&mut app, Key::VolumeDown, 0);
         }
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::OpenEntry(40))));
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::OpenEntry(40)))
+        );
         app.tick(5000);
         let row = app.lit().expect("lit");
         assert!(app.shows(&row, app.top().1), "scrolled into view");
-        assert_eq!(press(&mut app, Key::Power, 5000), vec![Effect::ReadDir("/dir040".into())]);
-        app.set_files("/dir040".into(), Ok(vec![entry("a", FileKind::File)]), LISTED);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::OpenEntry(0))), "a folder opened lights its first entry");
+        assert_eq!(
+            press(&mut app, Key::Power, 5000),
+            vec![Effect::ReadDir("/dir040".into())]
+        );
+        app.set_files(
+            "/dir040".into(),
+            Ok(vec![entry("a", FileKind::File)]),
+            LISTED,
+        );
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::OpenEntry(0))),
+            "a folder opened lights its first entry"
+        );
         assert_eq!(app.key(Key::Back, 6000), vec![Effect::ReadDir("/".into())]);
         app.set_files("/".into(), Ok(folders), LISTED);
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::OpenEntry(40))), "back up, the folder left is lit");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::OpenEntry(40))),
+            "back up, the folder left is lit"
+        );
     }
 
     #[test]
     fn the_cant_start_page_retries_looks_around_or_erases() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::CantStart, W, H, PPD);
-        app.set_asked(Asked { reason: Some("RescueParty".into()), ..Asked::default() });
-        assert_eq!(tap(&mut app, &f, &i, Action::RebootTo(Target::System)), vec![Effect::Reboot(Target::System)]);
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::FactoryReset), vec![Effect::FactoryReset]);
-        assert_eq!(tap(&mut app, &f, &i, Action::Dismiss), vec![Effect::Dismiss]);
+        app.set_asked(Asked {
+            reason: Some("RescueParty".into()),
+            ..Asked::default()
+        });
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::RebootTo(Target::System)),
+            vec![Effect::Reboot(Target::System)]
+        );
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::FactoryReset),
+            vec![Effect::FactoryReset]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Dismiss),
+            vec![Effect::Dismiss]
+        );
         assert_eq!(app.screen(), Screen::Home);
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::Home, "the system's question is not behind it");
+        assert_eq!(
+            app.screen(),
+            Screen::Home,
+            "the system's question is not behind it"
+        );
     }
 
     #[test]
@@ -9035,19 +12328,42 @@ mod tests {
         let mut app = App::new(Screen::CantStart, W, H, PPD);
         app.erase_started(true, true, vec![Part::Data, Part::Metadata]);
         assert_eq!(app.screen(), Screen::Erase);
-        assert!(app.frame(&f, &i).hits.is_empty(), "nothing is to be done while erasing");
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "nothing is to be done while erasing"
+        );
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::Erase, "there is nothing to go back to");
+        assert_eq!(
+            app.screen(),
+            Screen::Erase,
+            "there is nothing to go back to"
+        );
         app.erase_at(Part::Metadata);
         assert_eq!(app.state.erase.done, 1);
         press(&mut app, Key::Power, 0);
         assert!(!app.display_on());
-        app.erase_ended(Err(EraseStop::Failed(Part::Metadata, "make_f2fs ended with exit status: 1".into())), 1000);
+        app.erase_ended(
+            Err(EraseStop::Failed(
+                Part::Metadata,
+                "make_f2fs ended with exit status: 1".into(),
+            )),
+            1000,
+        );
         assert!(app.display_on(), "what comes next is the user's to choose");
-        assert_eq!(app.state.data, Data::Erased, "the data partition went before /metadata failed");
+        assert_eq!(
+            app.state.data,
+            Data::Erased,
+            "the data partition went before /metadata failed"
+        );
         let later = 2000;
-        assert_eq!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::PowerOff), later), vec![Effect::Reboot(Target::PowerOff)]);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Dismiss, later), vec![Effect::Dismiss]);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::RebootTo(Target::PowerOff), later),
+            vec![Effect::Reboot(Target::PowerOff)]
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Dismiss, later),
+            vec![Effect::Dismiss]
+        );
         assert_eq!(app.screen(), Screen::Home);
     }
 
@@ -9058,45 +12374,105 @@ mod tests {
         app.erase_started(false, true, vec![Part::Cache]);
         app.erase_ended(Ok(()), 0);
         assert_eq!(app.state.erase.done, 1, "every part is erased");
-        assert!(app.frame(&f, &i).hits.is_empty(), "the runtime starts the system at once");
-        assert_eq!(app.state.data, Data::Closed, "the data partition was not part of it");
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "the runtime starts the system at once"
+        );
+        assert_eq!(
+            app.state.data,
+            Data::Closed,
+            "the data partition was not part of it"
+        );
     }
 
     #[test]
     fn the_wipe_page_erases_everything_or_the_parts_chosen() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Wipe, &f, &i);
-        let chosen = |app: &App| WIPES.iter().zip(app.state.wipe).filter(|(_, on)| *on).map(|(&w, _)| w).collect::<Vec<_>>();
-        assert!(swipe(&mut app, &f, &i, Confirm::Wipe).is_empty(), "nothing is chosen at first");
-        for part in [Wipe::Updates, Wipe::Logs, Wipe::Art, Wipe::SystemCaches, Wipe::AppCaches, Wipe::Media, Wipe::AppData] {
+        let chosen = |app: &App| {
+            WIPES
+                .iter()
+                .zip(app.state.wipe)
+                .filter(|(_, on)| *on)
+                .map(|(&w, _)| w)
+                .collect::<Vec<_>>()
+        };
+        assert!(
+            swipe(&mut app, &f, &i, Confirm::Wipe).is_empty(),
+            "nothing is chosen at first"
+        );
+        for part in [
+            Wipe::Updates,
+            Wipe::Logs,
+            Wipe::Art,
+            Wipe::SystemCaches,
+            Wipe::AppCaches,
+            Wipe::Media,
+            Wipe::AppData,
+        ] {
             tap(&mut app, &f, &i, Action::WipeItem(part));
         }
-        let parts = vec![Wipe::AppData, Wipe::Media, Wipe::AppCaches, Wipe::SystemCaches, Wipe::Art, Wipe::Logs, Wipe::Updates];
-        assert_eq!(chosen(&app), parts, "every part the page lists can be chosen with the others");
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Wipe), vec![Effect::Wipe(parts)], "in the order listed");
+        let parts = vec![
+            Wipe::AppData,
+            Wipe::Media,
+            Wipe::AppCaches,
+            Wipe::SystemCaches,
+            Wipe::Art,
+            Wipe::Logs,
+            Wipe::Updates,
+        ];
+        assert_eq!(
+            chosen(&app),
+            parts,
+            "every part the page lists can be chosen with the others"
+        );
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Wipe),
+            vec![Effect::Wipe(parts)],
+            "in the order listed"
+        );
         tap(&mut app, &f, &i, Action::WipeItem(Wipe::All));
         assert_eq!(chosen(&app), [Wipe::All], "everything takes the parts in");
         tap(&mut app, &f, &i, Action::WipeItem(Wipe::Art));
-        assert_eq!(chosen(&app), [Wipe::Art], "a part on its own leaves everything out");
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Wipe), vec![Effect::Wipe(vec![Wipe::Art])]);
+        assert_eq!(
+            chosen(&app),
+            [Wipe::Art],
+            "a part on its own leaves everything out"
+        );
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Wipe),
+            vec![Effect::Wipe(vec![Wipe::Art])]
+        );
         tap(&mut app, &f, &i, Action::WipeItem(Wipe::Art));
         assert!(chosen(&app).is_empty(), "tapped again, a part is left out");
         tap(&mut app, &f, &i, Action::WipeItem(Wipe::All));
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Wipe), vec![Effect::Wipe(vec![Wipe::All])]);
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Wipe),
+            vec![Effect::Wipe(vec![Wipe::All])]
+        );
     }
 
     #[test]
     fn the_cache_partition_is_offered_only_on_a_phone_that_has_one() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Wipe, &f, &i);
-        let offered = |app: &mut App| app.frame(&f, &i).hits.iter().any(|h| h.action == Action::WipeItem(Wipe::Cache));
+        let offered = |app: &mut App| {
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::WipeItem(Wipe::Cache))
+        };
         assert!(!offered(&mut app));
         app.state.cache_partition = true;
         app.refresh();
         assert!(offered(&mut app));
         tap(&mut app, &f, &i, Action::WipeItem(Wipe::Cache));
         tap(&mut app, &f, &i, Action::WipeItem(Wipe::Media));
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Wipe), vec![Effect::Wipe(vec![Wipe::Media, Wipe::Cache])], "in the order listed");
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Wipe),
+            vec![Effect::Wipe(vec![Wipe::Media, Wipe::Cache])],
+            "in the order listed"
+        );
     }
 
     #[test]
@@ -9107,15 +12483,28 @@ mod tests {
         app.erase_progress(30, 120);
         assert_eq!(app.state.erase.progress, Some((30, 120)));
         app.erase_at(Part::Art);
-        assert_eq!(app.state.erase.progress, None, "the next part starts from nothing");
+        assert_eq!(
+            app.state.erase.progress, None,
+            "the next part starts from nothing"
+        );
         press(&mut app, Key::Power, 0);
         assert!(!app.display_on());
         app.erase_ended(Ok(()), 1000);
         assert!(app.display_on(), "how it ended waits to be read");
-        assert_eq!(app.state.data, Data::Closed, "the data partition itself stays");
+        assert_eq!(
+            app.state.data,
+            Data::Closed,
+            "the data partition itself stays"
+        );
         let later = 2000;
-        assert_eq!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), later), vec![Effect::Reboot(Target::System)]);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Dismiss, later), vec![Effect::Dismiss]);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), later),
+            vec![Effect::Reboot(Target::System)]
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Dismiss, later),
+            vec![Effect::Dismiss]
+        );
         assert_eq!(app.screen(), Screen::Home);
     }
 
@@ -9123,14 +12512,33 @@ mod tests {
     fn parts_waiting_on_a_locked_user_erase_nothing_and_send_the_user_home_to_decrypt() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        app.state.data = Data::Locked { user: 0, keys: Keys::Digits, checking: false };
+        app.state.data = Data::Locked {
+            user: 0,
+            keys: Keys::Digits,
+            checking: false,
+        };
         app.erase_started(false, false, vec![Part::AppCaches, Part::Logs]);
         app.erase_ended(Err(EraseStop::Locked(vec![0])), 0);
         assert_eq!(app.state.erase.done, 0, "nothing was erased");
-        assert_eq!(app.state.data, Data::Locked { user: 0, keys: Keys::Digits, checking: false }, "the partition stays as it was");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Dismiss, 1000), vec![Effect::Dismiss]);
+        assert_eq!(
+            app.state.data,
+            Data::Locked {
+                user: 0,
+                keys: Keys::Digits,
+                checking: false
+            },
+            "the partition stays as it was"
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Dismiss, 1000),
+            vec![Effect::Dismiss]
+        );
         assert_eq!(app.screen(), Screen::Home);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Open(Screen::Decrypt), 1000), Vec::new(), "the screen lock is asked for at once");
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Open(Screen::Decrypt), 1000),
+            Vec::new(),
+            "the screen lock is asked for at once"
+        );
         assert_eq!(app.screen(), Screen::Decrypt);
     }
 
@@ -9142,8 +12550,14 @@ mod tests {
         app.erase_started(true, false, vec![Part::Data, Part::Metadata]);
         app.erase_ended(Ok(()), 0);
         assert_eq!(app.state.data, Data::Erased);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Dismiss, 1000), vec![Effect::Dismiss]);
-        assert!(tap_at(&mut app, &f, &i, Action::Open(Screen::Decrypt), 1000).is_empty(), "nothing opens until the system makes it afresh");
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Dismiss, 1000),
+            vec![Effect::Dismiss]
+        );
+        assert!(
+            tap_at(&mut app, &f, &i, Action::Open(Screen::Decrypt), 1000).is_empty(),
+            "nothing opens until the system makes it afresh"
+        );
         assert_eq!(app.screen(), Screen::Decrypt);
     }
 
@@ -9151,22 +12565,66 @@ mod tests {
     fn an_update_that_erases_all_user_data_waits_to_be_agreed_to() {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
-        app.install(Event::Checking { size: 7_103_043_868 }, 0);
-        app.install(Event::Ready { version: Some("OS3.0.306.0.WMACNXM".into()), wipe: true }, 0);
-        assert_eq!(app.state.install, Install::Confirming { version: Some("OS3.0.306.0.WMACNXM".into()), wipe: true });
+        app.install(
+            Event::Checking {
+                size: 7_103_043_868,
+            },
+            0,
+        );
+        app.install(
+            Event::Ready {
+                version: Some("OS3.0.306.0.WMACNXM".into()),
+                wipe: true,
+            },
+            0,
+        );
+        assert_eq!(
+            app.state.install,
+            Install::Confirming {
+                version: Some("OS3.0.306.0.WMACNXM".into()),
+                wipe: true
+            }
+        );
         // The question lit the panel, so the user swipes past the wake guard.
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::InstallWipe)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::InstallWipe))
+            .unwrap()
+            .rect;
         let y = track.centre().1 - app.top().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 1000);
         app.touch(Touch::Move(track.x + track.w, y), &f, 1000);
         assert_eq!(app.touch(Touch::Up, &f, 1000), vec![Effect::Install]);
-        assert_eq!(app.state.install, Install::Updating { version: Some("OS3.0.306.0.WMACNXM".into()), stage: None, overwriting: false });
+        assert_eq!(
+            app.state.install,
+            Install::Updating {
+                version: Some("OS3.0.306.0.WMACNXM".into()),
+                stage: None,
+                overwriting: false
+            }
+        );
         app.key(Key::Back, 1000);
-        assert_eq!(app.screen(), Screen::Installing, "an update being written keeps the page");
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "an update being written keeps the page"
+        );
 
         let mut app = sideloading(&f, &i);
-        app.install(Event::Ready { version: None, wipe: true }, 0);
-        assert_eq!(app.key(Key::Back, 1000), vec![Effect::Cancel], "turning it down cancels before anything is written");
+        app.install(
+            Event::Ready {
+                version: None,
+                wipe: true,
+            },
+            0,
+        );
+        assert_eq!(
+            app.key(Key::Back, 1000),
+            vec![Effect::Cancel],
+            "turning it down cancels before anything is written"
+        );
         assert_eq!(app.state.install, Install::Ending);
         assert_eq!(app.screen(), Screen::Install);
     }
@@ -9176,38 +12634,97 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Install, &f, &i);
         app.data_waiting(None);
-        tap(&mut app, &f, &i, Action::Open(Screen::Choose(Place::Storage)));
-        app.set_place(Place::Storage, String::new(), Ok(vec![entry("rom.zip", FileKind::File)]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::ChooseEntry(0)), vec![Effect::InstallFile(Place::Storage, "rom.zip".into())]);
-        assert_eq!(app.state.package_name.as_deref(), Some("rom.zip"), "the question names the file");
+        tap(
+            &mut app,
+            &f,
+            &i,
+            Action::Open(Screen::Choose(Place::Storage)),
+        );
+        app.set_place(
+            Place::Storage,
+            String::new(),
+            Ok(vec![entry("rom.zip", FileKind::File)]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ChooseEntry(0)),
+            vec![Effect::InstallFile(Place::Storage, "rom.zip".into())]
+        );
+        assert_eq!(
+            app.state.package_name.as_deref(),
+            Some("rom.zip"),
+            "the question names the file"
+        );
         app.install(Event::Script, 0);
         assert_eq!(app.state.install, Install::ConfirmingScript);
         // The question lit the panel, so the user swipes past the wake guard.
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::RunScript)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::RunScript))
+            .unwrap()
+            .rect;
         let y = track.centre().1 - app.top().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 1000);
         app.touch(Touch::Move(track.x + track.w, y), &f, 1000);
         assert_eq!(app.touch(Touch::Up, &f, 1000), vec![Effect::Install]);
-        assert_eq!(app.state.install, Install::Scripting { stage: None, running: false });
+        assert_eq!(
+            app.state.install,
+            Install::Scripting {
+                stage: None,
+                running: false
+            }
+        );
         app.install(Event::Running, 1000);
         for line in ["- Flashing boot", " ", "- Done"] {
             app.install(Event::Print(line.into()), 1000);
         }
         app.install(Event::Progress(Stage::Script { thousandths: 500 }), 1000);
-        assert_eq!(app.state.install, Install::Scripting { stage: Some(Stage::Script { thousandths: 500 }), running: true });
+        assert_eq!(
+            app.state.install,
+            Install::Scripting {
+                stage: Some(Stage::Script { thousandths: 500 }),
+                running: true
+            }
+        );
         let fr = app.frame(&f, &i);
-        assert!(fr.hits.is_empty(), "nothing on the page to tap while the script runs");
-        assert_eq!(fr.rows.as_ref().map(Rows::count), Some(3), "a row to each line it showed");
+        assert!(
+            fr.hits.is_empty(),
+            "nothing on the page to tap while the script runs"
+        );
+        assert_eq!(
+            fr.rows.as_ref().map(Rows::count),
+            Some(3),
+            "a row to each line it showed"
+        );
         app.key(Key::Back, 1000);
-        assert_eq!(app.screen(), Screen::Installing, "a script running keeps the page");
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "a script running keeps the page"
+        );
         assert_eq!(app.deadline(1000), Some(1000 + TOAST_MS), "it says why");
         app.install(Event::Finished(Outcome::Ran { wipe_cache: false }), 1000);
-        assert_eq!(app.state.install, Install::Finished { outcome: Outcome::Ran { wipe_cache: false }, damage: None });
+        assert_eq!(
+            app.state.install,
+            Install::Finished {
+                outcome: Outcome::Ran { wipe_cache: false },
+                damage: None
+            }
+        );
         let fr = app.frame(&f, &i);
         let rows = fr.rows.as_ref().expect("what it showed stays on the page");
         assert_eq!(rows.count(), 3);
-        assert!(fr.hit(W as f32 / 2.0, rows.rect(1, W as f32).centre().1).is_none(), "its lines answer no touch");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 2000), vec![Effect::Reboot(Target::System)]);
+        assert!(
+            fr.hit(W as f32 / 2.0, rows.rect(1, W as f32).centre().1)
+                .is_none(),
+            "its lines answer no touch"
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 2000),
+            vec![Effect::Reboot(Target::System)]
+        );
     }
 
     #[test]
@@ -9215,26 +12732,61 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
         app.install(Event::Script, 0);
-        assert_eq!(app.key(Key::Back, 1000), vec![Effect::Cancel], "turning it down cancels before it runs");
-        assert_eq!((app.screen(), &app.state.install), (Screen::Install, &Install::Ending));
+        assert_eq!(
+            app.key(Key::Back, 1000),
+            vec![Effect::Cancel],
+            "turning it down cancels before it runs"
+        );
+        assert_eq!(
+            (app.screen(), &app.state.install),
+            (Screen::Install, &Install::Ending)
+        );
 
         let mut app = sideloading(&f, &i);
         app.install(Event::Script, 0);
-        app.state.install = Install::Scripting { stage: None, running: false };
+        app.state.install = Install::Scripting {
+            stage: None,
+            running: false,
+        };
         let full = "extract META-INF/com/google/android/update-binary: No space left on device (os error 28)";
-        app.install(Event::Finished(Outcome::Failed(Failure::Error(full.into()))), 0);
-        assert!(matches!(app.state.install, Install::Finished { damage: None, .. }), "a script that never ran wrote nothing");
+        app.install(
+            Event::Finished(Outcome::Failed(Failure::Error(full.into()))),
+            0,
+        );
+        assert!(
+            matches!(app.state.install, Install::Finished { damage: None, .. }),
+            "a script that never ran wrote nothing"
+        );
         tap_at(&mut app, &f, &i, Action::Sideload, 1000);
         app.install(Event::Waiting, 1000);
         app.install(Event::Script, 1000);
-        app.state.install = Install::Scripting { stage: None, running: false };
+        app.state.install = Install::Scripting {
+            stage: None,
+            running: false,
+        };
         app.install(Event::Running, 1000);
         app.install(Event::Print("! Could not write vendor_b".into()), 1000);
         app.install(Event::Finished(Outcome::Failed(Failure::Script(1))), 1000);
-        assert_eq!(app.state.install, Install::Finished { outcome: Outcome::Failed(Failure::Script(1)), damage: Some(Damage::Script) });
-        assert_eq!(app.state.script_output, ["! Could not write vendor_b"], "what it showed before it failed stays");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Sideload, 2000), vec![Effect::Sideload]);
-        assert!(app.state.script_output.is_empty(), "sending again starts afresh");
+        assert_eq!(
+            app.state.install,
+            Install::Finished {
+                outcome: Outcome::Failed(Failure::Script(1)),
+                damage: Some(Damage::Script)
+            }
+        );
+        assert_eq!(
+            app.state.script_output,
+            ["! Could not write vendor_b"],
+            "what it showed before it failed stays"
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Sideload, 2000),
+            vec![Effect::Sideload]
+        );
+        assert!(
+            app.state.script_output.is_empty(),
+            "sending again starts afresh"
+        );
     }
 
     #[test]
@@ -9248,14 +12800,22 @@ mod tests {
         }
         assert_eq!(app.state.script_output.len(), SCRIPT_LINES);
         assert_eq!(app.state.script_output[0], "line 2");
-        assert_eq!(app.frame(&f, &i).rows.as_ref().map(Rows::count), Some(SCRIPT_LINES));
+        assert_eq!(
+            app.frame(&f, &i).rows.as_ref().map(Rows::count),
+            Some(SCRIPT_LINES)
+        );
     }
 
     #[test]
     fn the_install_page_offers_to_keep_skyward_where_the_phone_has_recovery_partitions() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Install, &f, &i);
-        let offered = |app: &mut App| app.frame(&f, &i).hits.iter().any(|h| h.action == Action::Toggle(Switch::KeepRecovery));
+        let offered = |app: &mut App| {
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::Toggle(Switch::KeepRecovery))
+        };
         assert!(!offered(&mut app), "a phone whose recovery lives in boot");
         app.state.recovery_partitions = true;
         app.refresh();
@@ -9269,7 +12829,13 @@ mod tests {
     fn the_install_page_offers_to_check_a_zips_signature_off_until_turned_on() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Install, &f, &i);
-        assert!(app.frame(&f, &i).hits.iter().any(|h| h.action == Action::Toggle(Switch::Signature)), "on any phone");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::Toggle(Switch::Signature)),
+            "on any phone"
+        );
         assert!(!app.state.check_signature);
         tap(&mut app, &f, &i, Action::Toggle(Switch::Signature));
         assert!(app.state.check_signature);
@@ -9281,13 +12847,36 @@ mod tests {
         let mut app = sideloading(&f, &i);
         app.install(Event::Checking { size: 4096 }, 0);
         app.key(Key::Back, 1000);
-        assert_eq!(app.screen(), Screen::Installing, "a package being looked at keeps the page");
-        let checking = Stage::Signature { done: 1024, total: 4000 };
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "a package being looked at keeps the page"
+        );
+        let checking = Stage::Signature {
+            done: 1024,
+            total: 4000,
+        };
         app.install(Event::Progress(checking.clone()), 1000);
-        assert_eq!(app.state.install, Install::Checking { size: 4096, stage: Some(checking) });
-        assert!(app.frame(&f, &i).hits.is_empty(), "nothing on the page to tap while it is checked");
-        assert_eq!(app.key(Key::Back, 2000), vec![Effect::Cancel], "checking only reads, so leaving stops it");
-        assert_eq!((app.screen(), &app.state.install), (Screen::Install, &Install::Ending));
+        assert_eq!(
+            app.state.install,
+            Install::Checking {
+                size: 4096,
+                stage: Some(checking)
+            }
+        );
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "nothing on the page to tap while it is checked"
+        );
+        assert_eq!(
+            app.key(Key::Back, 2000),
+            vec![Effect::Cancel],
+            "checking only reads, so leaving stops it"
+        );
+        assert_eq!(
+            (app.screen(), &app.state.install),
+            (Screen::Install, &Install::Ending)
+        );
         app.install(Event::Finished(Outcome::Cancelled), 2000);
         assert_eq!(app.state.install, Install::Idle);
     }
@@ -9298,9 +12887,18 @@ mod tests {
         let mut app = sideloading(&f, &i);
         app.install(Event::Script, 0);
         app.install(Event::Running, 0);
-        let writing = Stage::Reflashing { done: 1 << 20, total: 4 << 20 };
+        let writing = Stage::Reflashing {
+            done: 1 << 20,
+            total: 4 << 20,
+        };
         app.install(Event::Progress(writing.clone()), 0);
-        assert_eq!(app.state.install, Install::Scripting { stage: Some(writing), running: true });
+        assert_eq!(
+            app.state.install,
+            Install::Scripting {
+                stage: Some(writing),
+                running: true
+            }
+        );
         let why = "write /dev/block/by-name/recovery_a: Input/output error (os error 5)";
         app.install(Event::Reflashed(Reflash::Failed(why.into())), 0);
         app.install(Event::Finished(Outcome::Failed(Failure::Script(1))), 0);
@@ -9310,10 +12908,28 @@ mod tests {
 
         app.install(Event::Waiting, 1000);
         app.install(Event::Installing { version: None }, 1000);
-        app.install(Event::Progress(Stage::Reflashing { done: 1, total: 2 }), 1000);
-        assert!(matches!(app.state.install, Install::Updating { stage: Some(Stage::Reflashing { .. }), .. }), "an update writes it back too");
+        app.install(
+            Event::Progress(Stage::Reflashing { done: 1, total: 2 }),
+            1000,
+        );
+        assert!(
+            matches!(
+                app.state.install,
+                Install::Updating {
+                    stage: Some(Stage::Reflashing { .. }),
+                    ..
+                }
+            ),
+            "an update writes it back too"
+        );
         app.install(Event::Reflashed(Reflash::Written(vec![Slot::A])), 1000);
-        app.install(Event::Finished(Outcome::Installed { slot: Slot::A, wipe: false }), 1000);
+        app.install(
+            Event::Finished(Outcome::Installed {
+                slot: Slot::A,
+                wipe: false,
+            }),
+            1000,
+        );
         assert_eq!(app.state.reflash, Some(Reflash::Written(vec![Slot::A])));
     }
 
@@ -9321,15 +12937,30 @@ mod tests {
     fn work_the_recovery_does_not_do_is_shown_with_where_to_go() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Unhandled, W, H, PPD);
-        app.set_asked(Asked { unhandled: Some("--update_package=/data/ota_package/update.zip".into()), ..Asked::default() });
-        assert_eq!(tap(&mut app, &f, &i, Action::RebootTo(Target::System)), vec![Effect::Reboot(Target::System)]);
-        assert_eq!(tap(&mut app, &f, &i, Action::Dismiss), vec![Effect::Dismiss]);
+        app.set_asked(Asked {
+            unhandled: Some("--update_package=/data/ota_package/update.zip".into()),
+            ..Asked::default()
+        });
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::RebootTo(Target::System)),
+            vec![Effect::Reboot(Target::System)]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Dismiss),
+            vec![Effect::Dismiss]
+        );
         assert_eq!(app.screen(), Screen::Home);
     }
 
     /// Drag the knob of a swipe-to-confirm track all the way across.
     fn swipe(app: &mut App, f: &Fonts, i: &DeviceInfo, which: Confirm) -> Vec<Effect> {
-        let track = app.frame(f, i).hits.iter().find(|h| h.action == Action::Confirm(which)).expect("the track is on the page").rect;
+        let track = app
+            .frame(f, i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(which))
+            .expect("the track is on the page")
+            .rect;
         let y = track.centre().1 - app.top().1;
         let mut fx = app.touch(Touch::Down(track.x + track.h / 2.0, y), f, 0);
         fx.extend(app.touch(Touch::Move(track.x + track.w / 2.0, y), f, 0));
@@ -9340,7 +12971,13 @@ mod tests {
 
     #[test]
     fn every_unfinished_entry_now_opens_its_page() {
-        let (f, i) = (fonts(), DeviceInfo { slot: Some(Slot::B), ..info() });
+        let (f, i) = (
+            fonts(),
+            DeviceInfo {
+                slot: Some(Slot::B),
+                ..info()
+            },
+        );
         let routes: [(Screen, Screen); 13] = [
             (Screen::Home, Screen::Search),
             (Screen::Home, Screen::Backup),
@@ -9370,17 +13007,38 @@ mod tests {
     fn logs_are_exported_as_ticked_where_they_can_go() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Logs, W, H, PPD);
-        let both = Effect::ExportLogs { recovery: true, kernel: true, storage: false };
-        assert_eq!(tap(&mut app, &f, &i, Action::ExportLogs), vec![both], "both, to the temporary folder, at first");
+        let both = Effect::ExportLogs {
+            recovery: true,
+            kernel: true,
+            storage: false,
+        };
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ExportLogs),
+            vec![both],
+            "both, to the temporary folder, at first"
+        );
         tap(&mut app, &f, &i, Action::LogPart(0));
         tap(&mut app, &f, &i, Action::LogsTo(1));
-        assert!(tap(&mut app, &f, &i, Action::ExportLogs).is_empty(), "internal storage waits for the data partition");
+        assert!(
+            tap(&mut app, &f, &i, Action::ExportLogs).is_empty(),
+            "internal storage waits for the data partition"
+        );
         app.tick(1000);
         assert_eq!(app.deadline(1000), Some(TOAST_MS), "and says so");
         app.data_waiting(None);
-        assert_eq!(tap(&mut app, &f, &i, Action::ExportLogs), vec![Effect::ExportLogs { recovery: false, kernel: true, storage: true }]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ExportLogs),
+            vec![Effect::ExportLogs {
+                recovery: false,
+                kernel: true,
+                storage: true
+            }]
+        );
         tap(&mut app, &f, &i, Action::LogPart(1));
-        assert!(tap(&mut app, &f, &i, Action::ExportLogs).is_empty(), "nothing ticked, nothing saved");
+        assert!(
+            tap(&mut app, &f, &i, Action::ExportLogs).is_empty(),
+            "nothing ticked, nothing saved"
+        );
     }
 
     #[test]
@@ -9389,7 +13047,10 @@ mod tests {
         let mut app = App::new(Screen::Settings, W, H, PPD);
         tap(&mut app, &f, &i, Action::Open(Screen::TimeZone));
         assert_eq!(app.state.time_zone, 0, "China until another is chosen");
-        let london = TIME_ZONES.iter().position(|&(_, _, name)| name == "Europe/London").expect("London is listed");
+        let london = TIME_ZONES
+            .iter()
+            .position(|&(_, _, name)| name == "Europe/London")
+            .expect("London is listed");
         tap(&mut app, &f, &i, Action::TimeZone(london));
         assert_eq!(app.state.time_zone, london);
         tap(&mut app, &f, &i, Action::TimeZone(0));
@@ -9401,28 +13062,50 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Backup, &f, &i);
         assert_eq!(app.state.backup, [true, true, false, true]);
-        assert!(swipe(&mut app, &f, &i, Confirm::Backup).is_empty(), "internal storage waits for the data partition");
+        assert!(
+            swipe(&mut app, &f, &i, Confirm::Backup).is_empty(),
+            "internal storage waits for the data partition"
+        );
         assert_eq!(app.deadline(0), Some(TOAST_MS), "and says so");
         // The owner's files open first; another user's still wait.
         app.data_waiting(Some((10, Keys::Digits)));
-        let first = Effect::Backup { parts: [true, true, false, true], place: Place::Storage, compress: false, verify: true };
+        let first = Effect::Backup {
+            parts: [true, true, false, true],
+            place: Place::Storage,
+            compress: false,
+            verify: true,
+        };
         assert_eq!(swipe(&mut app, &f, &i, Confirm::Backup), vec![first]);
         tap(&mut app, &f, &i, Action::BackupPart(2));
-        assert!(swipe(&mut app, &f, &i, Confirm::Backup).is_empty(), "the data partition is backed up only with every user's files open");
+        assert!(
+            swipe(&mut app, &f, &i, Confirm::Backup).is_empty(),
+            "the data partition is backed up only with every user's files open"
+        );
         app.data_waiting(None);
         tap(&mut app, &f, &i, Action::BackupPart(0));
         assert_eq!(app.state.backup, [false, true, true, true]);
         tap(&mut app, &f, &i, Action::BackupTo(Place::UsbDrive));
         tap(&mut app, &f, &i, Action::Toggle(Switch::Compress));
         tap(&mut app, &f, &i, Action::Toggle(Switch::Verify));
-        assert!(swipe(&mut app, &f, &i, Confirm::Backup).is_empty(), "no drive is plugged in");
+        assert!(
+            swipe(&mut app, &f, &i, Confirm::Backup).is_empty(),
+            "no drive is plugged in"
+        );
         app.set_usb_drive(Some(UsbDrive::Shown));
-        let second = Effect::Backup { parts: [false, true, true, true], place: Place::UsbDrive, compress: true, verify: false };
+        let second = Effect::Backup {
+            parts: [false, true, true, true],
+            place: Place::UsbDrive,
+            compress: true,
+            verify: false,
+        };
         assert_eq!(swipe(&mut app, &f, &i, Confirm::Backup), vec![second]);
         for k in 1..4 {
             tap(&mut app, &f, &i, Action::BackupPart(k));
         }
-        assert!(swipe(&mut app, &f, &i, Confirm::Backup).is_empty(), "nothing ticked, nothing backed up");
+        assert!(
+            swipe(&mut app, &f, &i, Confirm::Backup).is_empty(),
+            "nothing ticked, nothing backed up"
+        );
     }
 
     /// A backup found in `place`, made at `made`, holding `parts`.
@@ -9435,60 +13118,141 @@ mod tests {
             system: Some("OS3.0.305.0.WMACNXM".into()),
             slot: Some(Slot::B),
         };
-        BackupEntry { place, name: fmt::stamp(made, 0), held: Ok(held) }
+        BackupEntry {
+            place,
+            name: fmt::stamp(made, 0),
+            held: Ok(held),
+        }
     }
 
     #[test]
     fn backups_found_are_listed_newest_first_and_those_unread_last() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Restore)), vec![Effect::FindBackups { storage: false, usb: false }]);
-        let unread = BackupEntry { place: Place::Storage, name: "20261021-150000".into(), held: Err("read backup.toml: not found".into()) };
-        let (old, new) = (found(Place::UsbDrive, 1_792_000_000, [true; 4]), found(Place::Storage, 1_792_348_260, [true; 4]));
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Restore)),
+            vec![Effect::FindBackups {
+                storage: false,
+                usb: false
+            }]
+        );
+        let unread = BackupEntry {
+            place: Place::Storage,
+            name: "20261021-150000".into(),
+            held: Err("read backup.toml: not found".into()),
+        };
+        let (old, new) = (
+            found(Place::UsbDrive, 1_792_000_000, [true; 4]),
+            found(Place::Storage, 1_792_348_260, [true; 4]),
+        );
         app.set_backups(vec![unread.clone(), old.clone(), new.clone()]);
         assert_eq!(app.state.backups, [new, old, unread]);
-        let opens = app.frame(&f, &i).hits.iter().filter(|h| matches!(h.action, Action::OpenBackup(_))).count();
-        assert_eq!(opens, 3, "each opens, one that cannot be read to be deleted");
+        let opens = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .filter(|h| matches!(h.action, Action::OpenBackup(_)))
+            .count();
+        assert_eq!(
+            opens, 3,
+            "each opens, one that cannot be read to be deleted"
+        );
     }
 
     #[test]
     fn a_backup_found_opens_to_choose_what_to_restore() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Restore, &f, &i);
-        assert!(app.frame(&f, &i).hits.is_empty(), "nothing found, nothing to open");
-        app.set_backups(vec![found(Place::Storage, 1_792_348_260, [true, true, false, true])]);
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "nothing found, nothing to open"
+        );
+        app.set_backups(vec![found(
+            Place::Storage,
+            1_792_348_260,
+            [true, true, false, true],
+        )]);
         tap(&mut app, &f, &i, Action::OpenBackup(0));
         assert_eq!(app.screen(), Screen::RestoreBackup);
-        let parts: Vec<Action> =
-            app.frame(&f, &i).hits.iter().map(|h| h.action).filter(|a| matches!(a, Action::RestorePart(_))).collect();
-        assert_eq!(parts, [Action::RestorePart(0), Action::RestorePart(1), Action::RestorePart(3)], "only what the backup holds");
+        let parts: Vec<Action> = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .map(|h| h.action)
+            .filter(|a| matches!(a, Action::RestorePart(_)))
+            .collect();
+        assert_eq!(
+            parts,
+            [
+                Action::RestorePart(0),
+                Action::RestorePart(1),
+                Action::RestorePart(3)
+            ],
+            "only what the backup holds"
+        );
         tap(&mut app, &f, &i, Action::RestorePart(1));
-        assert_eq!(app.state.restore.as_ref().map(|r| r.1), Some([true, false, false, true]));
+        assert_eq!(
+            app.state.restore.as_ref().map(|r| r.1),
+            Some([true, false, false, true])
+        );
         let name = fmt::stamp(1_792_348_260, 0);
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Restore), vec![Effect::Restore {
-            place: Place::Storage,
-            name: name.clone(),
-            parts: [true, false, false, true]
-        }]);
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Restore),
+            vec![Effect::Restore {
+                place: Place::Storage,
+                name: name.clone(),
+                parts: [true, false, false, true]
+            }]
+        );
         for k in [0, 3] {
             tap(&mut app, &f, &i, Action::RestorePart(k));
         }
-        assert!(swipe(&mut app, &f, &i, Confirm::Restore).is_empty(), "nothing ticked, nothing restored");
-        assert_eq!(app.key(Key::Back, 0), vec![Effect::FindBackups { storage: false, usb: false }], "back on the list, it is looked for again");
-        assert_eq!((app.screen(), app.state.restore.clone()), (Screen::Restore, None));
+        assert!(
+            swipe(&mut app, &f, &i, Confirm::Restore).is_empty(),
+            "nothing ticked, nothing restored"
+        );
+        assert_eq!(
+            app.key(Key::Back, 0),
+            vec![Effect::FindBackups {
+                storage: false,
+                usb: false
+            }],
+            "back on the list, it is looked for again"
+        );
+        assert_eq!(
+            (app.screen(), app.state.restore.clone()),
+            (Screen::Restore, None)
+        );
     }
 
     #[test]
     fn a_data_backup_is_restored_only_with_every_users_files_open() {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Restore, &f, &i);
-        app.set_backups(vec![found(Place::Storage, 1_792_348_260, [false, false, true, false])]);
+        app.set_backups(vec![found(
+            Place::Storage,
+            1_792_348_260,
+            [false, false, true, false],
+        )]);
         tap(&mut app, &f, &i, Action::OpenBackup(0));
         assert!(swipe(&mut app, &f, &i, Confirm::Restore).is_empty());
-        assert_eq!(app.deadline(0), Some(TOAST_MS), "the page says to decrypt first");
+        assert_eq!(
+            app.deadline(0),
+            Some(TOAST_MS),
+            "the page says to decrypt first"
+        );
         app.data_waiting(None);
         let fx = swipe(&mut app, &f, &i, Confirm::Restore);
-        assert!(matches!(&fx[..], [Effect::Restore { parts: [false, false, true, false], .. }]), "{fx:?}");
+        assert!(
+            matches!(
+                &fx[..],
+                [Effect::Restore {
+                    parts: [false, false, true, false],
+                    ..
+                }]
+            ),
+            "{fx:?}"
+        );
     }
 
     #[test]
@@ -9497,12 +13261,20 @@ mod tests {
         let mut app = opened(Screen::Restore, &f, &i);
         let mut other = found(Place::Storage, 1_792_348_260, [true; 4]);
         other.held.as_mut().unwrap().device = "aurora".into();
-        let unread = BackupEntry { place: Place::Storage, name: "20261021-150000".into(), held: Err("read backup.toml: not found".into()) };
+        let unread = BackupEntry {
+            place: Place::Storage,
+            name: "20261021-150000".into(),
+            held: Err("read backup.toml: not found".into()),
+        };
         app.set_backups(vec![other, unread]);
         for k in 0..2 {
             tap(&mut app, &f, &i, Action::OpenBackup(k));
             let actions: Vec<Action> = app.frame(&f, &i).hits.iter().map(|h| h.action).collect();
-            assert!(!actions.contains(&Action::Confirm(Confirm::Restore)) && actions.contains(&Action::AskDelete), "{k}: {actions:?}");
+            assert!(
+                !actions.contains(&Action::Confirm(Confirm::Restore))
+                    && actions.contains(&Action::AskDelete),
+                "{k}: {actions:?}"
+            );
             app.key(Key::Back, 0);
         }
     }
@@ -9515,13 +13287,40 @@ mod tests {
         let entry = found(Place::Storage, 1_792_348_260, [true; 4]);
         app.set_backups(vec![entry.clone()]);
         tap(&mut app, &f, &i, Action::OpenBackup(0));
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::Confirm(Confirm::DeleteBackup)), "asked for first");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| h.action != Action::Confirm(Confirm::DeleteBackup)),
+            "asked for first"
+        );
         tap(&mut app, &f, &i, Action::AskDelete);
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::DeleteBackup), vec![Effect::DeleteBackup { place: Place::Storage, name: entry.name }]);
-        assert!(app.backup_deleted(Err("Permission denied".into()), 0).is_empty());
-        assert_eq!(app.screen(), Screen::RestoreBackup, "not deleted, the page stays and says why");
-        assert_eq!(app.backup_deleted(Ok(()), 0), vec![Effect::FindBackups { storage: true, usb: false }]);
-        assert_eq!((app.screen(), app.state.restore.clone()), (Screen::Restore, None));
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::DeleteBackup),
+            vec![Effect::DeleteBackup {
+                place: Place::Storage,
+                name: entry.name
+            }]
+        );
+        assert!(app
+            .backup_deleted(Err("Permission denied".into()), 0)
+            .is_empty());
+        assert_eq!(
+            app.screen(),
+            Screen::RestoreBackup,
+            "not deleted, the page stays and says why"
+        );
+        assert_eq!(
+            app.backup_deleted(Ok(()), 0),
+            vec![Effect::FindBackups {
+                storage: true,
+                usb: false
+            }]
+        );
+        assert_eq!(
+            (app.screen(), app.state.restore.clone()),
+            (Screen::Restore, None)
+        );
     }
 
     #[test]
@@ -9529,12 +13328,34 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.set_usb_drive(Some(UsbDrive::Shown));
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Restore)), vec![Effect::FindBackups { storage: false, usb: true }]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Restore)),
+            vec![Effect::FindBackups {
+                storage: false,
+                usb: true
+            }]
+        );
         app.set_backups(vec![found(Place::UsbDrive, 1_792_348_260, [true; 4])]);
         tap(&mut app, &f, &i, Action::OpenBackup(0));
-        assert_eq!(app.set_usb_drive(None), vec![Effect::FindBackups { storage: false, usb: false }]);
-        assert_eq!((app.screen(), app.state.restore.clone()), (Screen::Restore, None));
-        assert_eq!(app.set_usb_drive(Some(UsbDrive::Shown)), vec![Effect::FindBackups { storage: false, usb: true }], "one plugged in is looked in");
+        assert_eq!(
+            app.set_usb_drive(None),
+            vec![Effect::FindBackups {
+                storage: false,
+                usb: false
+            }]
+        );
+        assert_eq!(
+            (app.screen(), app.state.restore.clone()),
+            (Screen::Restore, None)
+        );
+        assert_eq!(
+            app.set_usb_drive(Some(UsbDrive::Shown)),
+            vec![Effect::FindBackups {
+                storage: false,
+                usb: true
+            }],
+            "one plugged in is looked in"
+        );
     }
 
     #[test]
@@ -9545,15 +13366,36 @@ mod tests {
         app.backup_started(false, Place::Storage, true);
         assert_eq!(app.screen(), Screen::BackupJob);
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::BackupJob, "the page stays while the backup goes on");
+        assert_eq!(
+            app.screen(),
+            Screen::BackupJob,
+            "the page stays while the backup goes on"
+        );
         app.backup_plan(vec![("boot".into(), 200), ("system".into(), 800)]);
-        app.backup_at(BackupAt { item: 1, done: 400, of: 800, checking: false });
-        assert_eq!(tap(&mut app, &f, &i, Action::StopBackup), vec![Effect::StopBackup]);
+        app.backup_at(BackupAt {
+            item: 1,
+            done: 400,
+            of: 800,
+            checking: false,
+        });
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::StopBackup),
+            vec![Effect::StopBackup]
+        );
         assert!(app.state.backup_job.as_ref().unwrap().stopping);
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::StopBackup), "only one stop is asked for");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| h.action != Action::StopBackup),
+            "only one stop is asked for"
+        );
         app.backup_ended(BackupEnd::Stopped, 0);
         tap_at(&mut app, &f, &i, Action::Back, 1000);
-        assert_eq!((app.screen(), app.state.backup_job.clone()), (Screen::Backup, None));
+        assert_eq!(
+            (app.screen(), app.state.backup_job.clone()),
+            (Screen::Backup, None)
+        );
     }
 
     #[test]
@@ -9564,49 +13406,131 @@ mod tests {
         tap(&mut app, &f, &i, Action::OpenBackup(0));
         app.backup_started(true, Place::Storage, true);
         app.backup_plan(vec![("boot".into(), 200), ("data".into(), 800)]);
-        app.backup_at(BackupAt { item: 0, done: 100, of: 200, checking: true });
-        let stops = |app: &mut App| app.frame(&f, &i).hits.iter().any(|h| h.action == Action::StopBackup);
-        assert!(stops(&mut app), "nothing is written while the backup is checked");
-        app.backup_at(BackupAt { item: 0, done: 0, of: 400, checking: false });
-        assert!(!stops(&mut app), "what has begun to be written is not stopped");
+        app.backup_at(BackupAt {
+            item: 0,
+            done: 100,
+            of: 200,
+            checking: true,
+        });
+        let stops = |app: &mut App| {
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::StopBackup)
+        };
+        assert!(
+            stops(&mut app),
+            "nothing is written while the backup is checked"
+        );
+        app.backup_at(BackupAt {
+            item: 0,
+            done: 0,
+            of: 400,
+            checking: false,
+        });
+        assert!(
+            !stops(&mut app),
+            "what has begun to be written is not stopped"
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::BackupJob);
-        app.backup_ended(BackupEnd::Restored { unmade: vec!["/data/user/10".into()] }, 0);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 1000), vec![Effect::Reboot(Target::System)]);
+        app.backup_ended(
+            BackupEnd::Restored {
+                unmade: vec!["/data/user/10".into()],
+            },
+            0,
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 1000),
+            vec![Effect::Reboot(Target::System)]
+        );
     }
 
     #[test]
     fn the_slot_page_switches_to_the_slot_picked() {
-        let (f, i) = (fonts(), DeviceInfo { slot: Some(Slot::B), ..info() });
+        let (f, i) = (
+            fonts(),
+            DeviceInfo {
+                slot: Some(Slot::B),
+                ..info()
+            },
+        );
         let mut app = App::new(Screen::Reboot, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Slot)), vec![Effect::ReadSlots], "read as the page opens");
-        let held = BootSlots { active: Slot::B, bootable: [false, true], successful: [true, true] };
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Slot)),
+            vec![Effect::ReadSlots],
+            "read as the page opens"
+        );
+        let held = BootSlots {
+            active: Slot::B,
+            bootable: [false, true],
+            successful: [true, true],
+        };
         app.set_boot_slots(Ok(held));
         assert!(swipe(&mut app, &f, &i, Confirm::Slot).is_empty());
         assert_eq!(app.deadline(0), Some(TOAST_MS), "B starts next already");
         tap(&mut app, &f, &i, Action::PickSlot(Slot::A));
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Slot), vec![Effect::SetSlot(Slot::A)]);
-        let switched = BootSlots { active: Slot::A, bootable: [true, true], ..held };
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Slot),
+            vec![Effect::SetSlot(Slot::A)]
+        );
+        let switched = BootSlots {
+            active: Slot::A,
+            bootable: [true, true],
+            ..held
+        };
         app.slot_switched(Ok(switched), 0);
-        assert_eq!((app.state.boot_slots.clone(), app.state.next_slot), (Some(Ok(switched)), None), "the pick is done with");
+        assert_eq!(
+            (app.state.boot_slots.clone(), app.state.next_slot),
+            (Some(Ok(switched)), None),
+            "the pick is done with"
+        );
         tap(&mut app, &f, &i, Action::PickSlot(Slot::B));
         app.key(Key::Back, 0);
-        assert_eq!(app.state.next_slot, None, "a pick left unswitched is put down");
+        assert_eq!(
+            app.state.next_slot, None,
+            "a pick left unswitched is put down"
+        );
     }
 
     #[test]
     fn the_slot_stays_as_an_update_in_flight_set_it() {
-        let (f, i) = (fonts(), DeviceInfo { slot: Some(Slot::B), snapshot: SnapshotState::Snapshotted, ..info() });
+        let (f, i) = (
+            fonts(),
+            DeviceInfo {
+                slot: Some(Slot::B),
+                snapshot: SnapshotState::Snapshotted,
+                ..info()
+            },
+        );
         let mut app = App::new(Screen::Slot, W, H, PPD);
-        app.set_boot_slots(Ok(BootSlots { active: Slot::A, bootable: [true, true], successful: [false, true] }));
-        assert!(app.frame(&f, &i).hits.iter().all(|h| !matches!(h.action, Action::Confirm(_))), "nothing to swipe");
+        app.set_boot_slots(Ok(BootSlots {
+            active: Slot::A,
+            bootable: [true, true],
+            successful: [false, true],
+        }));
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| !matches!(h.action, Action::Confirm(_))),
+            "nothing to swipe"
+        );
     }
 
     /// The systems with a second one installed, the main one starting.
     fn two_systems() -> Overview {
         Overview {
-            installed: skyward_systems::Named { name: "HyperOS 3".into(), version: Some("OS3.0.308.0.WMACNXM".into()) },
-            other: Some(skyward_systems::Other { id: "ubuntu".into(), name: "Ubuntu Touch".into(), version: "24.04".into(), size: 16 << 30 }),
+            installed: skyward_systems::Named {
+                name: "HyperOS 3".into(),
+                version: Some("OS3.0.308.0.WMACNXM".into()),
+            },
+            other: Some(skyward_systems::Other {
+                id: "ubuntu".into(),
+                name: "Ubuntu Touch".into(),
+                version: "24.04".into(),
+                size: 16 << 30,
+            }),
             other_starts: false,
             changed: false,
         }
@@ -9617,30 +13541,57 @@ mod tests {
     fn systems_page(f: &Fonts, i: &DeviceInfo, systems: Overview) -> App {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.state.dual_boot = true;
-        assert_eq!(tap(&mut app, f, i, Action::Open(Screen::Systems)), vec![Effect::ReadSystems], "read as the page opens");
+        assert_eq!(
+            tap(&mut app, f, i, Action::Open(Screen::Systems)),
+            vec![Effect::ReadSystems],
+            "read as the page opens"
+        );
         app.set_systems(Ok(systems));
         app
     }
 
     fn swipes(app: &mut App, f: &Fonts, i: &DeviceInfo) -> bool {
-        app.frame(f, i).hits.iter().any(|h| matches!(h.action, Action::Confirm(_)))
+        app.frame(f, i)
+            .hits
+            .iter()
+            .any(|h| matches!(h.action, Action::Confirm(_)))
     }
 
     #[test]
     fn the_home_page_offers_the_systems_where_the_phone_can_hold_a_second() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::Open(Screen::Systems)), "no init_boot partitions in both slots");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| h.action != Action::Open(Screen::Systems)),
+            "no init_boot partitions in both slots"
+        );
         let app = systems_page(&f, &i, two_systems());
         assert_eq!(app.screen(), Screen::Systems);
         let named = |systems| {
             let mut app = App::new(Screen::Home, W, H, PPD);
             (app.state.dual_boot, app.state.systems) = (true, Some(Ok(systems)));
             let t = app.theme();
-            let cx = Ctx { t: &t, f: &f, info: &i, state: &app.state, term: None, band: None };
+            let cx = Ctx {
+                t: &t,
+                f: &f,
+                info: &i,
+                state: &app.state,
+                term: None,
+                band: None,
+            };
             pages::render(Screen::Home, &cx).canvas.data.clone()
         };
-        assert!(named(two_systems()) != named(Overview { other_starts: true, ..two_systems() }), "the home page names the one that starts");
+        assert!(
+            named(two_systems())
+                != named(Overview {
+                    other_starts: true,
+                    ..two_systems()
+                }),
+            "the home page names the one that starts"
+        );
     }
 
     #[test]
@@ -9649,50 +13600,111 @@ mod tests {
         let mut app = systems_page(&f, &i, two_systems());
         assert!(!swipes(&mut app, &f, &i), "the main system starts already");
         tap(&mut app, &f, &i, Action::PickSystem(Who::Other));
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::SwitchSystem), vec![Effect::SwitchSystem(Who::Other)]);
-        assert_eq!((app.state.systems_work, app.state.system_pick), (Some(SystemsWork::Switching(Who::Other)), None));
-        assert!(app.frame(&f, &i).hits.is_empty(), "nothing to tap while the boot partitions are written");
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::SwitchSystem),
+            vec![Effect::SwitchSystem(Who::Other)]
+        );
+        assert_eq!(
+            (app.state.systems_work, app.state.system_pick),
+            (Some(SystemsWork::Switching(Who::Other)), None)
+        );
+        assert!(
+            app.frame(&f, &i).hits.is_empty(),
+            "nothing to tap while the boot partitions are written"
+        );
         // The card tapped darkens and comes back, as a row of a list does.
         app.tick(1000);
         app.key(Key::Back, 1000);
-        assert_eq!((app.screen(), app.deadline(1000)), (Screen::Systems, Some(1000 + TOAST_MS)), "the page stays until they are, and says why");
+        assert_eq!(
+            (app.screen(), app.deadline(1000)),
+            (Screen::Systems, Some(1000 + TOAST_MS)),
+            "the page stays until they are, and says why"
+        );
         app.systems_work_failed("the store's header does not check", 0);
         assert_eq!(app.state.systems_work, None);
-        app.set_systems(Ok(Overview { other_starts: true, ..two_systems() }));
+        app.set_systems(Ok(Overview {
+            other_starts: true,
+            ..two_systems()
+        }));
         tap(&mut app, &f, &i, Action::PickSystem(Who::Installed));
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::SwitchSystem), vec![Effect::SwitchSystem(Who::Installed)]);
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::SwitchSystem),
+            vec![Effect::SwitchSystem(Who::Installed)]
+        );
         app.set_systems(Ok(two_systems()));
         tap(&mut app, &f, &i, Action::PickSystem(Who::Other));
         app.key(Key::Back, 0);
-        assert_eq!((app.screen(), app.state.system_pick), (Screen::Home, None), "a pick left unswitched is put down");
+        assert_eq!(
+            (app.screen(), app.state.system_pick),
+            (Screen::Home, None),
+            "a pick left unswitched is put down"
+        );
     }
 
     #[test]
     fn the_second_system_waits_for_an_update_in_flight_and_the_main_one_does_not() {
-        let (f, i) = (fonts(), DeviceInfo { snapshot: SnapshotState::Snapshotted, ..info() });
+        let (f, i) = (
+            fonts(),
+            DeviceInfo {
+                snapshot: SnapshotState::Snapshotted,
+                ..info()
+            },
+        );
         let mut app = systems_page(&f, &i, two_systems());
         tap(&mut app, &f, &i, Action::PickSystem(Who::Other));
         assert!(!swipes(&mut app, &f, &i), "nothing to swipe");
-        app.set_systems(Ok(Overview { other_starts: true, ..two_systems() }));
+        app.set_systems(Ok(Overview {
+            other_starts: true,
+            ..two_systems()
+        }));
         tap(&mut app, &f, &i, Action::PickSystem(Who::Installed));
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::SwitchSystem), vec![Effect::SwitchSystem(Who::Installed)], "back to the main system to merge it");
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::SwitchSystem),
+            vec![Effect::SwitchSystem(Who::Installed)],
+            "back to the main system to merge it"
+        );
     }
 
     #[test]
     fn the_second_system_is_removed_once_asked_and_swiped() {
         let (f, i) = (fonts(), info());
         let mut app = systems_page(&f, &i, two_systems());
-        assert!(app.frame(&f, &i).hits.iter().any(|h| h.action == Action::Open(Screen::Decrypt)), "the data partition is opened first");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::Open(Screen::Decrypt)),
+            "the data partition is opened first"
+        );
         app.state.data = Data::Open;
         app.refresh();
         tap(&mut app, &f, &i, Action::AskDelete);
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::RemoveSystem), vec![Effect::RemoveSystem]);
-        assert_eq!((app.state.systems_work, app.state.asking_delete), (Some(SystemsWork::Removing), false));
-        app.set_systems(Ok(Overview { other: None, ..two_systems() }));
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::RemoveSystem),
+            vec![Effect::RemoveSystem]
+        );
+        assert_eq!(
+            (app.state.systems_work, app.state.asking_delete),
+            (Some(SystemsWork::Removing), false)
+        );
+        app.set_systems(Ok(Overview {
+            other: None,
+            ..two_systems()
+        }));
         assert_eq!(app.state.systems_work, None);
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::AskDelete), "nothing left to remove");
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| h.action != Action::AskDelete),
+            "nothing left to remove"
+        );
         tap(&mut app, &f, &i, Action::Open(Screen::Install));
-        assert_eq!(app.screen(), Screen::Install, "the empty place opens the install page");
+        assert_eq!(
+            app.screen(),
+            Screen::Install,
+            "the empty place opens the install page"
+        );
     }
 
     #[test]
@@ -9700,22 +13712,71 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
         app.install(Event::Checking { size: 3 << 30 }, 0);
-        app.install(Event::System { name: "Ubuntu Touch".into(), version: "24.04".into(), sizes: vec![3 << 30, 8 << 30, 16 << 30] }, 0);
+        app.install(
+            Event::System {
+                name: "Ubuntu Touch".into(),
+                version: "24.04".into(),
+                sizes: vec![3 << 30, 8 << 30, 16 << 30],
+            },
+            0,
+        );
         // The package lit the panel, so the user looks and taps past the
         // wake guard.
         tap_at(&mut app, &f, &i, Action::SystemSize(1), 1000);
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::InstallSystem)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::InstallSystem))
+            .unwrap()
+            .rect;
         let y = track.centre().1 - app.top().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 1000);
         app.touch(Touch::Move(track.x + track.w, y), &f, 1000);
-        assert_eq!(app.touch(Touch::Up, &f, 1000), vec![Effect::InstallSystem { size: 8 << 30 }]);
-        assert_eq!(app.state.install, Install::Systeming { name: "Ubuntu Touch".into(), stage: None });
-        app.install(Event::Progress(Stage::Root { done: 1 << 30, total: 6 << 30 }), 1000);
-        assert_eq!(app.state.install, Install::Systeming { name: "Ubuntu Touch".into(), stage: Some(Stage::Root { done: 1 << 30, total: 6 << 30 }) });
+        assert_eq!(
+            app.touch(Touch::Up, &f, 1000),
+            vec![Effect::InstallSystem { size: 8 << 30 }]
+        );
+        assert_eq!(
+            app.state.install,
+            Install::Systeming {
+                name: "Ubuntu Touch".into(),
+                stage: None
+            }
+        );
+        app.install(
+            Event::Progress(Stage::Root {
+                done: 1 << 30,
+                total: 6 << 30,
+            }),
+            1000,
+        );
+        assert_eq!(
+            app.state.install,
+            Install::Systeming {
+                name: "Ubuntu Touch".into(),
+                stage: Some(Stage::Root {
+                    done: 1 << 30,
+                    total: 6 << 30
+                })
+            }
+        );
         app.key(Key::Back, 1000);
-        assert_eq!(app.screen(), Screen::Installing, "the root being written keeps the page");
-        app.install(Event::Finished(Outcome::SystemInstalled { name: "Ubuntu Touch".into() }), 1000);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Open(Screen::Systems), 2000), vec![Effect::ReadSystems]);
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "the root being written keeps the page"
+        );
+        app.install(
+            Event::Finished(Outcome::SystemInstalled {
+                name: "Ubuntu Touch".into(),
+            }),
+            1000,
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Open(Screen::Systems), 2000),
+            vec![Effect::ReadSystems]
+        );
         assert_eq!(app.screen(), Screen::Systems);
     }
 
@@ -9725,7 +13786,13 @@ mod tests {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.state.dual_boot = true;
         app.switch_asked(Who::Installed);
-        assert_eq!((app.screen(), app.state.systems_work), (Screen::Systems, Some(SystemsWork::Switching(Who::Installed))));
+        assert_eq!(
+            (app.screen(), app.state.systems_work),
+            (
+                Screen::Systems,
+                Some(SystemsWork::Switching(Who::Installed))
+            )
+        );
         assert!(app.frame(&f, &i).hits.is_empty());
     }
 
@@ -9736,36 +13803,75 @@ mod tests {
         app.state.dual_boot = true;
         app.system_stopped("no partition userdata showed within 15s".into());
         assert_eq!(app.screen(), Screen::Systems);
-        app.set_systems(Ok(Overview { other_starts: true, ..two_systems() }));
+        app.set_systems(Ok(Overview {
+            other_starts: true,
+            ..two_systems()
+        }));
         let page = app.frame(&f, &i);
-        assert!(page.hits.iter().any(|h| h.action == Action::PickSystem(Who::Installed)), "the main system is there to switch back to");
-        assert!(!page.hits.iter().any(|h| h.action == Action::Confirm(Confirm::SwitchSystem)), "nothing is switched until one is picked");
+        assert!(
+            page.hits
+                .iter()
+                .any(|h| h.action == Action::PickSystem(Who::Installed)),
+            "the main system is there to switch back to"
+        );
+        assert!(
+            !page
+                .hits
+                .iter()
+                .any(|h| h.action == Action::Confirm(Confirm::SwitchSystem)),
+            "nothing is switched until one is picked"
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::Home);
-        let opens = app.frame(&f, &i).hits.iter().filter(|h| h.action == Action::Open(Screen::Systems)).count();
+        let opens = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .filter(|h| h.action == Action::Open(Screen::Systems))
+            .count();
         assert_eq!(opens, 2, "the card says so above the entry to the systems");
     }
 
     /// Whether the page shows a key of the keypad or keyboard to tap.
     fn keys_shown(app: &mut App, f: &Fonts, i: &DeviceInfo) -> bool {
-        app.frame(f, i).hits.iter().any(|h| matches!(h.action, Action::Type(_)))
+        app.frame(f, i)
+            .hits
+            .iter()
+            .any(|h| matches!(h.action, Action::Type(_)))
     }
 
     #[test]
     fn the_decrypt_page_opens_the_partition_and_then_asks_with_the_users_own_control() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Decrypt)), vec![Effect::OpenData], "no swipe first");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Decrypt)),
+            vec![Effect::OpenData],
+            "no swipe first"
+        );
         assert_eq!(app.state.data, Data::Opening);
-        assert!(!keys_shown(&mut app, &f, &i) && app.frame(&f, &i).pattern.is_none(), "nothing to answer yet");
+        assert!(
+            !keys_shown(&mut app, &f, &i) && app.frame(&f, &i).pattern.is_none(),
+            "nothing to answer yet"
+        );
         app.data_waiting(Some((0, Keys::Pattern)));
-        assert!(app.frame(&f, &i).pattern.is_some(), "the owner set a pattern, so the grid shows");
+        assert!(
+            app.frame(&f, &i).pattern.is_some(),
+            "the owner set a pattern, so the grid shows"
+        );
         app.data_waiting(Some((0, Keys::Digits)));
         assert!(keys_shown(&mut app, &f, &i), "for a code, the keypad");
         app.key(Key::Back, 0);
-        assert!(tap(&mut app, &f, &i, Action::Open(Screen::Decrypt)).is_empty(), "open already, it is not opened again");
+        assert!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Decrypt)).is_empty(),
+            "open already, it is not opened again"
+        );
         let mut first = App::new(Screen::Decrypt, W, H, PPD);
-        assert_eq!(first.arrive(), vec![Effect::OpenData], "a recovery that starts on the page opens it as well");
+        assert_eq!(
+            first.arrive(),
+            vec![Effect::OpenData],
+            "a recovery that starts on the page opens it as well"
+        );
     }
 
     #[test]
@@ -9773,11 +13879,19 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Decrypt, &f, &i);
         tap(&mut app, &f, &i, Action::Skip);
-        assert_eq!((app.screen(), app.stack.len()), (Screen::Home, 1), "back on the home page, with no other behind it");
+        assert_eq!(
+            (app.screen(), app.stack.len()),
+            (Screen::Home, 1),
+            "back on the home page, with no other behind it"
+        );
         let mut first = App::new(Screen::Decrypt, W, H, PPD);
         first.arrive();
         tap(&mut first, &f, &i, Action::Skip);
-        assert_eq!((first.screen(), first.stack.len()), (Screen::Home, 1), "a recovery that started on the page goes on to the home page");
+        assert_eq!(
+            (first.screen(), first.stack.len()),
+            (Screen::Home, 1),
+            "a recovery that started on the page goes on to the home page"
+        );
     }
 
     #[test]
@@ -9792,12 +13906,34 @@ mod tests {
         tap(&mut app, &f, &i, Action::Type(Cap::Backspace));
         assert_eq!(app.state.code, "123");
         let fx = tap(&mut app, &f, &i, Action::Type(Cap::Enter));
-        assert_eq!(fx, vec![Effect::Unlock { user: 0, code: "123".into() }]);
+        assert_eq!(
+            fx,
+            vec![Effect::Unlock {
+                user: 0,
+                code: "123".into()
+            }]
+        );
         assert_eq!(app.state.code, "", "what was typed is gone once it is sent");
-        assert_eq!(app.state.data, Data::Locked { user: 0, keys: Keys::Digits, checking: true });
-        assert!(!keys_shown(&mut app, &f, &i), "nothing more is taken while it is checked");
-        app.unlock_failed("the secure world does not recognise that credential".into(), 0);
-        assert!(keys_shown(&mut app, &f, &i), "turned down, it is asked for again");
+        assert_eq!(
+            app.state.data,
+            Data::Locked {
+                user: 0,
+                keys: Keys::Digits,
+                checking: true
+            }
+        );
+        assert!(
+            !keys_shown(&mut app, &f, &i),
+            "nothing more is taken while it is checked"
+        );
+        app.unlock_failed(
+            "the secure world does not recognise that credential".into(),
+            0,
+        );
+        assert!(
+            keys_shown(&mut app, &f, &i),
+            "turned down, it is asked for again"
+        );
         assert_eq!(app.deadline(0), Some(TOAST_MS), "with why");
         app.data_waiting(None);
         assert_eq!(app.state.data, Data::Open);
@@ -9809,7 +13945,11 @@ mod tests {
         let mut app = App::new(Screen::Decrypt, W, H, PPD);
         app.data_waiting(Some((0, Keys::Digits)));
         assert!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)).is_empty());
-        assert_eq!(app.deadline(0), Some(TOAST_MS), "the page says to type one first");
+        assert_eq!(
+            app.deadline(0),
+            Some(TOAST_MS),
+            "the page says to type one first"
+        );
     }
 
     #[test]
@@ -9825,9 +13965,25 @@ mod tests {
             app.touch(Touch::Move(dots[which].0, dots[which].1 - scroll), &f, 0);
         }
         let fx = app.touch(Touch::Up, &f, 0);
-        assert_eq!(fx, vec![Effect::Unlock { user: 0, code: "1258".into() }], "the dots counted from one across the rows");
-        assert!(app.state.pattern.is_empty(), "the grid is cleared once it is sent");
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::Pattern), "nothing more is drawn while it is checked");
+        assert_eq!(
+            fx,
+            vec![Effect::Unlock {
+                user: 0,
+                code: "1258".into()
+            }],
+            "the dots counted from one across the rows"
+        );
+        assert!(
+            app.state.pattern.is_empty(),
+            "the grid is cleared once it is sent"
+        );
+        assert!(
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .all(|h| h.action != Action::Pattern),
+            "nothing more is drawn while it is checked"
+        );
     }
 
     #[test]
@@ -9842,7 +13998,11 @@ mod tests {
         app.touch(Touch::Move(dots[1].0, dots[1].1 - scroll), &f, 0);
         let fx = app.touch(Touch::Up, &f, 0);
         assert!(fx.is_empty());
-        assert_eq!(app.deadline(0), Some(TOAST_MS), "the page says how many dots it takes");
+        assert_eq!(
+            app.deadline(0),
+            Some(TOAST_MS),
+            "the page says how many dots it takes"
+        );
     }
 
     #[test]
@@ -9851,7 +14011,10 @@ mod tests {
         let mut app = App::new(Screen::Decrypt, W, H, PPD);
         app.arrive();
         app.data_failed("KeyMint is not running".into());
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenData), vec![Effect::OpenData]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenData),
+            vec![Effect::OpenData]
+        );
         assert_eq!(app.state.data, Data::Opening);
     }
 
@@ -9869,7 +14032,13 @@ mod tests {
         let mut app = opened(Screen::Search, &f, &i);
         type_text(&mut app, &f, &i, "bf");
         assert_eq!(app.state.search, "bf");
-        let opens: Vec<Action> = app.frame(&f, &i).hits.iter().map(|h| h.action).filter(|a| matches!(a, Action::Open(_))).collect();
+        let opens: Vec<Action> = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .map(|h| h.action)
+            .filter(|a| matches!(a, Action::Open(_)))
+            .collect();
         assert_eq!(opens, [Action::Open(Screen::Backup)]);
         tap(&mut app, &f, &i, Action::Type(Cap::Backspace));
         assert_eq!(app.state.search, "b");
@@ -9877,7 +14046,11 @@ mod tests {
         assert_eq!(app.state.search, "");
         type_text(&mut app, &f, &i, "xpsj");
         tap(&mut app, &f, &i, Action::Type(Cap::Enter));
-        assert_eq!(app.screen(), Screen::ScreenOff, "return opens the first result");
+        assert_eq!(
+            app.screen(),
+            Screen::ScreenOff,
+            "return opens the first result"
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::Search);
     }
@@ -9915,39 +14088,86 @@ mod tests {
     fn the_terminal_sends_every_key_to_its_shell() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Terminal)), vec![Effect::StartShell("/".into())], "the page asks for a shell the first time");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Terminal)),
+            vec![Effect::StartShell("/".into())],
+            "the page asks for a shell the first time"
+        );
         let (rows, cols) = app.term_size(&f);
-        assert!(rows >= 20 && cols >= 40, "a screen of {rows} rows by {cols}");
+        assert!(
+            rows >= 20 && cols >= 40,
+            "a screen of {rows} rows by {cols}"
+        );
         app.term_started(rows, cols);
-        assert_eq!(tap(&mut app, &f, &i, Action::Type(Cap::Char('l'))), vec![Effect::TermInput(b"l".to_vec())]);
-        assert_eq!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)), vec![Effect::TermInput(b"\r".to_vec())]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Char('l'))),
+            vec![Effect::TermInput(b"l".to_vec())]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Enter)),
+            vec![Effect::TermInput(b"\r".to_vec())]
+        );
         assert!(tap(&mut app, &f, &i, Action::TermKey(TermKey::Ctrl)).is_empty());
-        assert_eq!(tap(&mut app, &f, &i, Action::Type(Cap::Char('c'))), vec![Effect::TermInput(vec![0x03])]);
-        assert_eq!(tap(&mut app, &f, &i, Action::TermKey(TermKey::Up)), vec![Effect::TermInput(b"\x1b[A".to_vec())]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Char('c'))),
+            vec![Effect::TermInput(vec![0x03])]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::TermKey(TermKey::Up)),
+            vec![Effect::TermInput(b"\x1b[A".to_vec())]
+        );
         app.term_output(b"ishtar:/ # ");
         tap_back(&mut app, &f, &i, 0);
-        assert!(tap(&mut app, &f, &i, Action::Open(Screen::Terminal)).is_empty(), "the same shell goes on");
+        assert!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Terminal)).is_empty(),
+            "the same shell goes on"
+        );
         app.term_ended(TermEnd::Exited(0));
-        assert!(tap(&mut app, &f, &i, Action::Type(Cap::Char('l'))).is_empty(), "nothing runs to take the keys");
-        assert_eq!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)), vec![Effect::StartShell("/".into())]);
+        assert!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Char('l'))).is_empty(),
+            "nothing runs to take the keys"
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Enter)),
+            vec![Effect::StartShell("/".into())]
+        );
     }
 
     #[test]
     fn the_file_managers_button_opens_the_terminal_in_the_folder_shown() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Files, W, H, PPD);
-        app.set_files("/sdcard/Download".into(), Ok(vec![entry("a.txt", FileKind::File)]), 0);
-        assert_eq!(app.frame(&f, &i).button, Some((widgets::Glyph::Terminal, Action::TerminalHere)));
-        assert_eq!(tap_button(&mut app, &f, &i, 0), vec![Effect::StartShell("/sdcard/Download".into())], "a shell starts there");
+        app.set_files(
+            "/sdcard/Download".into(),
+            Ok(vec![entry("a.txt", FileKind::File)]),
+            0,
+        );
+        assert_eq!(
+            app.frame(&f, &i).button,
+            Some((widgets::Glyph::Terminal, Action::TerminalHere))
+        );
+        assert_eq!(
+            tap_button(&mut app, &f, &i, 0),
+            vec![Effect::StartShell("/sdcard/Download".into())],
+            "a shell starts there"
+        );
         assert_eq!(app.screen(), Screen::Terminal);
         let (rows, cols) = app.term_size(&f);
         app.term_started(rows, cols);
         app.term_ended(TermEnd::Exited(0));
-        assert_eq!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)), vec![Effect::StartShell("/sdcard/Download".into())], "Enter starts it again there");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Enter)),
+            vec![Effect::StartShell("/sdcard/Download".into())],
+            "Enter starts it again there"
+        );
         app.term_started(rows, cols);
         tap_back(&mut app, &f, &i, 0);
         app.set_files("/data/adb".into(), Ok(Vec::new()), 0);
-        assert_eq!(tap_button(&mut app, &f, &i, 0), vec![Effect::ShellTo("/data/adb".into())], "the shell running goes there");
+        assert_eq!(
+            tap_button(&mut app, &f, &i, 0),
+            vec![Effect::ShellTo("/data/adb".into())],
+            "the shell running goes there"
+        );
         assert_eq!(app.screen(), Screen::Terminal);
     }
 
@@ -9955,7 +14175,11 @@ mod tests {
     fn the_bars_round_button_darkens_under_a_finger_on_the_frames_drawn() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Files, W, H, PPD);
-        app.set_files("/data/adb".into(), Ok(vec![entry("a.txt", FileKind::File)]), LISTED);
+        app.set_files(
+            "/data/adb".into(),
+            Ok(vec![entry("a.txt", FileKind::File)]),
+            LISTED,
+        );
         let t = app.theme();
         let (cx, cy, _) = widgets::button_disc(&t);
         let k = (((cy - t.m.dp(5.0)) as u32 * W + (cx + t.m.dp(5.0)) as u32) * 4) as usize;
@@ -9969,20 +14193,33 @@ mod tests {
         let rest = pixel(&mut app, 0);
         app.touch(Touch::Down(x, y), &f, 100);
         assert_ne!(pixel(&mut app, 100), rest, "held down, its disc darkens");
-        assert_eq!(app.touch(Touch::Up, &f, 150), vec![Effect::StartShell("/data/adb".into())]);
+        assert_eq!(
+            app.touch(Touch::Up, &f, 150),
+            vec![Effect::StartShell("/data/adb".into())]
+        );
         for now in (150..1000).step_by(8) {
             pixel(&mut app, now);
         }
         assert_eq!(app.screen(), Screen::Terminal, "the terminal slides in");
         app.text_opened(&f, "/data/adb/a.txt".into(), Ok(Some(b"a".to_vec())), 1000);
-        app.state.editor.as_mut().expect("the editor page shows a file").insert('b');
+        app.state
+            .editor
+            .as_mut()
+            .expect("the editor page shows a file")
+            .insert('b');
         app.refresh();
         for now in (1000..1500).step_by(8) {
             pixel(&mut app, now);
         }
         app.touch(Touch::Down(x, y), &f, 1500);
         pixel(&mut app, 1500);
-        assert_eq!(app.touch(Touch::Up, &f, 1550), vec![Effect::SaveText { path: "/data/adb/a.txt".into(), text: "ba".into() }]);
+        assert_eq!(
+            app.touch(Touch::Up, &f, 1550),
+            vec![Effect::SaveText {
+                path: "/data/adb/a.txt".into(),
+                text: "ba".into()
+            }]
+        );
     }
 
     #[test]
@@ -9993,17 +14230,36 @@ mod tests {
         app.term_started(rows, cols);
         let many: String = (0..100).map(|n| format!("line {n}\r\n")).collect();
         app.term_output(many.as_bytes());
-        let (card, pitch) = app.frame(&f, &i).scrollback.expect("the terminal's screen scrolls back");
+        let (card, pitch) = app
+            .frame(&f, &i)
+            .scrollback
+            .expect("the terminal's screen scrolls back");
         let (x, y) = (card.x + card.w / 2.0, card.y + card.h / 3.0);
         app.touch(Touch::Down(x, y), &f, 0);
         app.touch(Touch::Move(x, y + pitch * 5.5), &f, 10);
         app.touch(Touch::Up, &f, 20);
-        assert_eq!(app.term.as_ref().expect("the shell started").screen().scrollback(), 5, "down shows five older rows");
+        assert_eq!(
+            app.term
+                .as_ref()
+                .expect("the shell started")
+                .screen()
+                .scrollback(),
+            5,
+            "down shows five older rows"
+        );
         assert_eq!(app.top().1, 0.0, "the page itself stays put");
     }
 
     fn entry(name: &str, kind: FileKind) -> FileRow {
-        FileRow { name: name.into(), kind, size: 4096, modified: 1_792_348_260, mode: 0o040_755, uid: 0, gid: 0 }
+        FileRow {
+            name: name.into(),
+            kind,
+            size: 4096,
+            modified: 1_792_348_260,
+            mode: 0o040_755,
+            uid: 0,
+            gid: 0,
+        }
     }
 
     /// When the tests list folders: a day after the entries changed.
@@ -10017,20 +14273,59 @@ mod tests {
     fn the_file_manager_walks_folders_and_back_up_to_the_root() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Files)), vec![Effect::ReadDir("/".into())]);
-        let link = FileKind::Link { target: "/storage/self/primary".into(), folder: true };
-        app.set_files("/".into(), Ok(vec![entry("sdcard", link), entry("vendor", folder(12)), entry("init.rc", FileKind::File)]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenEntry(1)), vec![Effect::ReadDir("/vendor".into())]);
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenEntry(0)), vec![Effect::ReadDir("/sdcard".into())], "a link to a folder opens like one");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Files)),
+            vec![Effect::ReadDir("/".into())]
+        );
+        let link = FileKind::Link {
+            target: "/storage/self/primary".into(),
+            folder: true,
+        };
+        app.set_files(
+            "/".into(),
+            Ok(vec![
+                entry("sdcard", link),
+                entry("vendor", folder(12)),
+                entry("init.rc", FileKind::File),
+            ]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenEntry(1)),
+            vec![Effect::ReadDir("/vendor".into())]
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenEntry(0)),
+            vec![Effect::ReadDir("/sdcard".into())],
+            "a link to a folder opens like one"
+        );
         app.set_files("/vendor".into(), Ok(vec![entry("etc", folder(3))]), LISTED);
-        assert_eq!(app.key(Key::Back, 0), vec![Effect::ReadDir("/".into())], "back climbs a folder");
+        assert_eq!(
+            app.key(Key::Back, 0),
+            vec![Effect::ReadDir("/".into())],
+            "back climbs a folder"
+        );
         assert_eq!(app.screen(), Screen::Files);
-        app.set_files("/".into(), Ok(vec![entry("vmlinux", FileKind::File), entry("init.rc", FileKind::File)]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenEntry(1)), vec![Effect::OpenText("/init.rc".into())], "a text file opens to edit");
+        app.set_files(
+            "/".into(),
+            Ok(vec![
+                entry("vmlinux", FileKind::File),
+                entry("init.rc", FileKind::File),
+            ]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenEntry(1)),
+            vec![Effect::OpenText("/init.rc".into())],
+            "a text file opens to edit"
+        );
         assert_eq!(app.screen(), Screen::Files);
         tap(&mut app, &f, &i, Action::OpenEntry(0));
         assert_eq!(app.screen(), Screen::FileInfo);
-        assert_eq!(app.state.file.as_ref().map(|e| e.name.as_str()), Some("vmlinux"));
+        assert_eq!(
+            app.state.file.as_ref().map(|e| e.name.as_str()),
+            Some("vmlinux")
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.state.file, None);
         assert!(app.key(Key::Back, 0).is_empty(), "at the root, back leaves");
@@ -10042,12 +14337,18 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Install, &f, &i);
         // Closed, the storage leads to the decrypt page, which comes back.
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Decrypt)), vec![Effect::OpenData]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Decrypt)),
+            vec![Effect::OpenData]
+        );
         app.data_waiting(None);
         tap(&mut app, &f, &i, Action::Skip);
         assert_eq!(app.screen(), Screen::Install);
         let storage = Screen::Choose(Place::Storage);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(storage)), vec![Effect::ReadPlace(Place::Storage, String::new())]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(storage)),
+            vec![Effect::ReadPlace(Place::Storage, String::new())]
+        );
         let listed = vec![
             entry(".thumbnails", folder(9)),
             entry("Download", folder(3)),
@@ -10058,19 +14359,67 @@ mod tests {
             entry("fifo", FileKind::Special),
         ];
         app.set_place(Place::Storage, String::new(), Ok(listed), LISTED);
-        let shown: Vec<&str> = app.state.storage.entries.as_ref().expect("listed").iter().map(|e| e.name.as_str()).collect();
-        assert_eq!(shown, ["Download", "OTA.ZIP", "boot.img"], "folders and what can be installed, hidden ones left out");
-        assert_eq!(tap(&mut app, &f, &i, Action::ChooseEntry(0)), vec![Effect::ReadPlace(Place::Storage, "Download".into())]);
-        app.set_place(Place::Storage, "Download".into(), Ok(vec![entry("ota.zip", FileKind::File)]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::ChooseEntry(0)), vec![Effect::InstallFile(Place::Storage, "Download/ota.zip".into())]);
-        assert_eq!((app.screen(), app.state.source), (Screen::Installing, Source::File(Place::Storage)));
-        assert_eq!(app.state.install, Install::Checking { size: 4096, stage: None }, "the file is read at once");
+        let shown: Vec<&str> = app
+            .state
+            .storage
+            .entries
+            .as_ref()
+            .expect("listed")
+            .iter()
+            .map(|e| e.name.as_str())
+            .collect();
+        assert_eq!(
+            shown,
+            ["Download", "OTA.ZIP", "boot.img"],
+            "folders and what can be installed, hidden ones left out"
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ChooseEntry(0)),
+            vec![Effect::ReadPlace(Place::Storage, "Download".into())]
+        );
+        app.set_place(
+            Place::Storage,
+            "Download".into(),
+            Ok(vec![entry("ota.zip", FileKind::File)]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ChooseEntry(0)),
+            vec![Effect::InstallFile(
+                Place::Storage,
+                "Download/ota.zip".into()
+            )]
+        );
+        assert_eq!(
+            (app.screen(), app.state.source),
+            (Screen::Installing, Source::File(Place::Storage))
+        );
+        assert_eq!(
+            app.state.install,
+            Install::Checking {
+                size: 4096,
+                stage: None
+            },
+            "the file is read at once"
+        );
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::Installing, "a file being read keeps the page");
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "a file being read keeps the page"
+        );
         app.install(Event::Finished(Outcome::Refused(Refusal::Unknown)), 0);
         tap_at(&mut app, &f, &i, Action::Back, 1000);
-        assert_eq!((app.screen(), &app.state.install), (storage, &Install::Idle), "back to choose another");
-        assert_eq!(app.key(Key::Back, 1000), vec![Effect::ReadPlace(Place::Storage, String::new())], "back climbs to the top");
+        assert_eq!(
+            (app.screen(), &app.state.install),
+            (storage, &Install::Idle),
+            "back to choose another"
+        );
+        assert_eq!(
+            app.key(Key::Back, 1000),
+            vec![Effect::ReadPlace(Place::Storage, String::new())],
+            "back climbs to the top"
+        );
         app.set_place(Place::Storage, String::new(), Ok(Vec::new()), LISTED);
         assert!(app.key(Key::Back, 1000).is_empty());
         assert_eq!(app.screen(), Screen::Install, "from the top, back leaves");
@@ -10081,26 +14430,68 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Install, &f, &i);
         let page = Screen::Choose(Place::UsbDrive);
-        assert!(tap(&mut app, &f, &i, Action::Open(page)).is_empty(), "with no drive, nothing to read");
+        assert!(
+            tap(&mut app, &f, &i, Action::Open(page)).is_empty(),
+            "with no drive, nothing to read"
+        );
         assert_eq!(app.screen(), page);
         assert!(app.frame(&f, &i).rows.is_none(), "the page waits for one");
-        assert_eq!(app.set_usb_drive(Some(UsbDrive::Shown)), vec![Effect::ReadPlace(Place::UsbDrive, String::new())], "read once shown");
-        app.set_place(Place::UsbDrive, String::new(), Ok(vec![entry("ROMs", folder(2))]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::ChooseEntry(0)), vec![Effect::ReadPlace(Place::UsbDrive, "ROMs".into())]);
-        app.set_place(Place::UsbDrive, "ROMs".into(), Ok(vec![entry("boot.img", FileKind::File)]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::ChooseEntry(0)), vec![Effect::InstallFile(Place::UsbDrive, "ROMs/boot.img".into())]);
+        assert_eq!(
+            app.set_usb_drive(Some(UsbDrive::Shown)),
+            vec![Effect::ReadPlace(Place::UsbDrive, String::new())],
+            "read once shown"
+        );
+        app.set_place(
+            Place::UsbDrive,
+            String::new(),
+            Ok(vec![entry("ROMs", folder(2))]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ChooseEntry(0)),
+            vec![Effect::ReadPlace(Place::UsbDrive, "ROMs".into())]
+        );
+        app.set_place(
+            Place::UsbDrive,
+            "ROMs".into(),
+            Ok(vec![entry("boot.img", FileKind::File)]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ChooseEntry(0)),
+            vec![Effect::InstallFile(Place::UsbDrive, "ROMs/boot.img".into())]
+        );
         assert_eq!(app.state.source, Source::File(Place::UsbDrive));
-        app.install(Event::Finished(Outcome::Failed(Failure::Unreadable("read /mnt/usb/ROMs/boot.img: Input/output error".into()))), 0);
+        app.install(
+            Event::Finished(Outcome::Failed(Failure::Unreadable(
+                "read /mnt/usb/ROMs/boot.img: Input/output error".into(),
+            ))),
+            0,
+        );
         tap_at(&mut app, &f, &i, Action::Back, 1000);
         assert_eq!(app.screen(), page, "back to choose another");
         assert!(app.set_usb_drive(None).is_empty());
-        assert_eq!(app.state.drive.path, "", "a drive pulled out leaves nothing of its folders");
-        assert!(app.frame(&f, &i).rows.is_none(), "the page waits for another");
+        assert_eq!(
+            app.state.drive.path, "",
+            "a drive pulled out leaves nothing of its folders"
+        );
+        assert!(
+            app.frame(&f, &i).rows.is_none(),
+            "the page waits for another"
+        );
         assert!(app.key(Key::Back, 1000).is_empty());
         assert_eq!(app.screen(), Screen::Install);
-        let unreadable = Some(UsbDrive::Unreadable("sdg holds no filesystem the kernel reads".into()));
-        assert!(app.set_usb_drive(unreadable).is_empty(), "another page reads nothing");
-        assert!(tap_at(&mut app, &f, &i, Action::Open(page), 1000).is_empty(), "nothing on the drive can be read");
+        let unreadable = Some(UsbDrive::Unreadable(
+            "sdg holds no filesystem the kernel reads".into(),
+        ));
+        assert!(
+            app.set_usb_drive(unreadable).is_empty(),
+            "another page reads nothing"
+        );
+        assert!(
+            tap_at(&mut app, &f, &i, Action::Open(page), 1000).is_empty(),
+            "nothing on the drive can be read"
+        );
     }
 
     #[test]
@@ -10108,8 +14499,18 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = opened(Screen::Install, &f, &i);
         app.data_waiting(None);
-        tap(&mut app, &f, &i, Action::Open(Screen::Choose(Place::Storage)));
-        app.set_place(Place::Storage, String::new(), Ok(vec![entry("ota.zip", FileKind::File)]), LISTED);
+        tap(
+            &mut app,
+            &f,
+            &i,
+            Action::Open(Screen::Choose(Place::Storage)),
+        );
+        app.set_place(
+            Place::Storage,
+            String::new(),
+            Ok(vec![entry("ota.zip", FileKind::File)]),
+            LISTED,
+        );
         app.state.install = Install::Ending;
         assert!(tap(&mut app, &f, &i, Action::ChooseEntry(0)).is_empty());
         assert_eq!(app.screen(), Screen::Choose(Place::Storage));
@@ -10120,7 +14521,14 @@ mod tests {
     fn in_sdcard(f: &Fonts, i: &DeviceInfo) -> App {
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         tap(&mut app, f, i, Action::Open(Screen::Files));
-        app.set_files("/sdcard".into(), Ok(vec![entry("DCIM", folder(2)), entry("a.zip", FileKind::File)]), LISTED);
+        app.set_files(
+            "/sdcard".into(),
+            Ok(vec![
+                entry("DCIM", folder(2)),
+                entry("a.zip", FileKind::File),
+            ]),
+            LISTED,
+        );
         app
     }
 
@@ -10140,12 +14548,26 @@ mod tests {
         let mut app = in_sdcard(&f, &i);
         let (x, y) = spot(&mut app, &f, &i, Action::OpenEntry(0));
         app.touch(Touch::Down(x, y), &f, 1000);
-        assert_eq!(app.deadline(1000), Some(1000 + LONG_PRESS_MS), "the press is timed");
+        assert_eq!(
+            app.deadline(1000),
+            Some(1000 + LONG_PRESS_MS),
+            "the press is timed"
+        );
         assert!(app.tick(1000 + LONG_PRESS_MS - 1).is_empty());
-        assert_eq!(app.tick(1000 + LONG_PRESS_MS), vec![Effect::Haptic], "held long enough, it opens with a tap of the motor");
+        assert_eq!(
+            app.tick(1000 + LONG_PRESS_MS),
+            vec![Effect::Haptic],
+            "held long enough, it opens with a tap of the motor"
+        );
         assert_eq!(app.screen(), Screen::FileInfo);
-        assert_eq!(app.state.file.as_ref().map(|e| e.name.as_str()), Some("DCIM"));
-        assert!(app.touch(Touch::Up, &f, 1500).is_empty(), "lifting does not open the folder as well");
+        assert_eq!(
+            app.state.file.as_ref().map(|e| e.name.as_str()),
+            Some("DCIM")
+        );
+        assert!(
+            app.touch(Touch::Up, &f, 1500).is_empty(),
+            "lifting does not open the folder as well"
+        );
         assert_eq!(app.screen(), Screen::FileInfo);
     }
 
@@ -10155,19 +14577,50 @@ mod tests {
         let mut app = in_sdcard(&f, &i);
         hold_entry(&mut app, &f, &i, 1);
         assert!(tap(&mut app, &f, &i, Action::PickEntry(FileOp::Copy)).is_empty());
-        assert_eq!(app.screen(), Screen::Files, "back to the folders to pick one");
-        assert_eq!(app.state.clip, Some(Clip { op: FileOp::Copy, path: "/sdcard/a.zip".into() }));
-        assert!(app.frame(&f, &i).dock.is_some(), "the bar is held at the bottom");
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenEntry(0)), vec![Effect::ReadDir("/sdcard/DCIM".into())]);
+        assert_eq!(
+            app.screen(),
+            Screen::Files,
+            "back to the folders to pick one"
+        );
+        assert_eq!(
+            app.state.clip,
+            Some(Clip {
+                op: FileOp::Copy,
+                path: "/sdcard/a.zip".into()
+            })
+        );
+        assert!(
+            app.frame(&f, &i).dock.is_some(),
+            "the bar is held at the bottom"
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenEntry(0)),
+            vec![Effect::ReadDir("/sdcard/DCIM".into())]
+        );
         app.set_files("/sdcard/DCIM".into(), Ok(Vec::new()), LISTED);
-        let paste = Effect::Paste { op: FileOp::Copy, path: "/sdcard/a.zip".into(), into: "/sdcard/DCIM".into(), clash: None };
+        let paste = Effect::Paste {
+            op: FileOp::Copy,
+            path: "/sdcard/a.zip".into(),
+            into: "/sdcard/DCIM".into(),
+            clash: None,
+        };
         assert_eq!(tap(&mut app, &f, &i, Action::Paste), vec![paste]);
-        app.file_job_started(FileTask::Copy { path: "/sdcard/a.zip".into(), into: "/sdcard/DCIM".into() });
-        assert_eq!(app.state.clip, None, "the entry is put down once the copy starts");
+        app.file_job_started(FileTask::Copy {
+            path: "/sdcard/a.zip".into(),
+            into: "/sdcard/DCIM".into(),
+        });
+        assert_eq!(
+            app.state.clip, None,
+            "the entry is put down once the copy starts"
+        );
         assert_eq!(app.screen(), Screen::FileJob);
         app.file_progress((50, 100), (0, 1));
         assert_eq!(app.key(Key::Back, 0), Vec::new());
-        assert_eq!(app.screen(), Screen::FileJob, "the page stays while the copy runs");
+        assert_eq!(
+            app.screen(),
+            Screen::FileJob,
+            "the page stays while the copy runs"
+        );
         app.file_job_ended(JobEnd::Done, 0);
         assert_eq!(app.screen(), Screen::Files);
         assert_eq!(app.state.job, None);
@@ -10178,36 +14631,93 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
         let paste = |app: &mut App, op: FileOp, path: &str| {
-            app.state.clip = Some(Clip { op, path: path.into() });
+            app.state.clip = Some(Clip {
+                op,
+                path: path.into(),
+            });
             app.toast = None;
             app.refresh();
             tap(app, &f, &i, Action::Paste)
         };
         assert!(paste(&mut app, FileOp::Copy, "/sdcard").is_empty());
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("无法将\"sdcard\"放入其自身中"));
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("无法将\"sdcard\"放入其自身中")
+        );
         assert!(paste(&mut app, FileOp::Move, "/sdcard/a.zip").is_empty());
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("\"a.zip\"已在该文件夹中"));
-        assert!(app.state.clip.is_some(), "the entry stays picked, for another folder");
-        let copy = Effect::Paste { op: FileOp::Copy, path: "/sdcard/a.zip".into(), into: "/sdcard".into(), clash: None };
-        assert_eq!(paste(&mut app, FileOp::Copy, "/sdcard/a.zip"), vec![copy], "a copy where the entry is makes a second one");
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("\"a.zip\"已在该文件夹中")
+        );
+        assert!(
+            app.state.clip.is_some(),
+            "the entry stays picked, for another folder"
+        );
+        let copy = Effect::Paste {
+            op: FileOp::Copy,
+            path: "/sdcard/a.zip".into(),
+            into: "/sdcard".into(),
+            clash: None,
+        };
+        assert_eq!(
+            paste(&mut app, FileOp::Copy, "/sdcard/a.zip"),
+            vec![copy],
+            "a copy where the entry is makes a second one"
+        );
     }
 
     #[test]
     fn a_taken_name_waits_for_the_user_to_choose() {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
-        app.state.clip = Some(Clip { op: FileOp::Move, path: "/tmp/a.zip".into() });
-        app.file_clash(FileOp::Move, "/tmp/a.zip".into(), "/sdcard".into(), vec!["a.zip".into()]);
+        app.state.clip = Some(Clip {
+            op: FileOp::Move,
+            path: "/tmp/a.zip".into(),
+        });
+        app.file_clash(
+            FileOp::Move,
+            "/tmp/a.zip".into(),
+            "/sdcard".into(),
+            vec!["a.zip".into()],
+        );
         assert_eq!(app.screen(), Screen::Clash);
-        let paste = Effect::Paste { op: FileOp::Move, path: "/tmp/a.zip".into(), into: "/sdcard".into(), clash: Some(ClashChoice::KeepBoth) };
-        assert_eq!(tap(&mut app, &f, &i, Action::Resolve(ClashChoice::KeepBoth)), vec![paste]);
+        let paste = Effect::Paste {
+            op: FileOp::Move,
+            path: "/tmp/a.zip".into(),
+            into: "/sdcard".into(),
+            clash: Some(ClashChoice::KeepBoth),
+        };
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Resolve(ClashChoice::KeepBoth)),
+            vec![paste]
+        );
         assert_eq!(app.screen(), Screen::Files);
-        app.file_clash(FileOp::Move, "/tmp/a.zip".into(), "/sdcard".into(), vec!["a.zip".into()]);
+        app.file_clash(
+            FileOp::Move,
+            "/tmp/a.zip".into(),
+            "/sdcard".into(),
+            vec!["a.zip".into()],
+        );
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::Files, "turning the choice down goes back to the folder");
-        assert!(app.state.clip.is_some(), "with the entry still picked, for another folder");
-        app.file_clash(FileOp::Move, "/tmp/a.zip".into(), "/sdcard".into(), vec!["a.zip".into()]);
-        assert!(tap(&mut app, &f, &i, Action::Resolve(ClashChoice::Skip)).is_empty(), "skipping the entry leaves nothing to do");
+        assert_eq!(
+            app.screen(),
+            Screen::Files,
+            "turning the choice down goes back to the folder"
+        );
+        assert!(
+            app.state.clip.is_some(),
+            "with the entry still picked, for another folder"
+        );
+        app.file_clash(
+            FileOp::Move,
+            "/tmp/a.zip".into(),
+            "/sdcard".into(),
+            vec!["a.zip".into()],
+        );
+        assert!(
+            tap(&mut app, &f, &i, Action::Resolve(ClashChoice::Skip)).is_empty(),
+            "skipping the entry leaves nothing to do"
+        );
         assert_eq!(app.screen(), Screen::Files);
         assert_eq!(app.state.clip, None, "and nothing picked");
     }
@@ -10224,15 +14734,38 @@ mod tests {
             tap(&mut app, &f, &i, Action::Type(Cap::Backspace));
         }
         type_text(&mut app, &f, &i, "b");
-        let rename = Effect::Rename { path: "/sdcard/a.zip".into(), name: "ab".into() };
-        assert_eq!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)), vec![rename]);
-        app.renamed(Err(RenameRefused::Failed("rename /sdcard/a.zip to ab: No space left on device (os error 28)".into())), 0);
-        assert_eq!(app.screen(), Screen::Rename, "a name refused can be typed again");
+        let rename = Effect::Rename {
+            path: "/sdcard/a.zip".into(),
+            name: "ab".into(),
+        };
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Type(Cap::Enter)),
+            vec![rename]
+        );
+        app.renamed(
+            Err(RenameRefused::Failed(
+                "rename /sdcard/a.zip to ab: No space left on device (os error 28)".into(),
+            )),
+            0,
+        );
+        assert_eq!(
+            app.screen(),
+            Screen::Rename,
+            "a name refused can be typed again"
+        );
         app.toast = None;
         app.renamed(Err(RenameRefused::Taken), 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("该文件夹中已有\"ab\""), "as the folder compares names");
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("该文件夹中已有\"ab\""),
+            "as the folder compares names"
+        );
         app.renamed(Ok(()), 0);
-        assert_eq!(app.screen(), Screen::Files, "renamed, the folder shows again");
+        assert_eq!(
+            app.screen(),
+            Screen::Files,
+            "renamed, the folder shows again"
+        );
     }
 
     #[test]
@@ -10242,34 +14775,107 @@ mod tests {
         hold_entry(&mut app, &f, &i, 1);
         tap(&mut app, &f, &i, Action::OpenPermissions);
         assert_eq!(app.screen(), Screen::Permissions);
-        let bits: Vec<u32> = app.frame(&f, &i).hits.iter().filter_map(|h| if let Action::ModeBit(b) = h.action { Some(b) } else { None }).collect();
-        assert_eq!(bits, [0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001, 0o4000, 0o2000, 0o1000]);
-        let set = |mode| vec![Effect::SetMode { path: "/sdcard/a.zip".into(), mode }];
-        assert_eq!(tap(&mut app, &f, &i, Action::ModeBit(0o002)), set(0o757), "everyone may write");
+        let bits: Vec<u32> = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .filter_map(|h| {
+                if let Action::ModeBit(b) = h.action {
+                    Some(b)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        assert_eq!(
+            bits,
+            [
+                0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001, 0o4000, 0o2000,
+                0o1000
+            ]
+        );
+        let set = |mode| {
+            vec![Effect::SetMode {
+                path: "/sdcard/a.zip".into(),
+                mode,
+            }]
+        };
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ModeBit(0o002)),
+            set(0o757),
+            "everyone may write"
+        );
         app.mode_set(0o757, Ok(0o757), 0);
-        assert_eq!(app.state.file.as_ref().unwrap().mode, 0o040_757, "its type stays");
-        assert_eq!(tap(&mut app, &f, &i, Action::ModeBit(0o100)), set(0o657), "and back off");
+        assert_eq!(
+            app.state.file.as_ref().unwrap().mode,
+            0o040_757,
+            "its type stays"
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::ModeBit(0o100)),
+            set(0o657),
+            "and back off"
+        );
         app.toast = None;
         app.mode_set(0o4757, Ok(0o757), 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("该位置不支持修改权限"), "a filesystem that kept none of it");
-        app.mode_set(0o755, Err("give /sdcard/a.zip the permissions 0755: Read-only file system (os error 30)".into()), 0);
-        assert!(app.toast.as_ref().is_some_and(|t| t.0.starts_with("修改权限失败：give /sdcard/a.zip")), "{:?}", app.toast);
-        assert_eq!(app.state.file.as_ref().unwrap().mode, 0o040_757, "as it last was");
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("该位置不支持修改权限"),
+            "a filesystem that kept none of it"
+        );
+        app.mode_set(
+            0o755,
+            Err(
+                "give /sdcard/a.zip the permissions 0755: Read-only file system (os error 30)"
+                    .into(),
+            ),
+            0,
+        );
+        assert!(
+            app.toast
+                .as_ref()
+                .is_some_and(|t| t.0.starts_with("修改权限失败：give /sdcard/a.zip")),
+            "{:?}",
+            app.toast
+        );
+        assert_eq!(
+            app.state.file.as_ref().unwrap().mode,
+            0o040_757,
+            "as it last was"
+        );
         tap_back(&mut app, &f, &i, 0);
         tap_back(&mut app, &f, &i, 0);
-        assert_eq!(app.state.files.entries.as_ref().unwrap()[1].mode, 0o040_757, "the folder knows it too");
+        assert_eq!(
+            app.state.files.entries.as_ref().unwrap()[1].mode,
+            0o040_757,
+            "the folder knows it too"
+        );
     }
 
     #[test]
     fn a_links_page_offers_no_permissions_of_its_own() {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
-        app.state.file = Some(entry("latest", FileKind::Link { target: "DCIM".into(), folder: true }));
+        app.state.file = Some(entry(
+            "latest",
+            FileKind::Link {
+                target: "DCIM".into(),
+                folder: true,
+            },
+        ));
         app.open(Screen::FileInfo);
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::OpenPermissions));
+        assert!(!app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .any(|h| h.action == Action::OpenPermissions));
         app.state.file = Some(entry("a.zip", FileKind::File));
         app.refresh();
-        assert!(app.frame(&f, &i).hits.iter().any(|h| h.action == Action::OpenPermissions));
+        assert!(app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .any(|h| h.action == Action::OpenPermissions));
     }
 
     fn toast(app: &App) -> Option<&str> {
@@ -10281,27 +14887,62 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         tap(&mut app, &f, &i, Action::Open(Screen::Files));
-        app.set_files("/data/adb".into(), Ok(vec![entry("run.sh", FileKind::File)]), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenEntry(0)), vec![Effect::OpenText("/data/adb/run.sh".into())]);
-        app.text_opened(&f, "/data/adb/run.sh".into(), Ok(Some(b"echo hi\n".to_vec())), 0);
+        app.set_files(
+            "/data/adb".into(),
+            Ok(vec![entry("run.sh", FileKind::File)]),
+            LISTED,
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenEntry(0)),
+            vec![Effect::OpenText("/data/adb/run.sh".into())]
+        );
+        app.text_opened(
+            &f,
+            "/data/adb/run.sh".into(),
+            Ok(Some(b"echo hi\n".to_vec())),
+            0,
+        );
         assert_eq!(app.screen(), Screen::Editor);
         let frame = app.frame(&f, &i);
         assert_eq!(frame.button, None, "nothing waits to be saved");
         assert!(frame.caret.is_some());
-        let keys: Vec<Action> = frame.hits.iter().map(|h| h.action).filter(|a| matches!(a, Action::TermKey(_))).collect();
+        let keys: Vec<Action> = frame
+            .hits
+            .iter()
+            .map(|h| h.action)
+            .filter(|a| matches!(a, Action::TermKey(_)))
+            .collect();
         assert_eq!(keys, editor::EDITOR_KEYS.map(Action::TermKey));
         tap(&mut app, &f, &i, Action::Type(Cap::Shift));
         tap(&mut app, &f, &i, Action::Type(Cap::Char('x')));
-        assert_eq!(app.state.layer, Layer::Letters, "a capital lasts one letter");
+        assert_eq!(
+            app.state.layer,
+            Layer::Letters,
+            "a capital lasts one letter"
+        );
         tap(&mut app, &f, &i, Action::Type(Cap::Space));
         tap(&mut app, &f, &i, Action::TermKey(TermKey::Tab));
         tap(&mut app, &f, &i, Action::Type(Cap::Enter));
-        assert_eq!(app.frame(&f, &i).button, Some((widgets::Glyph::Done, Action::SaveText)));
-        let save = vec![Effect::SaveText { path: "/data/adb/run.sh".into(), text: "X \t\necho hi\n".into() }];
+        assert_eq!(
+            app.frame(&f, &i).button,
+            Some((widgets::Glyph::Done, Action::SaveText))
+        );
+        let save = vec![Effect::SaveText {
+            path: "/data/adb/run.sh".into(),
+            text: "X \t\necho hi\n".into(),
+        }];
         assert_eq!(tap_button(&mut app, &f, &i, 0), save);
         app.text_saved(Err("rename /data/adb/.run.sh.0.saving to /data/adb/run.sh: Read-only file system (os error 30)".into()), 0);
-        assert!(toast(&app).is_some_and(|t| t.starts_with("保存失败：rename")), "{:?}", app.toast);
-        assert_eq!(app.frame(&f, &i).button, Some((widgets::Glyph::Done, Action::SaveText)), "still to save");
+        assert!(
+            toast(&app).is_some_and(|t| t.starts_with("保存失败：rename")),
+            "{:?}",
+            app.toast
+        );
+        assert_eq!(
+            app.frame(&f, &i).button,
+            Some((widgets::Glyph::Done, Action::SaveText)),
+            "still to save"
+        );
         assert_eq!(tap_button(&mut app, &f, &i, 0), save);
         app.text_saved(Ok(()), 0);
         assert_eq!(toast(&app), Some("已保存"));
@@ -10315,16 +14956,28 @@ mod tests {
     fn leaving_the_editor_with_changes_unsaved_takes_going_back_again() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Files, W, H, PPD);
-        app.set_files("/tmp".into(), Ok(vec![entry("a.txt", FileKind::File)]), LISTED);
+        app.set_files(
+            "/tmp".into(),
+            Ok(vec![entry("a.txt", FileKind::File)]),
+            LISTED,
+        );
         app.text_opened(&f, "/tmp/a.txt".into(), Ok(Some(b"a".to_vec())), 0);
         tap(&mut app, &f, &i, Action::Type(Cap::Char('b')));
         tap_back(&mut app, &f, &i, 1000);
         assert_eq!(app.screen(), Screen::Editor, "the first back only warns");
         assert_eq!(toast(&app), Some("修改尚未保存，再次返回将放弃修改"));
         tap_back(&mut app, &f, &i, 1000 + TOAST_MS);
-        assert_eq!(app.screen(), Screen::Editor, "once the warning is gone, back warns again");
+        assert_eq!(
+            app.screen(),
+            Screen::Editor,
+            "once the warning is gone, back warns again"
+        );
         tap_back(&mut app, &f, &i, 1000 + TOAST_MS + 500);
-        assert_eq!(app.screen(), Screen::Files, "back again while it shows leaves");
+        assert_eq!(
+            app.screen(),
+            Screen::Files,
+            "back again while it shows leaves"
+        );
         assert_eq!(app.state.editor, None, "without the changes");
     }
 
@@ -10334,8 +14987,14 @@ mod tests {
         let mut app = in_sdcard(&f, &i);
         let refused = [
             (Ok(None), "暂不支持编辑超过 2 MB 的文件"),
-            (Ok(Some(vec![0xff, 0xfe, b'a'])), "仅支持编辑 UTF-8 编码的文本文件"),
-            (Ok(Some(b"\x7fELF\x02\x01\x01\0".to_vec())), "仅支持编辑 UTF-8 编码的文本文件"),
+            (
+                Ok(Some(vec![0xff, 0xfe, b'a'])),
+                "仅支持编辑 UTF-8 编码的文本文件",
+            ),
+            (
+                Ok(Some(b"\x7fELF\x02\x01\x01\0".to_vec())),
+                "仅支持编辑 UTF-8 编码的文本文件",
+            ),
         ];
         for (read, said) in refused {
             app.toast = None;
@@ -10343,8 +15002,16 @@ mod tests {
             assert_eq!(app.screen(), Screen::Files);
             assert_eq!(toast(&app), Some(said));
         }
-        app.text_opened(&f, "/sdcard/a.bin".into(), Err("open /sdcard/a.bin: Permission denied (os error 13)".into()), 0);
-        assert_eq!(toast(&app), Some("读取失败：open /sdcard/a.bin: Permission denied (os error 13)"));
+        app.text_opened(
+            &f,
+            "/sdcard/a.bin".into(),
+            Err("open /sdcard/a.bin: Permission denied (os error 13)".into()),
+            0,
+        );
+        assert_eq!(
+            toast(&app),
+            Some("读取失败：open /sdcard/a.bin: Permission denied (os error 13)")
+        );
         assert_eq!(app.state.editor, None);
     }
 
@@ -10353,11 +15020,28 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
         hold_entry(&mut app, &f, &i, 1);
-        assert_eq!(tap(&mut app, &f, &i, Action::EditEntry), vec![Effect::OpenText("/sdcard/a.zip".into())]);
-        for kind in [folder(2), FileKind::Link { target: "a.zip".into(), folder: false }, FileKind::Special] {
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::EditEntry),
+            vec![Effect::OpenText("/sdcard/a.zip".into())]
+        );
+        for kind in [
+            folder(2),
+            FileKind::Link {
+                target: "a.zip".into(),
+                folder: false,
+            },
+            FileKind::Special,
+        ] {
             app.state.file = Some(entry("other", kind));
             app.refresh();
-            assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::EditEntry), "{:?}", app.state.file);
+            assert!(
+                !app.frame(&f, &i)
+                    .hits
+                    .iter()
+                    .any(|h| h.action == Action::EditEntry),
+                "{:?}",
+                app.state.file
+            );
         }
     }
 
@@ -10367,8 +15051,16 @@ mod tests {
         let mut app = in_sdcard(&f, &i);
         hold_entry(&mut app, &f, &i, 1);
         app.text_opened(&f, "/sdcard/a.zip".into(), Ok(Some(b"x".to_vec())), 0);
-        let saved = FileRow { size: 9, modified: LISTED, ..entry("a.zip", FileKind::File) };
-        app.set_files("/sdcard".into(), Ok(vec![entry("DCIM", folder(2)), saved.clone()]), LISTED);
+        let saved = FileRow {
+            size: 9,
+            modified: LISTED,
+            ..entry("a.zip", FileKind::File)
+        };
+        app.set_files(
+            "/sdcard".into(),
+            Ok(vec![entry("DCIM", folder(2)), saved.clone()]),
+            LISTED,
+        );
         assert_eq!(app.state.file, Some(saved));
     }
 
@@ -10376,16 +15068,41 @@ mod tests {
     fn a_package_or_an_image_opened_in_the_file_manager_installs_and_another_is_chosen_there() {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenEntry(1)), vec![Effect::InstallPath("/sdcard/a.zip".into())]);
-        assert_eq!((app.screen(), app.state.source), (Screen::Installing, Source::Opened { drive: false }));
-        assert_eq!(app.state.package_name.as_deref(), Some("a.zip"), "the page names the file");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenEntry(1)),
+            vec![Effect::InstallPath("/sdcard/a.zip".into())]
+        );
+        assert_eq!(
+            (app.screen(), app.state.source),
+            (Screen::Installing, Source::Opened { drive: false })
+        );
+        assert_eq!(
+            app.state.package_name.as_deref(),
+            Some("a.zip"),
+            "the page names the file"
+        );
         app.install(Event::Finished(Outcome::Refused(Refusal::Unknown)), 0);
         tap_at(&mut app, &f, &i, Action::Back, 1000);
-        assert_eq!((app.screen(), &app.state.install), (Screen::Files, &Install::Idle), "another file is chosen where this one was");
+        assert_eq!(
+            (app.screen(), &app.state.install),
+            (Screen::Files, &Install::Idle),
+            "another file is chosen where this one was"
+        );
         let drive = format!("{USB_DRIVE}/ROMs");
-        app.set_files(drive.clone(), Ok(vec![entry("boot.img", FileKind::File)]), LISTED);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::OpenEntry(0), 2000), vec![Effect::InstallPath(format!("{drive}/boot.img"))]);
-        assert_eq!(app.state.source, Source::Opened { drive: true }, "the page warns about pulling the drive out");
+        app.set_files(
+            drive.clone(),
+            Ok(vec![entry("boot.img", FileKind::File)]),
+            LISTED,
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::OpenEntry(0), 2000),
+            vec![Effect::InstallPath(format!("{drive}/boot.img"))]
+        );
+        assert_eq!(
+            app.state.source,
+            Source::Opened { drive: true },
+            "the page warns about pulling the drive out"
+        );
     }
 
     #[test]
@@ -10393,7 +15110,14 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
         tap(&mut app, &f, &i, Action::OpenEntry(1));
-        app.install(Event::Image { kind: ImageKind::Dtbo, size: 1 << 20, partitions: vec!["dtbo"] }, 0);
+        app.install(
+            Event::Image {
+                kind: ImageKind::Dtbo,
+                size: 1 << 20,
+                partitions: vec!["dtbo"],
+            },
+            0,
+        );
         assert_eq!(app.key(Key::Back, 1000), vec![Effect::Cancel]);
         assert_eq!(app.screen(), Screen::Files);
         assert!(tap_at(&mut app, &f, &i, Action::OpenEntry(1), 2000).is_empty());
@@ -10405,17 +15129,36 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
         hold_entry(&mut app, &f, &i, 1);
-        assert_eq!(tap(&mut app, &f, &i, Action::InstallEntry), vec![Effect::InstallPath("/sdcard/a.zip".into())]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::InstallEntry),
+            vec![Effect::InstallPath("/sdcard/a.zip".into())]
+        );
         assert_eq!(app.screen(), Screen::Installing);
-        let link = FileKind::Link { target: "/sdcard/a.zip".into(), folder: false };
+        let link = FileKind::Link {
+            target: "/sdcard/a.zip".into(),
+            folder: false,
+        };
         let taken = [entry("boot.IMG", FileKind::File), entry("b.zip", link)];
-        let left = [entry("a.txt", FileKind::File), entry("img", FileKind::File), entry("c.zip", folder(1)), entry("d.zip", FileKind::Special)];
-        for (e, offered) in taken.into_iter().map(|e| (e, true)).chain(left.into_iter().map(|e| (e, false))) {
+        let left = [
+            entry("a.txt", FileKind::File),
+            entry("img", FileKind::File),
+            entry("c.zip", folder(1)),
+            entry("d.zip", FileKind::Special),
+        ];
+        for (e, offered) in taken
+            .into_iter()
+            .map(|e| (e, true))
+            .chain(left.into_iter().map(|e| (e, false)))
+        {
             app.state.file = Some(e);
             app.state.install = Install::Idle;
             app.stack = vec![(Screen::FileInfo, 0.0, Focus::Unset)];
             app.refresh();
-            let has = app.frame(&f, &i).hits.iter().any(|h| h.action == Action::InstallEntry);
+            let has = app
+                .frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::InstallEntry);
             assert_eq!(has, offered, "{:?}", app.state.file);
         }
     }
@@ -10428,12 +15171,23 @@ mod tests {
         assert_eq!(app.screen(), Screen::Relabel);
         assert!(swipe(&mut app, &f, &i, Confirm::Relabel).is_empty());
         assert_eq!(toast(&app), Some("请先在「解密」中打开 data 分区"));
-        app.state.data = Data::Locked { user: 0, keys: Keys::Digits, checking: false };
+        app.state.data = Data::Locked {
+            user: 0,
+            keys: Keys::Digits,
+            checking: false,
+        };
         app.refresh();
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Relabel), vec![Effect::Relabel], "open, though a user has yet to unlock");
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Relabel),
+            vec![Effect::Relabel],
+            "open, though a user has yet to unlock"
+        );
         app.state.data = Data::Open;
         app.refresh();
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::Relabel), vec![Effect::Relabel]);
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::Relabel),
+            vec![Effect::Relabel]
+        );
         app.relabel_started();
         assert!(!app.frame(&f, &i).back, "no going back while it works");
         app.key(Key::Back, 0);
@@ -10441,12 +15195,28 @@ mod tests {
         assert_eq!(toast(&app), Some("请等待完成或停止后再返回"));
         app.relabel_progress(0, 0, 0);
         app.relabel_progress(10, 400, 2);
-        assert_eq!(tap(&mut app, &f, &i, Action::StopRelabel), vec![Effect::StopRelabel]);
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::StopRelabel), "stopping, it is not asked again");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::StopRelabel),
+            vec![Effect::StopRelabel]
+        );
+        assert!(
+            !app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::StopRelabel),
+            "stopping, it is not asked again"
+        );
         app.relabel_progress(12, 400, 3);
         app.relabel_ended(JobEnd::Stopped, 0);
-        let job = app.state.relabel.clone().expect("the page shows how it ended");
-        assert_eq!((job.checked, job.total, job.changed, job.outcome), (12, 400, 3, Some(JobEnd::Stopped)));
+        let job = app
+            .state
+            .relabel
+            .clone()
+            .expect("the page shows how it ended");
+        assert_eq!(
+            (job.checked, job.total, job.changed, job.outcome),
+            (12, 400, 3, Some(JobEnd::Stopped))
+        );
         assert!(app.frame(&f, &i).back);
         tap_at(&mut app, &f, &i, Action::Back, 2000);
         assert_eq!(app.screen(), Screen::Advanced);
@@ -10464,21 +15234,35 @@ mod tests {
             size: 64 << 20,
             others: others.iter().map(|o| o.to_string()).collect(),
         };
-        vec![row("data", None, &[]), row("metadata", Some("f2fs"), &[]), row("cache", Some("ext4"), &["f2fs"])]
+        vec![
+            row("data", None, &[]),
+            row("metadata", Some("f2fs"), &[]),
+            row("cache", Some("ext4"), &["f2fs"]),
+        ]
     }
 
     #[test]
     fn the_filesystem_page_does_to_a_partition_what_is_chosen_and_reads_them_again_after() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Filesystems)), vec![Effect::ReadFilesystems]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Filesystems)),
+            vec![Effect::ReadFilesystems]
+        );
         app.set_filesystems(Ok(fs_rows()));
         tap(&mut app, &f, &i, Action::OpenFilesystem(2));
         assert_eq!(app.screen(), Screen::Filesystem);
-        assert_eq!(app.state.fs_action, FsAction::Repair, "a repair, which changes nothing the partition holds, to begin with");
+        assert_eq!(
+            app.state.fs_action,
+            FsAction::Repair,
+            "a repair, which changes nothing the partition holds, to begin with"
+        );
         tap(&mut app, &f, &i, Action::ChooseFs(FsChoice::Remake(0)));
         assert_eq!(app.state.fs_action, FsAction::Remake("f2fs".into()));
-        let remake = Effect::Filesystem { name: "cache".into(), action: FsAction::Remake("f2fs".into()) };
+        let remake = Effect::Filesystem {
+            name: "cache".into(),
+            action: FsAction::Remake("f2fs".into()),
+        };
         assert_eq!(swipe(&mut app, &f, &i, Confirm::Filesystem), vec![remake]);
         app.part_work_started(PartKind::Remake("f2fs".into()), false);
         assert_eq!(app.screen(), Screen::PartWork);
@@ -10486,14 +15270,25 @@ mod tests {
         app.part_at(0);
         assert!(!app.frame(&f, &i).back, "no going back while it works");
         app.key(Key::Back, 0);
-        assert_eq!((app.screen(), toast(&app)), (Screen::PartWork, Some("请等待完成后再返回")));
+        assert_eq!(
+            (app.screen(), toast(&app)),
+            (Screen::PartWork, Some("请等待完成后再返回"))
+        );
         app.part_ended(0, ItemEnd::Made, "");
         app.part_work_ended(Ok(()), 0);
         assert!(app.frame(&f, &i).back);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Back, 2000), vec![Effect::ReadFilesystems], "the partition may hold another now");
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Back, 2000),
+            vec![Effect::ReadFilesystems],
+            "the partition may hold another now"
+        );
         assert_eq!(app.screen(), Screen::Filesystem);
         assert_eq!(app.state.part_work, None);
-        assert_eq!(app.state.fs_action, FsAction::Repair, "what to do to it is chosen afresh");
+        assert_eq!(
+            app.state.fs_action,
+            FsAction::Repair,
+            "what to do to it is chosen afresh"
+        );
     }
 
     #[test]
@@ -10509,33 +15304,67 @@ mod tests {
         assert_eq!(toast(&app), Some("正在打开 data 分区，请稍后再试"));
         app.state.data = Data::Open;
         app.refresh();
-        let repair = Effect::Filesystem { name: "data".into(), action: FsAction::Repair };
+        let repair = Effect::Filesystem {
+            name: "data".into(),
+            action: FsAction::Repair,
+        };
         assert_eq!(swipe(&mut app, &f, &i, Confirm::Filesystem), vec![repair]);
         app.part_work_started(PartKind::Repair, false);
         app.part_listed(vec!["data".into()]);
         app.part_at(0);
-        app.part_ended(0, ItemEnd::Fixed, "[FSCK] valid_block_count matching with CP   [Fail]\n\nDone: 3.2 secs\n");
+        app.part_ended(
+            0,
+            ItemEnd::Fixed,
+            "[FSCK] valid_block_count matching with CP   [Fail]\n\nDone: 3.2 secs\n",
+        );
         app.part_work_ended(Ok(()), 0);
-        let work = app.state.part_work.clone().expect("the page shows how it ended");
-        assert_eq!(work.items, [("data".to_string(), ItemState::Ended(ItemEnd::Fixed))]);
-        assert_eq!(work.output, ["[FSCK] valid_block_count matching with CP   [Fail]", "Done: 3.2 secs"], "blank lines left out");
-        assert_eq!(app.state.data, Data::Closed, "worked on, the partition is closed");
+        let work = app
+            .state
+            .part_work
+            .clone()
+            .expect("the page shows how it ended");
+        assert_eq!(
+            work.items,
+            [("data".to_string(), ItemState::Ended(ItemEnd::Fixed))]
+        );
+        assert_eq!(
+            work.output,
+            [
+                "[FSCK] valid_block_count matching with CP   [Fail]",
+                "Done: 3.2 secs"
+            ],
+            "blank lines left out"
+        );
+        assert_eq!(
+            app.state.data,
+            Data::Closed,
+            "worked on, the partition is closed"
+        );
     }
 
     #[test]
-    fn partition_work_the_system_asked_for_is_the_only_page_and_offers_somewhere_to_go_only_when_it_fell_short() {
+    fn partition_work_the_system_asked_for_is_the_only_page_and_offers_somewhere_to_go_only_when_it_fell_short(
+    ) {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.part_work_started(PartKind::Disable, true);
         assert_eq!(app.stack.len(), 1);
         assert_eq!(app.screen(), Screen::PartWork);
-        app.part_listed(vec!["/dev/block/by-name/userdata".into(), "/dev/block/by-name/metadata".into()]);
+        app.part_listed(vec![
+            "/dev/block/by-name/userdata".into(),
+            "/dev/block/by-name/metadata".into(),
+        ]);
         app.part_at(0);
         app.part_ended(0, ItemEnd::Erased, "");
         app.part_at(1);
         app.part_ended(1, ItemEnd::Erased, "");
         app.part_work_ended(Ok(()), 0);
-        let reboot = |app: &mut App| app.frame(&f, &i).hits.iter().any(|h| h.action == Action::RebootTo(Target::System));
+        let reboot = |app: &mut App| {
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::RebootTo(Target::System))
+        };
         assert!(!reboot(&mut app), "done, the phone leaves on its own");
         app.part_work_started(PartKind::Disable, true);
         app.part_work_ended(Err(PartStop::Refused(Refusal::Unverified)), 0);
@@ -10553,14 +15382,28 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.start_asked(false, "/sdcard/update.zip".into());
-        assert_eq!((app.screen(), app.state.source), (Screen::Installing, Source::Asked { security: false }));
+        assert_eq!(
+            (app.screen(), app.state.source),
+            (Screen::Installing, Source::Asked { security: false })
+        );
         app.asked_opening();
         app.key(Key::Back, 0);
-        assert_eq!((app.screen(), toast(&app)), (Screen::Installing, Some("正在打开 data 分区，请稍后再试")));
+        assert_eq!(
+            (app.screen(), toast(&app)),
+            (Screen::Installing, Some("正在打开 data 分区，请稍后再试"))
+        );
         app.asked_locked(0, 0);
         assert_eq!(app.state.install, Install::Locked(0));
-        assert!(app.frame(&f, &i).hits.iter().any(|h| h.action == Action::Open(Screen::Decrypt)));
-        assert_eq!(app.key(Key::Back, 5000), vec![Effect::Cancel], "leaving gives the update up");
+        assert!(app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .any(|h| h.action == Action::Open(Screen::Decrypt)));
+        assert_eq!(
+            app.key(Key::Back, 5000),
+            vec![Effect::Cancel],
+            "leaving gives the update up"
+        );
         app.install(Event::Finished(Outcome::Cancelled), 5000);
         assert_eq!(app.state.install, Install::Idle);
     }
@@ -10570,24 +15413,50 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.start_rescue();
-        assert_eq!((app.screen(), app.state.source), (Screen::Installing, Source::Rescue));
+        assert_eq!(
+            (app.screen(), app.state.source),
+            (Screen::Installing, Source::Rescue)
+        );
         app.install(Event::Waiting, 0);
         app.install(Event::Checking { size: 4096 }, 0);
-        app.install(Event::Done(Outcome::Installed { slot: Slot::B, wipe: false }), 0);
+        app.install(
+            Event::Done(Outcome::Installed {
+                slot: Slot::B,
+                wipe: false,
+            }),
+            0,
+        );
         assert!(matches!(app.state.install, Install::Finished { .. }));
         app.rescue_wiping();
         app.key(Key::Back, 5000);
-        assert_eq!((app.screen(), toast(&app)), (Screen::Installing, Some("正在清除，请等待清除完成")));
+        assert_eq!(
+            (app.screen(), toast(&app)),
+            (Screen::Installing, Some("正在清除，请等待清除完成"))
+        );
         app.rescue_wiped(Ok(()), 6000);
-        assert_eq!((app.state.install.clone(), app.state.data.clone()), (Install::Wiped(Ok(())), Data::Erased));
+        assert_eq!(
+            (app.state.install.clone(), app.state.data.clone()),
+            (Install::Wiped(Ok(())), Data::Erased)
+        );
         app.frame(&f, &i);
-        assert_eq!(app.key(Key::Back, 12000), vec![Effect::Cancel], "leaving ends rescue");
+        assert_eq!(
+            app.key(Key::Back, 12000),
+            vec![Effect::Cancel],
+            "leaving ends rescue"
+        );
         assert_eq!(app.state.install, Install::Ending);
     }
 
     fn network(name: &str, signal: i32, security: Security) -> Network {
         let bands = skyward_net::wlan::Bands::of(5805);
-        Network { ssid: name.as_bytes().to_vec(), name: name.into(), signal, frequency: 5805, bands, security }
+        Network {
+            ssid: name.as_bytes().to_vec(),
+            name: name.into(),
+            signal,
+            frequency: 5805,
+            bands,
+            security,
+        }
     }
 
     fn joined(name: &str, stage: Joining) -> Wlan {
@@ -10595,7 +15464,12 @@ mod tests {
         Wlan {
             power: Power::On,
             networks: vec![n.clone()],
-            joined: Some(skyward_net::wlan::Joined { ssid: n.ssid, name: n.name, security: n.security, stage }),
+            joined: Some(skyward_net::wlan::Joined {
+                ssid: n.ssid,
+                name: n.name,
+                security: n.security,
+                stage,
+            }),
         }
     }
 
@@ -10622,20 +15496,55 @@ mod tests {
     fn the_wlan_page_joins_a_network_with_its_password_and_leaves_it() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let entry = |app: &mut App| app.frame(&f, &i).hits.iter().any(|h| h.action == Action::Open(Screen::Wlan));
-        assert!(!entry(&mut app), "a phone whose WLAN is not brought up has no WLAN");
+        let entry = |app: &mut App| {
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::Open(Screen::Wlan))
+        };
+        assert!(
+            !entry(&mut app),
+            "a phone whose WLAN is not brought up has no WLAN"
+        );
         app.state.wlan = Some(Wlan::default());
         app.refresh();
         assert!(entry(&mut app));
-        assert!(app.act(Action::Open(Screen::Wlan), 0).is_empty(), "a WLAN that is off is not scanned");
-        assert_eq!(tap(&mut app, &f, &i, Action::Toggle(Switch::Wlan)), vec![Effect::Wlan(true)]);
-        assert_eq!(app.state.wlan.as_ref().unwrap().power, Power::Starting, "the switch moves at once");
-        let nearby = vec![network("Skyward", -34, Security::Psk), network("Skyward-Open", -72, Security::Open), network("Skyward-WEP", -60, Security::Wep)];
-        app.set_wlan(Wlan { power: Power::On, networks: nearby, joined: None });
+        assert!(
+            app.act(Action::Open(Screen::Wlan), 0).is_empty(),
+            "a WLAN that is off is not scanned"
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Toggle(Switch::Wlan)),
+            vec![Effect::Wlan(true)]
+        );
+        assert_eq!(
+            app.state.wlan.as_ref().unwrap().power,
+            Power::Starting,
+            "the switch moves at once"
+        );
+        let nearby = vec![
+            network("Skyward", -34, Security::Psk),
+            network("Skyward-Open", -72, Security::Open),
+            network("Skyward-WEP", -60, Security::Wep),
+        ];
+        app.set_wlan(Wlan {
+            power: Power::On,
+            networks: nearby,
+            joined: None,
+        });
         tap(&mut app, &f, &i, Action::JoinNetwork(2));
         assert_eq!(toast(&app), Some("暂不支持 WEP 加密的网络"));
-        let cafe = Effect::JoinWlan { ssid: b"Skyward-Open".to_vec(), name: "Skyward-Open".into(), security: Security::Open, password: Secret::default() };
-        assert_eq!(tap(&mut app, &f, &i, Action::JoinNetwork(1)), vec![cafe], "an open network is joined at once");
+        let cafe = Effect::JoinWlan {
+            ssid: b"Skyward-Open".to_vec(),
+            name: "Skyward-Open".into(),
+            security: Security::Open,
+            password: Secret::default(),
+        };
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::JoinNetwork(1)),
+            vec![cafe],
+            "an open network is joined at once"
+        );
         tap(&mut app, &f, &i, Action::JoinNetwork(0));
         assert_eq!(app.screen(), Screen::WlanPassword);
         let type_in = |app: &mut App, text: &str| {
@@ -10649,18 +15558,44 @@ mod tests {
         tap(&mut app, &f, &i, Action::Type(Cap::Show(Layer::Digits)));
         type_in(&mut app, "12");
         let fx = tap(&mut app, &f, &i, Action::Type(Cap::Enter));
-        let join = Effect::JoinWlan { ssid: b"Skyward".to_vec(), name: "Skyward".into(), security: Security::Psk, password: Secret("secret12".into()) };
-        assert_eq!(format!("{join:?}"), r#"JoinWlan { ssid: [83, 107, 121, 119, 97, 114, 100], name: "Skyward", security: Psk, password: Secret(8 characters) }"#, "what is printed leaves the password out");
+        let join = Effect::JoinWlan {
+            ssid: b"Skyward".to_vec(),
+            name: "Skyward".into(),
+            security: Security::Psk,
+            password: Secret("secret12".into()),
+        };
+        assert_eq!(
+            format!("{join:?}"),
+            r#"JoinWlan { ssid: [83, 107, 121, 119, 97, 114, 100], name: "Skyward", security: Psk, password: Secret(8 characters) }"#,
+            "what is printed leaves the password out"
+        );
         assert_eq!(fx, vec![join]);
-        assert_eq!(app.screen(), Screen::Wlan, "the WLAN page shows how joining goes");
-        assert_eq!((app.state.password.as_str(), app.state.joining.as_ref()), ("", None), "the password is not kept");
+        assert_eq!(
+            app.screen(),
+            Screen::Wlan,
+            "the WLAN page shows how joining goes"
+        );
+        assert_eq!(
+            (app.state.password.as_str(), app.state.joining.as_ref()),
+            ("", None),
+            "the password is not kept"
+        );
         app.set_wlan(connected("Skyward"));
-        assert_eq!(fmt::wlan_value(Lang::Hans, app.state.wlan.as_ref().unwrap()), "Skyward");
+        assert_eq!(
+            fmt::wlan_value(Lang::Hans, app.state.wlan.as_ref().unwrap()),
+            "Skyward"
+        );
         tap(&mut app, &f, &i, Action::OpenJoined);
         assert_eq!(app.screen(), Screen::WlanNetwork);
-        assert_eq!(tap(&mut app, &f, &i, Action::LeaveNetwork), vec![Effect::LeaveWlan]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::LeaveNetwork),
+            vec![Effect::LeaveWlan]
+        );
         assert_eq!(app.screen(), Screen::Wlan);
-        assert_eq!(tap(&mut app, &f, &i, Action::Toggle(Switch::Wlan)), vec![Effect::Wlan(false)]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Toggle(Switch::Wlan)),
+            vec![Effect::Wlan(false)]
+        );
         assert_eq!(app.state.wlan, Some(Wlan::default()));
     }
 
@@ -10672,43 +15607,81 @@ mod tests {
         app.act(Action::Open(Screen::Wlan), 0);
         tap(&mut app, &f, &i, Action::OpenJoined);
         assert_eq!(app.screen(), Screen::WlanPassword);
-        assert_eq!(app.state.joining.as_ref().map(|n| n.name.as_str()), Some("Skyward"));
+        assert_eq!(
+            app.state.joining.as_ref().map(|n| n.name.as_str()),
+            Some("Skyward")
+        );
         app.key(Key::Back, 0);
         app.set_wlan(joined("Skyward", Joining::Joining));
         tap(&mut app, &f, &i, Action::OpenJoined);
-        assert_eq!(app.screen(), Screen::WlanNetwork, "a network being joined shows how that goes");
-        assert_eq!(app.state.details.as_ref().map(|n| n.name.as_str()), Some("Skyward"));
+        assert_eq!(
+            app.screen(),
+            Screen::WlanNetwork,
+            "a network being joined shows how that goes"
+        );
+        assert_eq!(
+            app.state.details.as_ref().map(|n| n.name.as_str()),
+            Some("Skyward")
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.state.details, None);
     }
 
     #[test]
-    fn the_status_bar_shows_the_network_joined_and_how_fast_data_goes_without_the_page_drawn_again() {
+    fn the_status_bar_shows_the_network_joined_and_how_fast_data_goes_without_the_page_drawn_again()
+    {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        app.set_wlan(Wlan { power: Power::On, networks: Vec::new(), joined: None });
+        app.set_wlan(Wlan {
+            power: Power::On,
+            networks: Vec::new(),
+            joined: None,
+        });
         assert!(app.wlan_mark().is_none(), "no network joined");
         app.set_wlan(joined("Skyward", Joining::Addressing));
         assert!(app.wlan_mark().is_none(), "not while it has no address");
         app.set_wlan(connected("Skyward"));
         let mark = app.wlan_mark().unwrap();
-        assert_eq!((mark.level, mark.speed.as_str(), mark.unit, mark.receiving, mark.sending), (3, "0.00", "KB/s", false, false));
+        assert_eq!(
+            (
+                mark.level,
+                mark.speed.as_str(),
+                mark.unit,
+                mark.receiving,
+                mark.sending
+            ),
+            (3, "0.00", "KB/s", false, false)
+        );
         app.frame(&f, &i);
         app.dirty = false;
         app.set_traffic(Traffic { rx: 42_000, tx: 0 });
-        assert!(app.dirty && app.frame.is_some(), "the status bar is drawn again, and the page as it was");
+        assert!(
+            app.dirty && app.frame.is_some(),
+            "the status bar is drawn again, and the page as it was"
+        );
         let mark = app.wlan_mark().unwrap();
-        assert_eq!((mark.speed.as_str(), mark.receiving, mark.sending), ("41.0", true, false));
+        assert_eq!(
+            (mark.speed.as_str(), mark.receiving, mark.sending),
+            ("41.0", true, false)
+        );
     }
 
     #[test]
     fn a_network_is_added_by_hand_with_its_name_protection_and_password() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        app.state.wlan = Some(Wlan { power: Power::On, networks: Vec::new(), joined: None });
+        app.state.wlan = Some(Wlan {
+            power: Power::On,
+            networks: Vec::new(),
+            joined: None,
+        });
         app.act(Action::Open(Screen::Wlan), 0);
         tap(&mut app, &f, &i, Action::AddNetwork);
-        assert_eq!(app.screen(), Screen::WlanAdd, "the list ends with adding one, found networks or none");
+        assert_eq!(
+            app.screen(),
+            Screen::WlanAdd,
+            "the list ends with adding one, found networks or none"
+        );
         let type_in = |app: &mut App, text: &str| {
             for ch in text.chars() {
                 tap(app, &f, &i, Action::Type(Cap::Char(ch)));
@@ -10718,47 +15691,95 @@ mod tests {
         assert_eq!(toast(&app), Some("请输入网络名称"));
         type_in(&mut app, "skyward");
         let frame = app.frame(&f, &i);
-        assert!(!frame.hits.iter().any(|h| h.action == Action::TypeInto(Field::Password)), "an open network takes no password");
+        assert!(
+            !frame
+                .hits
+                .iter()
+                .any(|h| h.action == Action::TypeInto(Field::Password)),
+            "an open network takes no password"
+        );
         // The protections open over the page, which then answers no touch
         // but closes them.
         tap(&mut app, &f, &i, Action::ChooseSecurity);
         let frame = app.frame(&f, &i);
-        assert!(frame.hits.iter().all(|h| matches!(h.action, Action::CloseChoices | Action::PickSecurity(_))));
+        assert!(frame
+            .hits
+            .iter()
+            .all(|h| matches!(h.action, Action::CloseChoices | Action::PickSecurity(_))));
         assert!(frame.caret.is_none(), "no cursor shows through the list");
         let below = (W as f32 / 2.0, H as f32 - 20.0);
         app.touch(Touch::Down(below.0, below.1), &f, 0);
         app.touch(Touch::Up, &f, 0);
         let a = app.state.adding.clone().unwrap();
-        assert_eq!((a.name.as_str(), a.security, a.choosing), ("skyward", Security::Open, false), "a touch off the list types nothing");
+        assert_eq!(
+            (a.name.as_str(), a.security, a.choosing),
+            ("skyward", Security::Open, false),
+            "a touch off the list types nothing"
+        );
         tap(&mut app, &f, &i, Action::ChooseSecurity);
         app.key(Key::Back, 0);
-        assert_eq!((app.screen(), app.state.adding.as_ref().unwrap().choosing), (Screen::WlanAdd, false), "back closes the list first");
+        assert_eq!(
+            (app.screen(), app.state.adding.as_ref().unwrap().choosing),
+            (Screen::WlanAdd, false),
+            "back closes the list first"
+        );
         tap(&mut app, &f, &i, Action::ChooseSecurity);
         tap(&mut app, &f, &i, Action::PickSecurity(Security::Psk));
         let a = app.state.adding.clone().unwrap();
-        assert_eq!((a.security, a.choosing, a.field), (Security::Psk, false, Field::Name));
+        assert_eq!(
+            (a.security, a.choosing, a.field),
+            (Security::Psk, false, Field::Name)
+        );
         // The keyboard types into the field touched.
         tap(&mut app, &f, &i, Action::TypeInto(Field::Password));
         type_in(&mut app, "secret");
         tap(&mut app, &f, &i, Action::TypeInto(Field::Name));
-        assert_eq!((app.state.adding.as_ref().unwrap().name.as_str(), app.state.password.as_str()), ("skyward", "secret"));
+        assert_eq!(
+            (
+                app.state.adding.as_ref().unwrap().name.as_str(),
+                app.state.password.as_str()
+            ),
+            ("skyward", "secret")
+        );
         assert!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)).is_empty());
         assert_eq!(toast(&app), Some("请输入 8 到 63 位密码"));
-        assert_eq!(app.state.adding.as_ref().unwrap().field, Field::Password, "the keyboard types into the field turned down");
+        assert_eq!(
+            app.state.adding.as_ref().unwrap().field,
+            Field::Password,
+            "the keyboard types into the field turned down"
+        );
         tap(&mut app, &f, &i, Action::Type(Cap::Show(Layer::Digits)));
         type_in(&mut app, "12");
         let fx = tap(&mut app, &f, &i, Action::Type(Cap::Enter));
-        let join = Effect::JoinWlan { ssid: b"skyward".to_vec(), name: "skyward".into(), security: Security::Psk, password: Secret("secret12".into()) };
+        let join = Effect::JoinWlan {
+            ssid: b"skyward".to_vec(),
+            name: "skyward".into(),
+            security: Security::Psk,
+            password: Secret("secret12".into()),
+        };
         assert_eq!(fx, vec![join]);
-        assert_eq!(app.screen(), Screen::Wlan, "the WLAN page shows how joining goes");
-        assert_eq!((app.state.adding.as_ref(), app.state.password.as_str()), (None, ""), "nothing typed is kept");
+        assert_eq!(
+            app.screen(),
+            Screen::Wlan,
+            "the WLAN page shows how joining goes"
+        );
+        assert_eq!(
+            (app.state.adding.as_ref(), app.state.password.as_str()),
+            (None, ""),
+            "nothing typed is kept"
+        );
     }
 
     #[test]
-    fn a_network_added_by_hand_is_turned_down_for_a_name_too_long_and_joined_open_without_its_password() {
+    fn a_network_added_by_hand_is_turned_down_for_a_name_too_long_and_joined_open_without_its_password(
+    ) {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        app.state.wlan = Some(Wlan { power: Power::On, networks: vec![network("Skyward-Open", -72, Security::Open)], joined: None });
+        app.state.wlan = Some(Wlan {
+            power: Power::On,
+            networks: vec![network("Skyward-Open", -72, Security::Open)],
+            joined: None,
+        });
         app.act(Action::Open(Screen::Wlan), 0);
         tap(&mut app, &f, &i, Action::AddNetwork);
         tap(&mut app, &f, &i, Action::ChooseSecurity);
@@ -10767,7 +15788,11 @@ mod tests {
         tap(&mut app, &f, &i, Action::Type(Cap::Char('x')));
         tap(&mut app, &f, &i, Action::ChooseSecurity);
         tap(&mut app, &f, &i, Action::PickSecurity(Security::Open));
-        assert_eq!(app.state.adding.as_ref().unwrap().field, Field::Name, "with the password field gone, the keyboard types the name");
+        assert_eq!(
+            app.state.adding.as_ref().unwrap().field,
+            Field::Name,
+            "with the password field gone, the keyboard types the name"
+        );
         for _ in 0..33 {
             tap(&mut app, &f, &i, Action::Type(Cap::Char('a')));
         }
@@ -10776,14 +15801,26 @@ mod tests {
         tap(&mut app, &f, &i, Action::Type(Cap::Backspace));
         let fx = tap(&mut app, &f, &i, Action::Type(Cap::Enter));
         let name = "a".repeat(32);
-        assert_eq!(fx, vec![Effect::JoinWlan { ssid: name.clone().into_bytes(), name, security: Security::Open, password: Secret::default() }]);
+        assert_eq!(
+            fx,
+            vec![Effect::JoinWlan {
+                ssid: name.clone().into_bytes(),
+                name,
+                security: Security::Open,
+                password: Secret::default()
+            }]
+        );
     }
 
     #[test]
     fn the_keys_open_a_list_of_choices_take_one_and_close_it_going_back() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        app.state.wlan = Some(Wlan { power: Power::On, networks: Vec::new(), joined: None });
+        app.state.wlan = Some(Wlan {
+            power: Power::On,
+            networks: Vec::new(),
+            joined: None,
+        });
         app.act(Action::Open(Screen::Wlan), 0);
         app.act(Action::AddNetwork, 0);
         app.frame(&f, &i);
@@ -10791,9 +15828,21 @@ mod tests {
         press(&mut app, Key::Power, 0);
         assert!(app.state.adding.as_ref().unwrap().choosing);
         let t = app.theme();
-        let stops: Vec<Stop> = focus::spots(&t, app.frame(&f, &i)).iter().map(|s| s.stop).collect();
+        let stops: Vec<Stop> = focus::spots(&t, app.frame(&f, &i))
+            .iter()
+            .map(|s| s.stop)
+            .collect();
         let pick = |s| Stop::Hit(Action::PickSecurity(s));
-        assert_eq!(stops, [Stop::Back, pick(Security::Open), pick(Security::Psk), pick(Security::Sae)], "only the list and back");
+        assert_eq!(
+            stops,
+            [
+                Stop::Back,
+                pick(Security::Open),
+                pick(Security::Psk),
+                pick(Security::Sae)
+            ],
+            "only the list and back"
+        );
         light_on(&mut app, &f, &i, pick(Security::Sae));
         press(&mut app, Key::Power, 0);
         let a = app.state.adding.clone().unwrap();
@@ -10801,23 +15850,39 @@ mod tests {
         light_on(&mut app, &f, &i, Stop::Hit(Action::ChooseSecurity));
         press(&mut app, Key::Power, 0);
         press(&mut app, Key::Back, 0);
-        assert_eq!((app.screen(), app.state.adding.as_ref().unwrap().choosing), (Screen::WlanAdd, false));
+        assert_eq!(
+            (app.screen(), app.state.adding.as_ref().unwrap().choosing),
+            (Screen::WlanAdd, false)
+        );
     }
 
     #[test]
     fn a_choice_shows_held_down_while_touched() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        app.state.wlan = Some(Wlan { power: Power::On, networks: Vec::new(), joined: None });
+        app.state.wlan = Some(Wlan {
+            power: Power::On,
+            networks: Vec::new(),
+            joined: None,
+        });
         app.act(Action::Open(Screen::Wlan), 0);
         tap(&mut app, &f, &i, Action::AddNetwork);
         tap(&mut app, &f, &i, Action::ChooseSecurity);
         let wpa3 = Action::PickSecurity(Security::Sae);
-        let rect = app.frame(&f, &i).hits.iter().find(|h| h.action == wpa3).unwrap().rect;
+        let rect = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == wpa3)
+            .unwrap()
+            .rect;
         // Clear of the words, where only the list's own colour shows.
         let at = |app: &mut App| {
             let c = &app.frame(&f, &i).canvas;
-            let (x, y) = ((rect.x + rect.w) as u32 - 20, (rect.y + rect.h / 2.0) as u32);
+            let (x, y) = (
+                (rect.x + rect.w) as u32 - 20,
+                (rect.y + rect.h / 2.0) as u32,
+            );
             let k = ((y - c.held().start) * c.w + x) as usize * 4;
             Rgba::rgb(c.data[k], c.data[k + 1], c.data[k + 2])
         };
@@ -10836,29 +15901,68 @@ mod tests {
     fn a_networks_round_button_opens_its_details_and_its_row_joins_it() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Home, W, H, PPD);
-        let nearby = vec![network("Skyward", -34, Security::Psk), network("Skyward-Open", -72, Security::Open)];
-        app.state.wlan = Some(Wlan { power: Power::On, networks: nearby, joined: None });
+        let nearby = vec![
+            network("Skyward", -34, Security::Psk),
+            network("Skyward-Open", -72, Security::Open),
+        ];
+        app.state.wlan = Some(Wlan {
+            power: Power::On,
+            networks: nearby,
+            joined: None,
+        });
         app.act(Action::Open(Screen::Wlan), 0);
-        assert_eq!(tap(&mut app, &f, &i, Action::Rescan), vec![Effect::ScanWlan]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Rescan),
+            vec![Effect::ScanWlan]
+        );
         tap(&mut app, &f, &i, Action::NetworkDetails(1));
         assert_eq!(app.screen(), Screen::WlanNetwork);
-        assert_eq!(app.state.details.as_ref().map(|n| n.name.as_str()), Some("Skyward-Open"));
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::LeaveNetwork), "a network not chosen has nothing to forget");
+        assert_eq!(
+            app.state.details.as_ref().map(|n| n.name.as_str()),
+            Some("Skyward-Open")
+        );
+        assert!(
+            !app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::LeaveNetwork),
+            "a network not chosen has nothing to forget"
+        );
         app.key(Key::Back, 0);
         // The round button sits on its row, and is what a touch on it finds.
         let fr = app.frame(&f, &i);
-        let row = fr.hits.iter().find(|h| h.action == Action::JoinNetwork(1)).expect("the row").rect;
-        let round = fr.hits.iter().find(|h| h.action == Action::NetworkDetails(1)).expect("its round button").rect;
+        let row = fr
+            .hits
+            .iter()
+            .find(|h| h.action == Action::JoinNetwork(1))
+            .expect("the row")
+            .rect;
+        let round = fr
+            .hits
+            .iter()
+            .find(|h| h.action == Action::NetworkDetails(1))
+            .expect("its round button")
+            .rect;
         assert!(row.contains(round.x + round.w / 2.0, round.y + round.h / 2.0));
-        assert_eq!(fr.hit(round.x + round.w / 2.0, round.y + round.h / 2.0).map(|h| h.action), Some(Action::NetworkDetails(1)));
-        assert_eq!(fr.hit(row.x + row.w / 3.0, row.y + row.h / 2.0).map(|h| h.action), Some(Action::JoinNetwork(1)));
+        assert_eq!(
+            fr.hit(round.x + round.w / 2.0, round.y + round.h / 2.0)
+                .map(|h| h.action),
+            Some(Action::NetworkDetails(1))
+        );
+        assert_eq!(
+            fr.hit(row.x + row.w / 3.0, row.y + row.h / 2.0)
+                .map(|h| h.action),
+            Some(Action::JoinNetwork(1))
+        );
     }
 
     fn newest() -> Release {
         Release {
             version: "OS3.0.310.0.WMACNXM".into(),
             name: "ishtar-ota_full-OS3.0.310.0.WMACNXM-user-16.0-0123456789.zip".into(),
-            urls: vec!["https://ultimateota.d.miui.com/OS3.0.310.0.WMACNXM/ishtar-ota_full.zip".into()],
+            urls: vec![
+                "https://ultimateota.d.miui.com/OS3.0.310.0.WMACNXM/ishtar-ota_full.zip".into(),
+            ],
             md5: "0123456789abcdef0123456789abcdef".into(),
             size: "7.1G".into(),
             length: Some(7_572_375_802),
@@ -10868,42 +15972,104 @@ mod tests {
     #[test]
     fn the_update_page_asks_for_the_newest_system_and_downloads_its_full_package_to_install() {
         let f = fonts();
-        let i = DeviceInfo { os_version: Some("OS3.0.308.0.WMACNXM".into()), ..info() };
+        let i = DeviceInfo {
+            os_version: Some("OS3.0.308.0.WMACNXM".into()),
+            ..info()
+        };
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         app.state.update_server = true;
         app.state.wlan = Some(Wlan::default());
         app.refresh();
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Update)), vec![Effect::ReadUpdate], "nothing is asked without a network");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Update)),
+            vec![Effect::ReadUpdate],
+            "nothing is asked without a network"
+        );
         assert!(tap(&mut app, &f, &i, Action::CheckUpdate).is_empty());
-        assert_eq!(app.screen(), Screen::Wlan, "asking takes a network, which the WLAN page joins");
+        assert_eq!(
+            app.screen(),
+            Screen::Wlan,
+            "asking takes a network, which the WLAN page joins"
+        );
         app.key(Key::Back, 0);
         app.set_wlan(connected("Skyward"));
-        assert_eq!(tap(&mut app, &f, &i, Action::CheckUpdate), vec![Effect::CheckUpdate]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::CheckUpdate),
+            vec![Effect::CheckUpdate]
+        );
         assert_eq!(app.state.check, Check::Asking);
         app.update_checked(Ok(Some(newest())), Have::Nothing);
-        app.state.data = Data::Locked { user: 0, keys: Keys::Digits, checking: false };
+        app.state.data = Data::Locked {
+            user: 0,
+            keys: Keys::Digits,
+            checking: false,
+        };
         app.refresh();
         assert!(tap(&mut app, &f, &i, Action::Download).is_empty());
-        assert_eq!(app.screen(), Screen::Decrypt, "the package goes to internal storage, which opens with the owner's files");
+        assert_eq!(
+            app.screen(),
+            Screen::Decrypt,
+            "the package goes to internal storage, which opens with the owner's files"
+        );
         app.state.data = Data::Open;
         app.act(Action::Skip, 0);
         assert_eq!(app.screen(), Screen::Update);
-        assert_eq!(tap(&mut app, &f, &i, Action::Download), vec![Effect::Download(newest())]);
-        app.download_progress(Progress::Checking { done: 0, total: 7_572_375_802 }, 0);
-        app.download_progress(Progress::Downloading { done: 1_000_000_000, total: 7_572_375_802 }, 12_000_000);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Download),
+            vec![Effect::Download(newest())]
+        );
+        app.download_progress(
+            Progress::Checking {
+                done: 0,
+                total: 7_572_375_802,
+            },
+            0,
+        );
+        app.download_progress(
+            Progress::Downloading {
+                done: 1_000_000_000,
+                total: 7_572_375_802,
+            },
+            12_000_000,
+        );
         assert!(app.state.downloading());
-        assert_eq!(tap(&mut app, &f, &i, Action::StopDownload), vec![Effect::StopDownload]);
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::StopDownload), "stopping, it is not asked again");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::StopDownload),
+            vec![Effect::StopDownload]
+        );
+        assert!(
+            !app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::StopDownload),
+            "stopping, it is not asked again"
+        );
         // An end lights the panel, and a touch just after only keeps it lit.
         app.download_ended(DownloadEnd::Stopped, Have::Part(1_000_000_000), 0);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Download, 2000), vec![Effect::Download(newest())], "a download stopped carries on");
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Download, 2000),
+            vec![Effect::Download(newest())],
+            "a download stopped carries on"
+        );
         let damaged = skyward_net::download::Failure::Damaged;
         app.download_ended(DownloadEnd::Failed(damaged.clone()), Have::Nothing, 3000);
-        assert_eq!(fmt::download_failure(Lang::Hans, &damaged), "完整更新包校验失败，已删除，请重新下载。");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::Download, 5000), vec![Effect::Download(newest())]);
+        assert_eq!(
+            fmt::download_failure(Lang::Hans, &damaged),
+            "完整更新包校验失败，已删除，请重新下载。"
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::Download, 5000),
+            vec![Effect::Download(newest())]
+        );
         app.download_ended(DownloadEnd::Downloaded, Have::Whole(7_572_375_802), 6000);
         let fx = tap_at(&mut app, &f, &i, Action::InstallDownloaded, 8000);
-        assert_eq!(fx, vec![Effect::InstallFile(Place::Storage, format!("downloaded_rom/{}", newest().name))]);
+        assert_eq!(
+            fx,
+            vec![Effect::InstallFile(
+                Place::Storage,
+                format!("downloaded_rom/{}", newest().name)
+            )]
+        );
         assert_eq!(app.screen(), Screen::Installing);
     }
 
@@ -10912,13 +16078,27 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         app.state.wlan = Some(connected("Skyward"));
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Update)), vec![Effect::ReadUpdate], "a phone whose server is not known asks nothing");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Update)),
+            vec![Effect::ReadUpdate],
+            "a phone whose server is not known asks nothing"
+        );
         app.key(Key::Back, 0);
         app.state.update_server = true;
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Update)), vec![Effect::ReadUpdate, Effect::CheckUpdate]);
-        app.update_checked(Err(Unanswered::Failed("update.miui.com did not answer".into())), Have::Nothing);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Update)),
+            vec![Effect::ReadUpdate, Effect::CheckUpdate]
+        );
+        app.update_checked(
+            Err(Unanswered::Failed("update.miui.com did not answer".into())),
+            Have::Nothing,
+        );
         app.key(Key::Back, 0);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::Update)), vec![Effect::ReadUpdate, Effect::CheckUpdate], "a failed check is tried again");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::Update)),
+            vec![Effect::ReadUpdate, Effect::CheckUpdate],
+            "a failed check is tried again"
+        );
     }
 
     fn skyward_newest(newer: bool) -> Newest {
@@ -10940,40 +16120,109 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Settings, W, H, PPD);
         app.refresh();
-        let offered = |app: &mut App| app.frame(&f, &i).hits.iter().any(|h| h.action == Action::Open(Screen::SkywardUpdate));
-        assert!(!offered(&mut app), "a phone whose WLAN the recovery does not bring up");
+        let offered = |app: &mut App| {
+            app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::Open(Screen::SkywardUpdate))
+        };
+        assert!(
+            !offered(&mut app),
+            "a phone whose WLAN the recovery does not bring up"
+        );
         app.state.wlan = Some(Wlan::default());
         app.refresh();
-        assert!(!offered(&mut app), "a phone that keeps no recovery partition in each slot");
+        assert!(
+            !offered(&mut app),
+            "a phone that keeps no recovery partition in each slot"
+        );
         app.state.recovery_partitions = true;
         app.refresh();
-        assert!(tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)).is_empty(), "nothing is asked without a network");
+        assert!(
+            tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)).is_empty(),
+            "nothing is asked without a network"
+        );
         assert!(tap(&mut app, &f, &i, Action::CheckSkyward).is_empty());
-        assert_eq!(app.screen(), Screen::Wlan, "asking takes a network, which the WLAN page joins");
+        assert_eq!(
+            app.screen(),
+            Screen::Wlan,
+            "asking takes a network, which the WLAN page joins"
+        );
         app.key(Key::Back, 0);
         app.set_wlan(connected("Skyward"));
-        assert_eq!(tap(&mut app, &f, &i, Action::CheckSkyward), vec![Effect::CheckSkyward]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::CheckSkyward),
+            vec![Effect::CheckSkyward]
+        );
         assert_eq!(app.state.skyward_check, SkywardCheck::Asking);
         app.skyward_checked(Ok(skyward_newest(true)));
         let build = skyward_newest(true).build.unwrap();
         app.state.install = Install::Waiting;
-        assert!(tap(&mut app, &f, &i, Action::UpdateSkyward).is_empty(), "an install under way goes first");
+        assert!(
+            tap(&mut app, &f, &i, Action::UpdateSkyward).is_empty(),
+            "an install under way goes first"
+        );
         app.state.install = Install::Idle;
-        assert_eq!(tap(&mut app, &f, &i, Action::UpdateSkyward), vec![Effect::UpdateSkyward(build.clone())]);
-        app.skyward_progress(SkywardStage::Download(Progress::Downloading { done: 10_000_000, total: 42_739_608 }), 2_000_000);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::UpdateSkyward),
+            vec![Effect::UpdateSkyward(build.clone())]
+        );
+        app.skyward_progress(
+            SkywardStage::Download(Progress::Downloading {
+                done: 10_000_000,
+                total: 42_739_608,
+            }),
+            2_000_000,
+        );
         app.key(Key::Back, 0);
-        assert_eq!(app.screen(), Screen::SkywardUpdate, "the page stays while the build downloads");
-        assert_eq!(tap(&mut app, &f, &i, Action::StopSkywardUpdate), vec![Effect::StopSkywardUpdate]);
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::StopSkywardUpdate), "stopping, it is not asked again");
+        assert_eq!(
+            app.screen(),
+            Screen::SkywardUpdate,
+            "the page stays while the build downloads"
+        );
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::StopSkywardUpdate),
+            vec![Effect::StopSkywardUpdate]
+        );
+        assert!(
+            !app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::StopSkywardUpdate),
+            "stopping, it is not asked again"
+        );
         // An end lights the panel, and a touch just after only keeps it lit.
         app.skyward_ended(SkywardEnd::Stopped, 0);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::UpdateSkyward, 2000), vec![Effect::UpdateSkyward(build.clone())], "a download stopped carries on");
-        app.skyward_progress(SkywardStage::Write { done: 1 << 20, total: 4 << 20 }, 0);
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::StopSkywardUpdate), "writing goes on to its end");
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::UpdateSkyward, 2000),
+            vec![Effect::UpdateSkyward(build.clone())],
+            "a download stopped carries on"
+        );
+        app.skyward_progress(
+            SkywardStage::Write {
+                done: 1 << 20,
+                total: 4 << 20,
+            },
+            0,
+        );
+        assert!(
+            !app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::StopSkywardUpdate),
+            "writing goes on to its end"
+        );
         app.key(Key::Back, 2100);
-        assert_eq!(app.screen(), Screen::SkywardUpdate, "nor is the page left while the build is written");
+        assert_eq!(
+            app.screen(),
+            Screen::SkywardUpdate,
+            "nor is the page left while the build is written"
+        );
         app.skyward_ended(SkywardEnd::Updated(vec![Slot::A, Slot::B]), 3000);
-        assert_eq!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::Recovery), 5000), vec![Effect::Reboot(Target::Recovery)]);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::RebootTo(Target::Recovery), 5000),
+            vec![Effect::Reboot(Target::Recovery)]
+        );
         app.key(Key::Back, 5100);
         assert_eq!(app.screen(), Screen::Settings);
     }
@@ -10985,14 +16234,32 @@ mod tests {
         app.state.wlan = Some(connected("Skyward"));
         app.state.recovery_partitions = true;
         app.refresh();
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)), vec![Effect::CheckSkyward]);
-        app.skyward_checked(Err(Unanswered::Failed("GitHub answered 403 Forbidden: API rate limit exceeded".into())));
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)),
+            vec![Effect::CheckSkyward]
+        );
+        app.skyward_checked(Err(Unanswered::Failed(
+            "GitHub answered 403 Forbidden: API rate limit exceeded".into(),
+        )));
         app.key(Key::Back, 0);
-        assert_eq!(tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)), vec![Effect::CheckSkyward], "a failed check is tried again");
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)),
+            vec![Effect::CheckSkyward],
+            "a failed check is tried again"
+        );
         app.skyward_checked(Ok(skyward_newest(false)));
-        assert!(!app.frame(&f, &i).hits.iter().any(|h| h.action == Action::UpdateSkyward), "nothing newer to update to");
+        assert!(
+            !app.frame(&f, &i)
+                .hits
+                .iter()
+                .any(|h| h.action == Action::UpdateSkyward),
+            "nothing newer to update to"
+        );
         app.key(Key::Back, 0);
-        assert!(tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)).is_empty(), "an answer heard is not asked again");
+        assert!(
+            tap(&mut app, &f, &i, Action::Open(Screen::SkywardUpdate)).is_empty(),
+            "an answer heard is not asked again"
+        );
     }
 
     #[test]
@@ -11001,10 +16268,22 @@ mod tests {
         let mut app = App::new(Screen::Files, W, H, PPD);
         let text: String = (0..200).map(|n| format!("line {n}\n")).collect();
         app.text_opened(&f, "/tmp/long.txt".into(), Ok(Some(text.into_bytes())), 0);
-        let (card, pitch) = app.frame(&f, &i).scrollback.expect("the editor's text scrolls");
+        let (card, pitch) = app
+            .frame(&f, &i)
+            .scrollback
+            .expect("the editor's text scrolls");
         let l = editor::layout(&app.theme(), &f);
-        let ed = |app: &App| app.state.editor.clone().expect("the editor page shows a file");
-        app.touch(Touch::Down(l.x0 + 4.2 * l.cell, l.y0 + 2.5 * l.pitch), &f, 0);
+        let ed = |app: &App| {
+            app.state
+                .editor
+                .clone()
+                .expect("the editor page shows a file")
+        };
+        app.touch(
+            Touch::Down(l.x0 + 4.2 * l.cell, l.y0 + 2.5 * l.pitch),
+            &f,
+            0,
+        );
         app.touch(Touch::Up, &f, 0);
         assert_eq!(ed(&app).cursor(), (2, 4), "after \"line\" on the third row");
         let (x, y) = (card.x + card.w / 2.0, card.y + card.h / 2.0);
@@ -11012,10 +16291,18 @@ mod tests {
         app.touch(Touch::Move(x, y - pitch * 5.5), &f, 110);
         app.touch(Touch::Up, &f, 400);
         assert_eq!(ed(&app).top(), 5, "up shows the lines after");
-        assert_eq!(ed(&app).cursor(), (2, 4), "a drag leaves the cursor where it was");
+        assert_eq!(
+            ed(&app).cursor(),
+            (2, 4),
+            "a drag leaves the cursor where it was"
+        );
         assert_eq!(app.top().1, 0.0, "the page itself stays put");
         tap(&mut app, &f, &i, Action::TermKey(TermKey::Down));
-        assert_eq!((ed(&app).cursor(), ed(&app).top()), ((3, 4), 3), "moving the cursor brings it into view");
+        assert_eq!(
+            (ed(&app).cursor(), ed(&app).top()),
+            ((3, 4), 3),
+            "moving the cursor brings it into view"
+        );
         app.touch(Touch::Down(x, y), &f, 1000);
         for k in 1..=5 {
             app.touch(Touch::Move(x, y - pitch * k as f32), &f, 1000 + k * 8);
@@ -11024,7 +16311,10 @@ mod tests {
         let lifted = ed(&app).top();
         app.tick(1200);
         let gliding = ed(&app).top();
-        assert!(gliding > lifted + 5, "a flick glides on: {lifted} to {gliding}");
+        assert!(
+            gliding > lifted + 5,
+            "a flick glides on: {lifted} to {gliding}"
+        );
         app.touch(Touch::Down(x, y), &f, 1210);
         app.touch(Touch::Up, &f, 1220);
         app.tick(2000);
@@ -11038,18 +16328,29 @@ mod tests {
         let mut app = in_sdcard(&f, &i);
         hold_entry(&mut app, &f, &i, 1);
         tap(&mut app, &f, &i, Action::RenameEntry);
-        let refused =
-            [("", "请输入名称"), ("..", "名称不能为\".\"或\"..\""), ("x/y", "名称不能包含\"/\""), ("DCIM", "该文件夹中已有\"DCIM\"")];
+        let refused = [
+            ("", "请输入名称"),
+            ("..", "名称不能为\".\"或\"..\""),
+            ("x/y", "名称不能包含\"/\""),
+            ("DCIM", "该文件夹中已有\"DCIM\""),
+        ];
         for (name, said) in refused {
             app.state.new_name = name.into();
             app.toast = None;
-            assert!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)).is_empty(), "{name:?} is not renamed to");
+            assert!(
+                tap(&mut app, &f, &i, Action::Type(Cap::Enter)).is_empty(),
+                "{name:?} is not renamed to"
+            );
             assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some(said));
             assert_eq!(app.screen(), Screen::Rename);
         }
         app.state.new_name = "a.zip".into();
         assert!(tap(&mut app, &f, &i, Action::Type(Cap::Enter)).is_empty());
-        assert_eq!(app.screen(), Screen::FileInfo, "the name left as it was, the page goes");
+        assert_eq!(
+            app.screen(),
+            Screen::FileInfo,
+            "the name left as it was, the page goes"
+        );
     }
 
     #[test]
@@ -11057,37 +16358,67 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
         hold_entry(&mut app, &f, &i, 1);
-        assert!(app.frame(&f, &i).hits.iter().all(|h| h.action != Action::Confirm(Confirm::DeleteEntry)));
+        assert!(app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .all(|h| h.action != Action::Confirm(Confirm::DeleteEntry)));
         tap(&mut app, &f, &i, Action::AskDelete);
-        assert_eq!(swipe(&mut app, &f, &i, Confirm::DeleteEntry), vec![Effect::Delete("/sdcard/a.zip".into())]);
-        app.file_job_started(FileTask::Delete { path: "/sdcard/a.zip".into() });
+        assert_eq!(
+            swipe(&mut app, &f, &i, Confirm::DeleteEntry),
+            vec![Effect::Delete("/sdcard/a.zip".into())]
+        );
+        app.file_job_started(FileTask::Delete {
+            path: "/sdcard/a.zip".into(),
+        });
         assert_eq!(app.screen(), Screen::FileJob);
-        assert_eq!(tap(&mut app, &f, &i, Action::StopJob), vec![Effect::StopJob]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::StopJob),
+            vec![Effect::StopJob]
+        );
         app.key(Key::Back, 0);
         assert_eq!(app.screen(), Screen::FileJob, "it stays until stopped");
         app.file_job_ended(JobEnd::Stopped, 0);
-        assert_eq!(app.screen(), Screen::FileJob, "how it ended stays to be read");
+        assert_eq!(
+            app.screen(),
+            Screen::FileJob,
+            "how it ended stays to be read"
+        );
         app.key(Key::Back, 1000);
-        assert_eq!(app.screen(), Screen::Files, "back past the entry's page, which was for an entry being deleted");
+        assert_eq!(
+            app.screen(),
+            Screen::Files,
+            "back past the entry's page, which was for an entry being deleted"
+        );
     }
 
     #[test]
     fn work_that_ends_on_its_page_takes_the_title_of_how_it_ended() {
         let (f, i) = (fonts(), info());
         let mut app = in_sdcard(&f, &i);
-        app.file_job_started(FileTask::Copy { path: "/sdcard/a.zip".into(), into: "/tmp".into() });
+        app.file_job_started(FileTask::Copy {
+            path: "/sdcard/a.zip".into(),
+            into: "/tmp".into(),
+        });
         let mut c = Canvas::new(W, H);
         app.compose(&mut c, &f, &i, "12:00", 0);
         app.file_job_ended(JobEnd::Stopped, 0);
         app.compose(&mut c, &f, &i, "12:00", 16);
-        assert_eq!(app.titles.as_ref().map(|((title, _), _, _)| *title), Some("复制未完成"));
+        assert_eq!(
+            app.titles.as_ref().map(|((title, _), _, _)| *title),
+            Some("复制未完成")
+        );
     }
 
     #[test]
     fn an_unreadable_folder_offers_nothing_to_open() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Files, W, H, PPD);
-        app.set_files("/data".into(), Err("read /data: Permission denied (os error 13)".into()), LISTED);
+        app.set_files(
+            "/data".into(),
+            Err("read /data: Permission denied (os error 13)".into()),
+            LISTED,
+        );
         let fr = app.frame(&f, &i);
         assert!(fr.hits.is_empty() && fr.rows.is_none());
     }
@@ -11096,20 +16427,37 @@ mod tests {
     fn a_long_folder_scrolls_to_its_last_entry_in_one_list() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Files, W, H, PPD);
-        let many: Vec<FileRow> = (0..5000).map(|k| entry(&format!("IMG_{k:05}.jpg"), FileKind::File)).collect();
+        let many: Vec<FileRow> = (0..5000)
+            .map(|k| entry(&format!("IMG_{k:05}.jpg"), FileKind::File))
+            .collect();
         app.set_files("/sdcard/DCIM/Camera".into(), Ok(many), LISTED);
-        let rows = app.frame(&f, &i).rows.as_ref().expect("the entries are listed").count();
+        let rows = app
+            .frame(&f, &i)
+            .rows
+            .as_ref()
+            .expect("the entries are listed")
+            .count();
         assert_eq!(rows, 5000, "every entry has its row");
         let mut c = Canvas::new(W, H);
         app.compose(&mut c, &f, &i, "12:00", 0);
         let end = app.max_scroll();
         scroll_to(&mut app, &f, end, 1000);
         app.compose(&mut c, &f, &i, "12:00", 2000);
-        assert!(app.drawn.len() < 40, "only the rows near the screen are kept drawn: {}", app.drawn.len());
-        assert!(app.drawn.iter().any(|(k, _)| *k == 4999), "the last row shows");
+        assert!(
+            app.drawn.len() < 40,
+            "only the rows near the screen are kept drawn: {}",
+            app.drawn.len()
+        );
+        assert!(
+            app.drawn.iter().any(|(k, _)| *k == 4999),
+            "the last row shows"
+        );
         tap_at(&mut app, &f, &i, Action::OpenEntry(4999), 3000);
         assert_eq!(app.screen(), Screen::FileInfo);
-        assert_eq!(app.state.file.as_ref().map(|e| e.name.as_str()), Some("IMG_04999.jpg"));
+        assert_eq!(
+            app.state.file.as_ref().map(|e| e.name.as_str()),
+            Some("IMG_04999.jpg")
+        );
     }
 
     #[test]
@@ -11117,18 +16465,31 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         tap(&mut app, &f, &i, Action::Open(Screen::Files));
-        let folders: Vec<FileRow> = (0..300).map(|k| entry(&format!("dir{k:03}"), folder(k))).collect();
+        let folders: Vec<FileRow> = (0..300)
+            .map(|k| entry(&format!("dir{k:03}"), folder(k)))
+            .collect();
         app.set_files("/".into(), Ok(folders.clone()), LISTED);
         app.frame(&f, &i);
         scroll_to(&mut app, &f, 9000.0, 0);
         let (_, y) = spot(&mut app, &f, &i, Action::OpenEntry(36));
         assert!(y > 0.0 && y < H as f32, "row 36 is on screen at {y}");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::OpenEntry(36), 2000), vec![Effect::ReadDir("/dir036".into())]);
-        app.set_files("/dir036".into(), Ok(vec![entry("a", FileKind::File)]), LISTED);
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::OpenEntry(36), 2000),
+            vec![Effect::ReadDir("/dir036".into())]
+        );
+        app.set_files(
+            "/dir036".into(),
+            Ok(vec![entry("a", FileKind::File)]),
+            LISTED,
+        );
         assert_eq!(app.top().1, 0.0, "a folder opened starts from its top");
         assert_eq!(app.key(Key::Back, 3000), vec![Effect::ReadDir("/".into())]);
         app.set_files("/".into(), Ok(folders), LISTED);
-        assert_eq!(app.top().1, 9000.0, "back up, the folder is where it was left");
+        assert_eq!(
+            app.top().1,
+            9000.0,
+            "back up, the folder is where it was left"
+        );
     }
 
     #[test]
@@ -11136,26 +16497,44 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Advanced, W, H, PPD);
         tap(&mut app, &f, &i, Action::Open(Screen::Files));
-        let folders: Vec<FileRow> = (0..300).map(|k| entry(&format!("dir{k:03}"), folder(k))).collect();
+        let folders: Vec<FileRow> = (0..300)
+            .map(|k| entry(&format!("dir{k:03}"), folder(k)))
+            .collect();
         app.set_files("/".into(), Ok(folders.clone()), LISTED);
         app.frame(&f, &i);
         scroll_to(&mut app, &f, 9000.0, 0);
         app.tick(2000);
-        assert_eq!((app.title.level(2000), app.bar.level(2000)), (1.0, 1.0), "scrolled down, the bar is up");
+        assert_eq!(
+            (app.title.level(2000), app.bar.level(2000)),
+            (1.0, 1.0),
+            "scrolled down, the bar is up"
+        );
         // The runtime lists a folder as it is asked to, then goes round its
         // loop: time passes, and the next frame is the folder's first.
         let mut c = Canvas::new(W, H);
         tap_at(&mut app, &f, &i, Action::OpenEntry(36), 3000);
-        app.set_files("/dir036".into(), Ok(vec![entry("a", FileKind::File)]), LISTED);
+        app.set_files(
+            "/dir036".into(),
+            Ok(vec![entry("a", FileKind::File)]),
+            LISTED,
+        );
         app.tick(3008);
         app.compose(&mut c, &f, &i, "12:00", 3008);
-        assert_eq!((app.title.level(3008), app.bar.level(3008)), (0.0, 0.0), "a folder opened at its top has only its large title");
+        assert_eq!(
+            (app.title.level(3008), app.bar.level(3008)),
+            (0.0, 0.0),
+            "a folder opened at its top has only its large title"
+        );
         app.tick(4008);
         assert_eq!(app.key(Key::Back, 4100), vec![Effect::ReadDir("/".into())]);
         app.set_files("/".into(), Ok(folders), LISTED);
         app.tick(4108);
         app.compose(&mut c, &f, &i, "12:00", 4108);
-        assert_eq!((app.title.level(4108), app.bar.level(4108)), (1.0, 1.0), "back up, the list is under the bar from the first frame");
+        assert_eq!(
+            (app.title.level(4108), app.bar.level(4108)),
+            (1.0, 1.0),
+            "back up, the list is under the bar from the first frame"
+        );
         assert_ne!(app.deadline(4108), Some(0), "nothing eases in after it");
     }
 
@@ -11163,20 +16542,37 @@ mod tests {
     fn the_path_goes_up_from_its_capsules_even_held_under_the_bar() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Files, W, H, PPD);
-        let many: Vec<FileRow> = (0..200).map(|k| entry(&format!("lib{k:03}.so"), FileKind::File)).collect();
+        let many: Vec<FileRow> = (0..200)
+            .map(|k| entry(&format!("lib{k:03}.so"), FileKind::File))
+            .collect();
         app.set_files("/system/lib64".into(), Ok(many), LISTED);
-        assert_eq!(tap(&mut app, &f, &i, Action::OpenAncestor(1)), vec![Effect::ReadDir("/system".into())]);
+        assert_eq!(
+            tap(&mut app, &f, &i, Action::OpenAncestor(1)),
+            vec![Effect::ReadDir("/system".into())]
+        );
         scroll_to(&mut app, &f, 6000.0, 0);
         app.tick(2000);
         let t = app.theme();
         let (_, y) = spot(&mut app, &f, &i, Action::OpenAncestor(0));
-        assert!(y > widgets::bar_bottom(&t) && y < widgets::bar_bottom(&t) + t.m.dp(51.0), "the capsules stay under the bar: {y}");
+        assert!(
+            y > widgets::bar_bottom(&t) && y < widgets::bar_bottom(&t) + t.m.dp(51.0),
+            "the capsules stay under the bar: {y}"
+        );
         let mut c = Canvas::new(W, H);
         app.compose(&mut c, &f, &i, "12:00", 2000);
         let (x, _) = spot(&mut app, &f, &i, Action::OpenAncestor(0));
-        let px = |c: &Canvas, x: f32, y: f32| c.data[(y as usize * W as usize + x as usize) * 4..][..3].to_vec();
-        assert_eq!(px(&c, x - t.m.dp(20.0), y), vec![243, 244, 247], "the root's capsule shows over the list");
-        assert_eq!(tap_at(&mut app, &f, &i, Action::OpenAncestor(0), 3000), vec![Effect::ReadDir("/".into())]);
+        let px = |c: &Canvas, x: f32, y: f32| {
+            c.data[(y as usize * W as usize + x as usize) * 4..][..3].to_vec()
+        };
+        assert_eq!(
+            px(&c, x - t.m.dp(20.0), y),
+            vec![243, 244, 247],
+            "the root's capsule shows over the list"
+        );
+        assert_eq!(
+            tap_at(&mut app, &f, &i, Action::OpenAncestor(0), 3000),
+            vec![Effect::ReadDir("/".into())]
+        );
         // The strip's empty end covers the rows beneath it.
         app.touch(Touch::Down(W as f32 - t.m.dp(40.0), y), &f, 4000);
         assert!(app.touch(Touch::Up, &f, 4000).is_empty());
@@ -11185,7 +16581,10 @@ mod tests {
 
     #[test]
     fn rows_are_found_by_where_they_lie() {
-        let rows = Rows { edges: vec![100.0, 352.0, 682.0, 934.0], action: Some(Action::OpenEntry) };
+        let rows = Rows {
+            edges: vec![100.0, 352.0, 682.0, 934.0],
+            action: Some(Action::OpenEntry),
+        };
         assert_eq!(rows.count(), 3);
         assert_eq!(rows.at(99.0), None);
         assert_eq!(rows.at(100.0), Some(0));
@@ -11203,9 +16602,17 @@ mod tests {
     fn power_key_turns_the_panel_off_and_on() {
         let mut app = App::new(Screen::Home, W, H, PPD);
         assert!(app.key(Key::Power, 0).is_empty());
-        assert_eq!(app.panel(0), Some(SLIDER_START), "it waits for volume down first");
+        assert_eq!(
+            app.panel(0),
+            Some(SLIDER_START),
+            "it waits for volume down first"
+        );
         assert_eq!(app.deadline(0), Some(CHORD_MS));
-        assert_eq!(app.tick(CHORD_MS), vec![Effect::Ticks], "held on alone, it turns the panel off, ticking the motor");
+        assert_eq!(
+            app.tick(CHORD_MS),
+            vec![Effect::Ticks],
+            "held on alone, it turns the panel off, ticking the motor"
+        );
         assert!(!app.display_on());
         assert!(app.key_up(Key::Power, CHORD_MS + 50).is_empty());
         assert!(app.key(Key::Power, CHORD_MS + 60).is_empty());
@@ -11213,7 +16620,10 @@ mod tests {
         assert!(app.key_up(Key::Power, CHORD_MS + 100).is_empty());
         assert!(app.key(Key::Power, 1000).is_empty());
         assert_eq!(app.key_up(Key::Power, 1050), vec![Effect::Ticks]);
-        assert!(!app.display_on(), "let go sooner, it turns the panel off then");
+        assert!(
+            !app.display_on(),
+            "let go sooner, it turns the panel off then"
+        );
     }
 
     #[test]
@@ -11224,10 +16634,17 @@ mod tests {
         assert!(app.tick(1400).is_empty(), "once");
         app.state.vibrate = false;
         press(&mut app, Key::Power, 2000);
-        assert_eq!(press(&mut app, Key::Power, 3000), vec![Effect::Ticks], "with vibration off too");
+        assert_eq!(
+            press(&mut app, Key::Power, 3000),
+            vec![Effect::Ticks],
+            "with vibration off too"
+        );
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.tick(0);
-        assert!(app.tick(OFF).is_empty(), "but not the screen going off by itself");
+        assert!(
+            app.tick(OFF).is_empty(),
+            "but not the screen going off by itself"
+        );
         assert!(!app.display_on());
     }
 
@@ -11239,7 +16656,11 @@ mod tests {
         app.state.vibrate = true;
         assert!(app.key(Key::Power, 0).is_empty());
         let shot = vec![Effect::Haptic, Effect::Screenshot { storage: false }];
-        assert_eq!(app.key(Key::VolumeDown, CHORD_MS - 1), shot, "volume down follows in time");
+        assert_eq!(
+            app.key(Key::VolumeDown, CHORD_MS - 1),
+            shot,
+            "volume down follows in time"
+        );
         assert_eq!(app.chord, None, "nothing is left waiting");
         assert!(app.tick(1000).is_empty());
         assert!(app.key_up(Key::Power, 1000).is_empty());
@@ -11258,7 +16679,10 @@ mod tests {
         app.state.vibrate = false;
         app.data_waiting(None);
         app.key(Key::Power, 3000);
-        assert_eq!(app.key(Key::VolumeDown, 3010), vec![Effect::Screenshot { storage: true }]);
+        assert_eq!(
+            app.key(Key::VolumeDown, 3010),
+            vec![Effect::Screenshot { storage: true }]
+        );
     }
 
     #[test]
@@ -11270,11 +16694,21 @@ mod tests {
         assert!(!app.keys, "volume down waits for the power key first");
         assert!(app.tick(CHORD_MS).is_empty());
         assert!(app.keys, "then lights a control on its own");
-        assert_eq!(lit(&mut app, &f, &i), Some(Stop::Hit(Action::Open(Screen::Search))));
-        assert!(app.key(Key::Power, CHORD_MS + 10).is_empty(), "the power key came too late");
+        assert_eq!(
+            lit(&mut app, &f, &i),
+            Some(Stop::Hit(Action::Open(Screen::Search)))
+        );
+        assert!(
+            app.key(Key::Power, CHORD_MS + 10).is_empty(),
+            "the power key came too late"
+        );
         assert!(app.key_up(Key::VolumeDown, CHORD_MS + 20).is_empty());
         assert!(app.tick(CHORD_MS * 2 + 10).is_empty());
-        assert_eq!(app.screen(), Screen::Home, "the power key waits on the control lit until it comes up");
+        assert_eq!(
+            app.screen(),
+            Screen::Home,
+            "the power key waits on the control lit until it comes up"
+        );
         app.key_up(Key::Power, CHORD_MS * 3);
         assert_eq!(app.screen(), Screen::Search, "and then works it");
     }
@@ -11283,13 +16717,25 @@ mod tests {
     fn a_screenshot_says_where_it_went() {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.screenshot_saved(Ok(Shot::Album), 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("截图已保存到相册"));
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("截图已保存到相册")
+        );
         app.screenshot_saved(Ok(Shot::Held), 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("截图已暂存，解密后存入相册"));
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("截图已暂存，解密后存入相册")
+        );
         app.screenshot_saved(Err("No space left on device".into()), 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("截图保存失败：No space left on device"));
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("截图保存失败：No space left on device")
+        );
         app.screenshots_not_kept("Read-only file system", 0);
-        assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("暂存的截图未能存入相册：Read-only file system"));
+        assert_eq!(
+            app.toast.as_ref().map(|t| t.0.as_str()),
+            Some("暂存的截图未能存入相册：Read-only file system")
+        );
     }
 
     /// With the default two minutes, when the panel dims and when it goes
@@ -11305,17 +16751,32 @@ mod tests {
         app.tick(DIMS - 1);
         assert_eq!(app.panel(DIMS - 1), Some(SLIDER_START));
         app.tick(DIMS);
-        assert_eq!(app.deadline(DIMS), Some(DIMS + BACKLIGHT_STEP_MS), "the backlight steps down a frame at a time");
+        assert_eq!(
+            app.deadline(DIMS),
+            Some(DIMS + BACKLIGHT_STEP_MS),
+            "the backlight steps down a frame at a time"
+        );
         let midway = app.panel(DIMS + 250).unwrap();
-        assert!(midway < SLIDER_START && midway > dim_level(SLIDER_START), "{midway}");
+        assert!(
+            midway < SLIDER_START && midway > dim_level(SLIDER_START),
+            "{midway}"
+        );
         assert_eq!(app.panel(DIMS + 500), Some(dim_level(SLIDER_START)));
         assert_eq!(app.deadline(DIMS + 500), Some(OFF), "dim until it goes off");
         app.tick(OFF);
         assert!(!app.display_on());
-        assert_eq!(app.panel(OFF), Some(dim_level(SLIDER_START)), "the content goes dark under the dim backlight");
+        assert_eq!(
+            app.panel(OFF),
+            Some(dim_level(SLIDER_START)),
+            "the content goes dark under the dim backlight"
+        );
         app.tick(OFF + 365);
         assert_eq!(app.panel(OFF + 365), None);
-        assert_eq!(app.deadline(OFF + 365), None, "nothing to wait for on a dark panel");
+        assert_eq!(
+            app.deadline(OFF + 365),
+            None,
+            "nothing to wait for on a dark panel"
+        );
     }
 
     #[test]
@@ -11351,8 +16812,16 @@ mod tests {
         app.touch(Touch::Down(x, y), &f, DIMS + 600);
         app.touch(Touch::Up, &f, DIMS + 650);
         assert_eq!(app.screen(), Screen::Settings, "the tap counts");
-        assert_eq!(app.panel(DIMS + 800), Some(SLIDER_START), "back to full brightness");
-        assert_eq!(app.deadline(DIMS + 800), Some(DIMS + 650 + DIMS), "the wait starts over");
+        assert_eq!(
+            app.panel(DIMS + 800),
+            Some(SLIDER_START),
+            "back to full brightness"
+        );
+        assert_eq!(
+            app.deadline(DIMS + 800),
+            Some(DIMS + 650 + DIMS),
+            "the wait starts over"
+        );
     }
 
     #[test]
@@ -11370,7 +16839,11 @@ mod tests {
         press(&mut app, Key::Power, 200);
         assert!(app.display_on());
         tap_at(&mut app, &f, &i, Action::Open(Screen::Settings), 700);
-        assert_eq!(app.screen(), Screen::Settings, "a tap on the lit panel does");
+        assert_eq!(
+            app.screen(),
+            Screen::Settings,
+            "a tap on the lit panel does"
+        );
     }
 
     #[test]
@@ -11385,15 +16858,33 @@ mod tests {
         assert!(app.display_on(), "the cable coming out lights the panel");
         assert!(!app.charge_shown(), "and shows the page");
         assert_eq!(app.panel(pulled), Some(SLIDER_START));
-        assert_eq!(app.deadline(pulled + 520), Some(pulled + DIMS), "for the screen-off time, once the content is up");
+        assert_eq!(
+            app.deadline(pulled + 520),
+            Some(pulled + DIMS),
+            "for the screen-off time, once the content is up"
+        );
         app.tick(pulled + DIMS);
-        assert_eq!(app.panel(pulled + DIMS + 500), Some(dim_level(SLIDER_START)));
+        assert_eq!(
+            app.panel(pulled + DIMS + 500),
+            Some(dim_level(SLIDER_START))
+        );
         let again = pulled + DIMS + 600;
         app.plugged(again, false);
-        assert_eq!(app.panel(again + 150), Some(SLIDER_START), "a cable coming out brightens a lit panel");
-        assert_eq!(app.deadline(again + 150), Some(again + DIMS), "and the wait starts over");
+        assert_eq!(
+            app.panel(again + 150),
+            Some(SLIDER_START),
+            "a cable coming out brightens a lit panel"
+        );
+        assert_eq!(
+            app.deadline(again + 150),
+            Some(again + DIMS),
+            "and the wait starts over"
+        );
         press(&mut app, Key::Power, again + 200);
-        assert!(!app.display_on(), "the power key turns it off at once, as ever");
+        assert!(
+            !app.display_on(),
+            "the power key turns it off at once, as ever"
+        );
     }
 
     #[test]
@@ -11405,13 +16896,23 @@ mod tests {
         assert_eq!(app.panel(365), None);
         let plugged = 1000;
         app.plugged(plugged, true);
-        assert!(app.display_on() && app.charge_shown(), "the charging screen lights the panel");
-        assert_eq!(app.deadline(plugged + 1000), Some(0), "its tide moves a frame at a time");
+        assert!(
+            app.display_on() && app.charge_shown(),
+            "the charging screen lights the panel"
+        );
+        assert_eq!(
+            app.deadline(plugged + 1000),
+            Some(0),
+            "its tide moves a frame at a time"
+        );
         app.tick(plugged + CHARGE_MS - 1);
         assert!(app.display_on());
         app.tick(plugged + CHARGE_MS);
         assert!(!app.display_on(), "then the panel goes dark again");
-        assert!(app.panel(plugged + CHARGE_MS + 100).is_some(), "as the charging screen goes dark");
+        assert!(
+            app.panel(plugged + CHARGE_MS + 100).is_some(),
+            "as the charging screen goes dark"
+        );
         app.tick(plugged + CHARGE_MS + 365);
         assert_eq!(app.panel(plugged + CHARGE_MS + 365), None);
         assert!(app.charging.is_none(), "and goes with it");
@@ -11425,7 +16926,10 @@ mod tests {
         assert!(app.display_on() && app.charge_shown());
         app.tick(1000 + CHARGE_MS);
         assert!(app.display_on(), "the panel stays lit");
-        assert!(!app.charge_shown(), "as the charging screen goes for the page");
+        assert!(
+            !app.charge_shown(),
+            "as the charging screen goes for the page"
+        );
         app.tick(1000 + CHARGE_MS + 300);
         assert!(app.charging.is_none());
     }
@@ -11453,7 +16957,13 @@ mod tests {
 
     #[test]
     fn the_charging_screen_shows_the_level_over_a_tide_of_light() {
-        let (f, i) = (fonts(), DeviceInfo { battery: Some(battery_at(64, Charge::Charging)), ..info() });
+        let (f, i) = (
+            fonts(),
+            DeviceInfo {
+                battery: Some(battery_at(64, Charge::Charging)),
+                ..info()
+            },
+        );
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.tick(0);
         press(&mut app, Key::Power, 0);
@@ -11467,7 +16977,10 @@ mod tests {
         };
         assert_eq!(px(0, 0), [0, 0, 0], "on black");
         let foot = px(W / 2, H - 4);
-        assert!(foot[2] > 40 && foot[2] > foot[0] * 4 && foot[2] > foot[1] * 2, "the tide's light at the foot is blue: {foot:?}");
+        assert!(
+            foot[2] > 40 && foot[2] > foot[0] * 4 && foot[2] > foot[1] * 2,
+            "the tide's light at the foot is blue: {foot:?}"
+        );
     }
 
     #[test]
@@ -11475,8 +16988,15 @@ mod tests {
         let mut app = App::new(Screen::Home, W, H, PPD);
         app.tick(0);
         press(&mut app, Key::Power, 1000);
-        assert!(!app.display_on(), "touches and keys take the screen as off at once");
-        assert_eq!(app.panel(1000), Some(SLIDER_START), "while its content goes dark under the backlight it had");
+        assert!(
+            !app.display_on(),
+            "touches and keys take the screen as off at once"
+        );
+        assert_eq!(
+            app.panel(1000),
+            Some(SLIDER_START),
+            "while its content goes dark under the backlight it had"
+        );
         assert_eq!(app.deadline(1000), Some(0), "a frame at a time");
         assert_eq!(app.panel(1300), Some(SLIDER_START));
         app.tick(1365);
@@ -11493,7 +17013,10 @@ mod tests {
         press(&mut app, Key::Power, 1100);
         assert!(app.display_on(), "the power key lit it again");
         let level = app.curtain.level(1100);
-        assert!(level > 0.0 && level < 1.0, "from as dark as it had gone: {level}");
+        assert!(
+            level > 0.0 && level < 1.0,
+            "from as dark as it had gone: {level}"
+        );
         assert_eq!(app.curtain.level(1100 + 520), 1.0);
     }
 
@@ -11506,7 +17029,14 @@ mod tests {
         app.tick(365);
         press(&mut app, Key::Power, 1000);
         let mut c = Canvas::new(W, H);
-        let light = |c: &Canvas| c.data.as_chunks::<4>().0.iter().map(|p| p[0] as u64 + p[1] as u64 + p[2] as u64).sum::<u64>();
+        let light = |c: &Canvas| {
+            c.data
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|p| p[0] as u64 + p[1] as u64 + p[2] as u64)
+                .sum::<u64>()
+        };
         app.compose(&mut c, &f, &i, "12:00", 1000);
         let first = light(&c);
         app.compose(&mut c, &f, &i, "12:00", 1260);
@@ -11514,7 +17044,10 @@ mod tests {
         app.compose(&mut c, &f, &i, "12:00", 1520);
         let full = light(&c);
         assert_eq!(first, 0, "black as the panel lights");
-        assert!(halfway > full / 2 && halfway < full, "{halfway} of {full} halfway through");
+        assert!(
+            halfway > full / 2 && halfway < full,
+            "{halfway} of {full} halfway through"
+        );
     }
 
     #[test]
@@ -11554,12 +17087,22 @@ mod tests {
         let (f, i) = (fonts(), info());
         let mut app = sideloading(&f, &i);
         press(&mut app, Key::Power, 0);
-        app.install(Event::Finished(Outcome::Installed { slot: Slot::A, wipe: false }), 100);
+        app.install(
+            Event::Finished(Outcome::Installed {
+                slot: Slot::A,
+                wipe: false,
+            }),
+            100,
+        );
         assert!(app.display_on(), "the finished install lit the panel");
         // A finger reaching for the phone lands on 重启到系统; within the
         // guard it only keeps the panel awake.
         assert!(tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 200).is_empty());
-        assert_eq!(app.screen(), Screen::Installing, "the stray tap did not reboot");
+        assert_eq!(
+            app.screen(),
+            Screen::Installing,
+            "the stray tap did not reboot"
+        );
         // Past the guard the same tap reboots.
         assert_eq!(
             tap_at(&mut app, &f, &i, Action::RebootTo(Target::System), 700),
@@ -11571,7 +17114,13 @@ mod tests {
     fn a_finger_held_as_the_panel_goes_off_lets_go() {
         let (f, i) = (fonts(), info());
         let mut app = App::new(Screen::Reboot, W, H, PPD);
-        let track = app.frame(&f, &i).hits.iter().find(|h| h.action == Action::Confirm(Confirm::Reboot)).unwrap().rect;
+        let track = app
+            .frame(&f, &i)
+            .hits
+            .iter()
+            .find(|h| h.action == Action::Confirm(Confirm::Reboot))
+            .unwrap()
+            .rect;
         let y = track.centre().1;
         app.touch(Touch::Down(track.x + track.h / 2.0, y), &f, 0);
         app.touch(Touch::Move(track.x + track.w * 0.6, y), &f, 10);
@@ -11579,7 +17128,10 @@ mod tests {
         press(&mut app, Key::Power, 20);
         assert_eq!(app.state.confirm, 0.0, "the knob is back at the start");
         app.touch(Touch::Move(track.x + track.w, y), &f, 30);
-        assert!(app.touch(Touch::Up, &f, 40).is_empty(), "no reboot from a dark panel");
+        assert!(
+            app.touch(Touch::Up, &f, 40).is_empty(),
+            "no reboot from a dark panel"
+        );
         assert!(!app.display_on());
     }
 
@@ -11601,15 +17153,31 @@ mod tests {
         press(&mut app, Key::Power, 0);
         app.install(Event::Checking { size: 1 << 20 }, 10);
         assert!(!app.display_on(), "reading the package does not light it");
-        app.install(Event::Image { kind: ImageKind::Dtbo, size: 1 << 20, partitions: vec!["dtbo"] }, 20);
+        app.install(
+            Event::Image {
+                kind: ImageKind::Dtbo,
+                size: 1 << 20,
+                partitions: vec!["dtbo"],
+            },
+            20,
+        );
         assert!(app.display_on(), "an image waiting for its partition does");
         app.tick(20 + 520);
         assert_eq!(app.deadline(20 + 520), Some(20 + DIMS));
-        app.state.install = Install::Flashing { partition: "dtbo", stage: None };
+        app.state.install = Install::Flashing {
+            partition: "dtbo",
+            stage: None,
+        };
         press(&mut app, Key::Power, 500);
         app.install(Event::Progress(Stage::Flashing { done: 1, total: 2 }), 510);
         assert!(!app.display_on(), "progress does not");
-        app.install(Event::Finished(Outcome::Flashed { partition: "dtbo", slots: vec![Slot::A] }), 520);
+        app.install(
+            Event::Finished(Outcome::Flashed {
+                partition: "dtbo",
+                slots: vec![Slot::A],
+            }),
+            520,
+        );
         assert!(app.display_on(), "the end does");
     }
 
@@ -11635,7 +17203,12 @@ mod tests {
         assert!(frame.back);
         // The choices sit in order, top to bottom.
         let actions: Vec<Action> = frame.hits.iter().map(|h| h.action).collect();
-        assert_eq!(actions, (0..SCREEN_OFF.len()).map(Action::ScreenOff).collect::<Vec<_>>());
+        assert_eq!(
+            actions,
+            (0..SCREEN_OFF.len())
+                .map(Action::ScreenOff)
+                .collect::<Vec<_>>()
+        );
         tap(&mut app, &f, &i, Action::ScreenOff(0));
         assert_eq!(app.state.screen_off, 0);
         assert_eq!(app.screen(), Screen::ScreenOff, "the page stays");

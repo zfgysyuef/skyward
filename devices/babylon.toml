@@ -1,0 +1,157 @@
+[device]
+codename = "babylon"
+brand = "Xiaomi"
+model = "Xiaomi MIX Fold 3"
+ab = true
+soc = { hans = "第二代骁龙®8移动平台", hant = "Snapdragon® 8 Gen 2 行動平台", en = "Snapdragon® 8 Gen 2 Mobile Platform" }
+os_version_prop = "ro.mi.os.version.incremental"
+
+[display]
+# The inner panel. Android holds it at 1916×2160 (install orientation 270);
+# the kernel mode underneath is 2160×1916. density is ro.sf.lcd_density.
+width = 1916
+height = 2160
+density = 440
+diagonal = 8.03
+# RoundedCorner radius from the inner display.
+corner_radius = 20
+rotation = 270
+# The kernel mode under the 1916×2160 picture. The cover is the other DSI
+# panel; both stay connected, and the lid switch picks one.
+mode_width = 2160
+mode_height = 1916
+touch = "fts-pri"
+backlight = "panel0-backlight"
+
+# The cover, shown while the phone is shut. Its kernel mode is already
+# portrait, and its touch axes match that mode.
+[display.folded]
+width = 1080
+height = 2520
+density = 440
+corner_radius = 80
+rotation = 0
+mode_width = 1080
+mode_height = 2520
+touch = "fts-sec"
+backlight = "panel1-backlight"
+
+[modules]
+sources = ["vendor_boot", "vendor_dlkm", "vendor"]
+# Both touchscreens, FocalTech over SPI. The cover's driver depends on the
+# inner one. xiaomi_touch and panel_event_notifier come in as dependencies.
+# The inner firmware, st_fts_m18.ubin, is read from /odm/firmware.
+load = ["fts_touch_spi_pri", "fts_touch_spi_sec"]
+
+# Out of reset the controller reports raw frames. Told through Xiaomi's
+# touch layer, it reports positions. The node appears with xiaomi_touch,
+# which the touch driver loads first.
+[touch]
+writes = [{ path = "/sys/class/touch/touch_dev/enable_touch_raw", value = "0" }]
+
+# What the phone's own init runs once the system has finished starting, as
+# kernel-post-boot in /vendor/etc/init/hw/init.qti.kernel.rc. The kernel
+# starts the CPU clusters on the performance governor, which holds them at
+# their highest clock; the script hands them to WALT, lets idle CPUs power
+# down and sets how the memory bus scales. Without it the CPUs stay at
+# their highest clock and voltage even while idle, and the phone slowly
+# heats up.
+[[service]]
+path = "/vendor/bin/sh"
+args = ["/vendor/bin/init.kernel.post_boot.sh"]
+libraries = ["/system/lib64", "/vendor/lib64"]
+oneshot = true
+user = "root"
+groups = ["root", "system", "wakelock", "graphics"]
+
+# The secure world reaches back into Android through the listeners this
+# daemon registers; without them the key service cannot use any key.
+# /vendor/etc/init/qseecomd.rc starts it as root in drmrpc.
+[[service]]
+path = "/vendor/bin/qseecomd"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_property = "vendor.sys.listeners.registered"
+user = "root"
+groups = ["root", "drmrpc"]
+
+# The key service. The same program serves the secure clock and the shared
+# secret, which the vendor manifest describes apart from it. Without the
+# shared secret the credential service cannot write a note this service
+# will take, and a screen lock's keys stay closed.
+[[service]]
+path = "/vendor/bin/hw/android.hardware.security.keymint-service-qti"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_service = "android.hardware.security.keymint.IKeyMintDevice/default"
+registers = [
+    "android.hardware.security.keymint.IRemotelyProvisionedComponent/default",
+    "android.hardware.security.secureclock.ISecureClock/default",
+    "android.hardware.security.sharedsecret.ISharedSecret/default",
+]
+user = "system"
+groups = ["system", "drmrpc"]
+
+# The directory the phone's hardware services of the older kind register
+# with. A recovery carries none of it, so it is the installed system's own
+# program, running against the installed system's own libraries.
+[[service]]
+path = "/mnt/system_ext/bin/hwservicemanager"
+libraries = ["/mnt/system/system/lib64/bootstrap", "/mnt/system/system/lib64", "/mnt/system_ext/lib64"]
+ready_property = "hwservicemanager.ready"
+user = "system"
+groups = ["system", "readproc"]
+
+# The credential service: it is what the secure world has check a screen
+# lock, and the only thing that can hand out the note the key service wants
+# before it will use a key a screen lock guards.
+[[service]]
+path = "/vendor/bin/hw/android.hardware.gatekeeper@1.0-service-qti"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_hardware_service = "android.hardware.gatekeeper@1.0::IGatekeeper/default"
+user = "system"
+groups = ["system"]
+
+# The boot control. The phone is usable without it, so it comes last.
+[[service]]
+path = "/vendor/bin/hw/android.hardware.boot@1.2-service"
+libraries = ["/system/lib64", "/vendor/lib64"]
+ready_hardware_service = "android.hardware.boot@1.2::IBootControl/default"
+user = "root"
+groups = ["root"]
+
+# WLAN: the WCN7850 on PCIe, the same converged node as the 13 Ultra's,
+# driven by qca_cld3_kiwi_v2. Once fs_ready is written, cnss2 powers the
+# chip and loads kiwi/amss20.bin from the modem firmware partition, which
+# a recovery already mounts over /vendor/firmware. The driver then asks
+# for its settings and the MAC address, which that mount covers, so they
+# are given to the loader again: the settings from the vendor partition,
+# the address from persist. wpa_supplicant runs on the recovery's own
+# libraries, with libnl from the vendor interface's bundle. Whether a
+# network joined reaches the internet is asked of the page Xiaomi's
+# Chinese system asks.
+[wlan]
+modules = ["qca_cld3_kiwi_v2"]
+writes = [{ path = "/sys/kernel/cnss/fs_ready", value = "1" }]
+firmware = [
+    { name = "wlan/qca_cld/kiwi_v2/WCNSS_qcom_cfg.ini", path = "/vendor/etc/wifi/kiwi_v2/WCNSS_qcom_cfg.ini" },
+    { name = "wlan/qca_cld/kiwi_v2/wlan_mac.bin", partition = "persist", path = "kiwi_v2/wlan_mac.bin" },
+]
+interface = "wlan0"
+supplicant = "/vendor/bin/hw/wpa_supplicant"
+libraries = ["/vendor/lib64", "/system/lib64"]
+service = "android.hardware.wifi.supplicant.ISupplicant/default"
+probe = "http://connect.rom.miui.com/generate_204"
+
+# qcom-hv-haptics, as on the 13 Ultra. Waveform 0 is the click. The driver
+# says the motor's resonant frequency in lra_frequency_hz.
+[haptics]
+click = 0
+resonance = "/sys/class/qcom-haptics/lra_frequency_hz"
+strength = { lightest = 0.5, strongest = 1.0 }
+
+# The stock build the recovery is made on: the Chinese system's
+# OS3.0.304.0, whose full update package holds the recovery partition the
+# recovery is built on top of.
+[stock]
+version = "OS3.0.304.0.WMVCNXM"
+package = "https://hugeota.d.miui.com/OS3.0.304.0.WMVCNXM/babylon-ota_full-OS3.0.304.0.WMVCNXM-user-16.0-c94b3b1f6e.zip"
+recovery = "5b60decda2f4c6f902460ed44d3d5c5356c73711760bc268e01c6e30e17b96e7"

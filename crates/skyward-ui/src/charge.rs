@@ -49,7 +49,12 @@ const LINE_GAP_DP: f32 = 30.0;
 
 const BLACK: Rgba = Rgba::rgb(0, 0, 0);
 const INK: Rgba = Rgba::rgb(255, 255, 255);
-const LINE_INK: Rgba = Rgba { r: 255, g: 255, b: 255, a: 160 };
+const LINE_INK: Rgba = Rgba {
+    r: 255,
+    g: 255,
+    b: 255,
+    a: 160,
+};
 
 /// What the charger does to the battery, in the language.
 fn doing(l: Lang, b: &Battery) -> &'static str {
@@ -75,7 +80,11 @@ impl Art {
         let (dpx, ppx, lpx) = (m.dp(DIGITS_DP), m.dp(PERCENT_DP), m.dp(LINE_DP));
         let (digits, line) = (b.level.to_string(), doing(l, b));
         let probe = Canvas::new(1, 1);
-        let (dw, pw, gap) = (probe.text_width(&face, &digits, dpx), probe.text_width(&face, "%", ppx), m.dp(PERCENT_GAP_DP));
+        let (dw, pw, gap) = (
+            probe.text_width(&face, &digits, dpx),
+            probe.text_width(&face, "%", ppx),
+            m.dp(PERCENT_GAP_DP),
+        );
         let x = (w - dw - gap - pw) / 2.0;
         // The digits and the percent sign share a baseline, the digits'
         // middle on the line the screen puts them.
@@ -83,19 +92,37 @@ impl Art {
         let pad = m.dp(8.0);
         let box_h = (dpx * 1.6) as u32;
         let top = baseline - dpx * 1.2;
-        let digits_art = Sprite::capture(x - pad, top, (dw + 2.0 * pad) as u32, box_h, |c, ox, oy| {
-            c.text(&face, &digits, x + ox, baseline + oy, dpx, INK, None);
-        });
+        let digits_art =
+            Sprite::capture(x - pad, top, (dw + 2.0 * pad) as u32, box_h, |c, ox, oy| {
+                c.text(&face, &digits, x + ox, baseline + oy, dpx, INK, None);
+            });
         let px = x + dw + gap;
-        let percent = Sprite::capture(px - pad, top, (pw + 2.0 * pad) as u32, box_h, |c, ox, oy| {
-            c.text(&face, "%", px + ox, baseline + oy, ppx, INK, None);
-        });
+        let percent = Sprite::capture(
+            px - pad,
+            top,
+            (pw + 2.0 * pad) as u32,
+            box_h,
+            |c, ox, oy| {
+                c.text(&face, "%", px + ox, baseline + oy, ppx, INK, None);
+            },
+        );
         let lw = probe.text_width(&f.body, line, lpx);
         let (lx, cy) = ((w - lw) / 2.0, baseline + m.dp(LINE_GAP_DP) + lpx / 2.0);
-        let line_art = Sprite::capture(lx - pad, cy - lpx, (lw + 2.0 * pad) as u32, (lpx * 2.0) as u32, |c, ox, oy| {
-            c.text_vc(&f.body, line, lx + ox, cy + oy, lpx, INK, None);
-        });
-        Ok(Art { shows: (b.level, line), digits: digits_art, percent, line: line_art })
+        let line_art = Sprite::capture(
+            lx - pad,
+            cy - lpx,
+            (lw + 2.0 * pad) as u32,
+            (lpx * 2.0) as u32,
+            |c, ox, oy| {
+                c.text_vc(&f.body, line, lx + ox, cy + oy, lpx, INK, None);
+            },
+        );
+        Ok(Art {
+            shows: (b.level, line),
+            digits: digits_art,
+            percent,
+            line: line_art,
+        })
     }
 
     /// Whether the art shows `b` as it stands, in `l`.
@@ -128,7 +155,8 @@ fn tide(m: &Metrics, level: u8, ms: u64) -> (usize, Field) {
     let t = ms as f32 / 1000.0;
     let rise = motion::settle(ms, RISE);
     let breath = (std::f32::consts::TAU * t / BREATH).sin();
-    let crest = rise * (CREST_EMPTY + CREST_FULL * level.min(100) as f32 / 100.0) + SWELL * breath * rise;
+    let crest =
+        rise * (CREST_EMPTY + CREST_FULL * level.min(100) as f32 / 100.0) + SWELL * breath * rise;
     let reach = CREST_EMPTY + CREST_FULL + SWELL + SOFT;
     let top = (h as f32 * (1.0 - reach)) as usize / CELL * CELL;
     let (cols, rows) = (w / CELL + 2, (h - top) / CELL + 2);
@@ -149,9 +177,19 @@ fn tide(m: &Metrics, level: u8, ms: u64) -> (usize, Field) {
             // navy toward the foot.
             let glow = (-((edge - 0.06 - v) / 0.16).powi(2)).exp();
             let noise = glow::perlin(u * 2.5 + t * 0.15, v * 4.0 - t * 0.1);
-            let light = fill * (0.30 + 0.70 * glow) * (0.86 + 0.14 * breath) * (0.85 + 0.15 * noise);
-            *px = std::array::from_fn(|c| (NAVY[c] + (ELECTRIC[c] - NAVY[c]) * glow) * light * 255.0);
+            let light =
+                fill * (0.30 + 0.70 * glow) * (0.86 + 0.14 * breath) * (0.85 + 0.15 * noise);
+            *px =
+                std::array::from_fn(|c| (NAVY[c] + (ELECTRIC[c] - NAVY[c]) * glow) * light * 255.0);
         }
     }
-    (top, Field { cell: CELL, cols, rows, rgb })
+    (
+        top,
+        Field {
+            cell: CELL,
+            cols,
+            rows,
+            rgb,
+        },
+    )
 }

@@ -38,7 +38,16 @@ const ENTRY_BYTES: u64 = 2048;
 
 /// The slot's partitions that start the phone and check what it starts, in
 /// the order a backup takes them: those the phone has.
-const BOOT: [&str; 8] = ["boot", "init_boot", "vendor_boot", "dtbo", "vbmeta", "vbmeta_system", "vbmeta_vendor", "recovery"];
+const BOOT: [&str; 8] = [
+    "boot",
+    "init_boot",
+    "vendor_boot",
+    "dtbo",
+    "vbmeta",
+    "vbmeta_system",
+    "vbmeta_vendor",
+    "recovery",
+];
 
 /// The order a restore writes the parts in: what starts the phone and what
 /// it starts, then the baseband's, then the data partition's files, which
@@ -79,7 +88,11 @@ const DATA_SKIPPED: [&str; 21] = [
 /// What of the data partition backups leave out on this phone: what every
 /// phone's do, and what the phone's own secure world keeps in step.
 pub fn data_skipped(phone: &[String]) -> Vec<String> {
-    DATA_SKIPPED.iter().map(|s| s.to_string()).chain(phone.iter().cloned()).collect()
+    DATA_SKIPPED
+        .iter()
+        .map(|s| s.to_string())
+        .chain(phone.iter().cloned())
+        .collect()
 }
 
 pub struct BackupTask {
@@ -142,11 +155,16 @@ pub enum Refusal {
 impl std::fmt::Display for Refusal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Refusal::Room { needed, free } => write!(f, "the backup takes {needed} bytes, and {free} are free"),
+            Refusal::Room { needed, free } => {
+                write!(f, "the backup takes {needed} bytes, and {free} are free")
+            }
             Refusal::Update(state) => write!(f, "an update is in flight ({state:?})"),
             Refusal::OtherPhone(device) => write!(f, "the backup was made on {device}"),
             Refusal::Resized(name) => write!(f, "{name} is not the size it was backed up at"),
-            Refusal::DataReset => write!(f, "the data partition has been made afresh since the backup"),
+            Refusal::DataReset => write!(
+                f,
+                "the data partition has been made afresh since the backup"
+            ),
         }
     }
 }
@@ -161,7 +179,12 @@ pub enum Event {
     /// The part under way, the bytes of it done of how many in this pass
     /// over it, and whether this is the pass that checks a backup against
     /// what it recorded.
-    At { item: usize, done: u64, of: u64, checking: bool },
+    At {
+        item: usize,
+        done: u64,
+        of: u64,
+        checking: bool,
+    },
     Ended(End),
 }
 
@@ -171,7 +194,9 @@ pub enum End {
     /// A backup restored, but for the folders a key of their own began in
     /// that are gone, which only the system makes, with what the backup
     /// held in them.
-    Restored { unmade: Vec<PathBuf> },
+    Restored {
+        unmade: Vec<PathBuf>,
+    },
     /// Stopped as asked, with nothing of the backup left, or nothing of
     /// the restore written.
     Stopped,
@@ -193,7 +218,8 @@ impl Worker {
         if unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_CLOEXEC | libc::O_NONBLOCK) } != 0 {
             return Err(io::Error::last_os_error()).context("make the backup worker's wake pipe");
         }
-        let (wake, signal) = unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
+        let (wake, signal) =
+            unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
         let (tx, events) = mpsc::channel();
         let cancel = Arc::new(AtomicBool::new(false));
         let stop = cancel.clone();
@@ -208,7 +234,9 @@ impl Worker {
                 };
                 let ended = match task {
                     Task::Backup(t) => backup(t, &tell, &stop).map(End::Saved),
-                    Task::Restore(t) => restore(t, &tell, &stop).map(|unmade| End::Restored { unmade }),
+                    Task::Restore(t) => {
+                        restore(t, &tell, &stop).map(|unmade| End::Restored { unmade })
+                    }
                 };
                 let end = match ended {
                     Ok(end) => end,
@@ -229,7 +257,12 @@ impl Worker {
                 tell(Event::Ended(end));
             })
             .context("start the backup worker")?;
-        Ok(Worker { events, wake, cancel, thread: Some(thread) })
+        Ok(Worker {
+            events,
+            wake,
+            cancel,
+            thread: Some(thread),
+        })
     }
 
     pub fn fd(&self) -> RawFd {
@@ -239,7 +272,14 @@ impl Worker {
     /// The events since the last call.
     pub fn events(&self) -> Vec<Event> {
         let mut drain = [0u8; 64];
-        while unsafe { libc::read(self.wake.as_raw_fd(), drain.as_mut_ptr().cast(), drain.len()) } > 0 {}
+        while unsafe {
+            libc::read(
+                self.wake.as_raw_fd(),
+                drain.as_mut_ptr().cast(),
+                drain.len(),
+            )
+        } > 0
+        {}
         self.events.try_iter().collect()
     }
 
@@ -286,21 +326,43 @@ struct Telling<'a> {
 
 impl Telling<'_> {
     fn new(tell: &dyn Fn(Event), item: usize, of: u64, checking: bool) -> Telling<'_> {
-        tell(Event::At { item, done: 0, of, checking });
-        Telling { tell, item, of, checking, told: Instant::now() }
+        tell(Event::At {
+            item,
+            done: 0,
+            of,
+            checking,
+        });
+        Telling {
+            tell,
+            item,
+            of,
+            checking,
+            told: Instant::now(),
+        }
     }
 
     fn done(&mut self, done: u64) {
         if self.told.elapsed() >= PROGRESS_EVERY {
             self.told = Instant::now();
-            (self.tell)(Event::At { item: self.item, done, of: self.of, checking: self.checking });
+            (self.tell)(Event::At {
+                item: self.item,
+                done,
+                of: self.of,
+                checking: self.checking,
+            });
         }
     }
 }
 
 /// Copy `len` bytes from `from` to `to`, telling how far, and stopping when
 /// asked.
-fn copy(from: &mut impl Read, to: &mut impl Write, len: u64, cancel: &AtomicBool, telling: &mut Telling) -> Result<()> {
+fn copy(
+    from: &mut impl Read,
+    to: &mut impl Write,
+    len: u64,
+    cancel: &AtomicBool,
+    telling: &mut Telling,
+) -> Result<()> {
     let mut buf = vec![0u8; CHUNK];
     let mut done = 0u64;
     while done < len {
@@ -325,11 +387,16 @@ fn data_key() -> Result<String> {
 
 /// The bytes free where `path` is, or would be made.
 fn free_bytes(path: &Path) -> Result<u64> {
-    let there = path.ancestors().find(|p| p.exists()).context("the root is always there")?;
-    let c = std::ffi::CString::new(there.as_os_str().as_bytes()).with_context(|| format!("{} holds a NUL", there.display()))?;
+    let there = path
+        .ancestors()
+        .find(|p| p.exists())
+        .context("the root is always there")?;
+    let c = std::ffi::CString::new(there.as_os_str().as_bytes())
+        .with_context(|| format!("{} holds a NUL", there.display()))?;
     let mut st: libc::statvfs = unsafe { std::mem::zeroed() };
     if unsafe { libc::statvfs(c.as_ptr(), &mut st) } != 0 {
-        return Err(io::Error::last_os_error()).with_context(|| format!("look at the room on {}", there.display()));
+        return Err(io::Error::last_os_error())
+            .with_context(|| format!("look at the room on {}", there.display()));
     }
     Ok(st.f_bavail as u64 * st.f_frsize as u64)
 }
@@ -369,12 +436,16 @@ fn backup(t: BackupTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<Pa
     }
     if system {
         // A partition of the slot that holds nothing has nothing to keep.
-        for (base, size) in skyward_vab::slot_sizes(slot)?.into_iter().filter(|(_, size)| *size > 0) {
+        for (base, size) in skyward_vab::slot_sizes(slot)?
+            .into_iter()
+            .filter(|(_, size)| *size > 0)
+        {
             plan.push((Part::System, base.clone(), Source::Logical(base), size));
         }
     }
     if data {
-        let (bytes, entries) = archive::measure(Path::new(DATA), &skipped, cancel).context("measure the data partition's files")?;
+        let (bytes, entries) = archive::measure(Path::new(DATA), &skipped, cancel)
+            .context("measure the data partition's files")?;
         plan.push((Part::Data, "data".into(), Source::Data, bytes));
         needed += entries * ENTRY_BYTES;
     }
@@ -392,7 +463,11 @@ fn backup(t: BackupTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<Pa
     if !t.compress && needed > free {
         return Err(Refusal::Room { needed, free }.into());
     }
-    tell(Event::Plan(plan.iter().map(|(_, name, _, size)| (name.clone(), *size)).collect()));
+    tell(Event::Plan(
+        plan.iter()
+            .map(|(_, name, _, size)| (name.clone(), *size))
+            .collect(),
+    ));
     if let Some(at) = &t.remount {
         mount::remount_writable(at, true)?;
     }
@@ -411,33 +486,60 @@ fn backup(t: BackupTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<Pa
             let mut telling = Telling::new(tell, k, *size, false);
             match source {
                 Source::Block(device) => {
-                    let mut from = File::open(device).with_context(|| format!("open {}", device.display()))?;
-                    copy(&mut from, &mut writer, *size, cancel, &mut telling).with_context(|| format!("back up {name}"))?;
+                    let mut from =
+                        File::open(device).with_context(|| format!("open {}", device.display()))?;
+                    copy(&mut from, &mut writer, *size, cancel, &mut telling)
+                        .with_context(|| format!("back up {name}"))?;
                 }
                 Source::Logical(base) => {
-                    let whole = skyward_vab::map_whole(slot, base, &format!("skyward-backup-{base}{}", slot.suffix()), true)?;
+                    let whole = skyward_vab::map_whole(
+                        slot,
+                        base,
+                        &format!("skyward-backup-{base}{}", slot.suffix()),
+                        true,
+                    )?;
                     let copied = File::open(&whole.device)
                         .with_context(|| format!("open {}", whole.device.display()))
-                        .and_then(|mut from| copy(&mut from, &mut writer, whole.size, cancel, &mut telling));
+                        .and_then(|mut from| {
+                            copy(&mut from, &mut writer, whole.size, cancel, &mut telling)
+                        });
                     skyward_vab::unmap_whole(&whole)?;
                     copied.with_context(|| format!("back up {name}"))?;
                 }
                 Source::Data => {
-                    archive::pack(Path::new(DATA), &skipped, &mut writer, cancel, &mut |done| telling.done(done))
-                        .context("back up the data partition's files")?;
+                    archive::pack(
+                        Path::new(DATA),
+                        &skipped,
+                        &mut writer,
+                        cancel,
+                        &mut |done| telling.done(done),
+                    )
+                    .context("back up the data partition's files")?;
                 }
             }
-            items.push(Item { part: *part, name: name.clone(), stored: writer.finish()? });
+            items.push(Item {
+                part: *part,
+                name: name.clone(),
+                stored: writer.finish()?,
+            });
         }
         if t.verify {
             for (k, item) in items.iter().enumerate() {
                 let mut telling = Telling::new(tell, k, item.stored.size, true);
-                check(&folder, &item.stored, cancel, &mut telling).with_context(|| format!("check {}", item.name))?;
+                check(&folder, &item.stored, cancel, &mut telling)
+                    .with_context(|| format!("check {}", item.name))?;
             }
         }
         let data_key = if data { Some(data_key()?) } else { None };
-        let manifest =
-            Manifest { format: FORMAT, device: t.device.clone(), made: t.made, slot: slot.suffix().into(), system: t.system.clone(), data_key, items };
+        let manifest = Manifest {
+            format: FORMAT,
+            device: t.device.clone(),
+            made: t.made,
+            slot: slot.suffix().into(),
+            system: t.system.clone(),
+            data_key,
+            items,
+        };
         manifest.write(&folder, t.ownership)?;
         unsafe { libc::sync() };
         Ok(())
@@ -446,7 +548,10 @@ fn backup(t: BackupTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<Pa
     let made = match made {
         Err(e) if folder.exists() => match fs::remove_dir_all(&folder) {
             Ok(()) => Err(e),
-            Err(r) => Err(e.context(format!("taking away {} afterwards failed too: {r}", folder.display()))),
+            Err(r) => Err(e.context(format!(
+                "taking away {} afterwards failed too: {r}",
+                folder.display()
+            ))),
         },
         other => other,
     };
@@ -473,7 +578,10 @@ fn check(folder: &Path, stored: &Stored, cancel: &AtomicBool, telling: &mut Tell
 
 /// The index of a part in [`Part::ALL`].
 fn index(part: Part) -> usize {
-    Part::ALL.iter().position(|&p| p == part).expect("every part is listed")
+    Part::ALL
+        .iter()
+        .position(|&p| p == part)
+        .expect("every part is listed")
 }
 
 /// A reader that counts the bytes it gives, where the count can be read
@@ -497,25 +605,48 @@ fn restore(t: RestoreTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<
         return Err(Refusal::OtherPhone(manifest.device).into());
     }
     let slot = skyward_vab::current_slot()?.context("not an A/B phone")?;
-    let mut items: Vec<&Item> = manifest.items.iter().filter(|i| t.parts[index(i.part)]).collect();
-    ensure!(!items.is_empty(), "nothing chosen to restore is in the backup");
+    let mut items: Vec<&Item> = manifest
+        .items
+        .iter()
+        .filter(|i| t.parts[index(i.part)])
+        .collect();
+    ensure!(
+        !items.is_empty(),
+        "nothing chosen to restore is in the backup"
+    );
     items.sort_by_key(|i| RESTORE_ORDER.iter().position(|&p| p == i.part));
     // All that can be seen before anything is written.
     let system = items.iter().any(|i| i.part == Part::System);
     if system || items.iter().any(|i| i.part == Part::Boot) {
         no_update()?;
     }
-    let sizes = if system { skyward_vab::slot_sizes(slot)? } else { Vec::new() };
+    let sizes = if system {
+        skyward_vab::slot_sizes(slot)?
+    } else {
+        Vec::new()
+    };
     for item in &items {
         match item.part {
             Part::Boot | Part::Efs => {
                 let device = target(item, slot);
-                ensure!(device.exists(), "the phone has no partition {}", device.display());
+                ensure!(
+                    device.exists(),
+                    "the phone has no partition {}",
+                    device.display()
+                );
                 let size = skyward_block::size_bytes(&device)?;
-                ensure!(size == item.stored.size, "{} holds {size} bytes, and its backup {}", device.display(), item.stored.size);
+                ensure!(
+                    size == item.stored.size,
+                    "{} holds {size} bytes, and its backup {}",
+                    device.display(),
+                    item.stored.size
+                );
             }
             Part::System => {
-                let size = sizes.iter().find(|(base, _)| *base == item.name).map(|(_, size)| *size);
+                let size = sizes
+                    .iter()
+                    .find(|(base, _)| *base == item.name)
+                    .map(|(_, size)| *size);
                 if size != Some(item.stored.size) {
                     return Err(Refusal::Resized(item.name.clone()).into());
                 }
@@ -527,16 +658,27 @@ fn restore(t: RestoreTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<
             }
         }
     }
-    tell(Event::Plan(items.iter().map(|i| (i.name.clone(), i.stored.size)).collect()));
+    tell(Event::Plan(
+        items
+            .iter()
+            .map(|i| (i.name.clone(), i.stored.size))
+            .collect(),
+    ));
     // A damaged backup is not written anywhere.
     for (k, item) in items.iter().enumerate() {
         let mut telling = Telling::new(tell, k, item.stored.size, true);
-        check(&t.folder, &item.stored, cancel, &mut telling).with_context(|| format!("check {}", item.name))?;
+        check(&t.folder, &item.stored, cancel, &mut telling)
+            .with_context(|| format!("check {}", item.name))?;
     }
-    for item in items.iter().filter(|i| matches!(i.part, Part::Boot | Part::Efs)) {
+    for item in items
+        .iter()
+        .filter(|i| matches!(i.part, Part::Boot | Part::Efs))
+    {
         let device = target(item, slot);
         for point in mount::points_of(skyward_block::devnum(&device)?)? {
-            mount::umount(&point).with_context(|| format!("{} is in use at {}", device.display(), point.display()))?;
+            mount::umount(&point).with_context(|| {
+                format!("{} is in use at {}", device.display(), point.display())
+            })?;
         }
     }
     if system {
@@ -560,7 +702,12 @@ fn restore(t: RestoreTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<
             }
             Part::System => {
                 let mut telling = Telling::new(tell, k, item.stored.size * 2, false);
-                let whole = skyward_vab::map_whole(slot, &item.name, &format!("skyward-restore-{}{}", item.name, slot.suffix()), false)?;
+                let whole = skyward_vab::map_whole(
+                    slot,
+                    &item.name,
+                    &format!("skyward-restore-{}{}", item.name, slot.suffix()),
+                    false,
+                )?;
                 let written = write_image(&whole.device, &t.folder, &item.stored, &mut telling);
                 skyward_vab::unmap_whole(&whole)?;
                 written?;
@@ -569,12 +716,22 @@ fn restore(t: RestoreTask, tell: &dyn Fn(Event), cancel: &AtomicBool) -> Result<
                 let mut telling = Telling::new(tell, k, item.stored.size, false);
                 let read = Cell::new(0);
                 let mut reader = Reader::open(&t.folder, &item.stored);
-                let from = Counted { inner: &mut reader, read: &read };
-                let unpacked = archive::unpack(from, Path::new(DATA), &skipped, &go_on, &mut |_| telling.done(read.get()))
+                let from = Counted {
+                    inner: &mut reader,
+                    read: &read,
+                };
+                let unpacked =
+                    archive::unpack(from, Path::new(DATA), &skipped, &go_on, &mut |_| {
+                        telling.done(read.get())
+                    })
                     .context("restore the data partition's files")?;
                 io::copy(&mut reader, &mut io::sink()).context("read the rest of the backup")?;
                 reader.check(&item.stored)?;
-                unmade = unpacked.unmade.iter().map(|u| Path::new(DATA).join(u)).collect();
+                unmade = unpacked
+                    .unmade
+                    .iter()
+                    .map(|u| Path::new(DATA).join(u))
+                    .collect();
             }
         }
         skyward_sys::kmsg(&format!("restored {}", item.name))?;
@@ -596,17 +753,34 @@ fn target(item: &Item, slot: Slot) -> PathBuf {
 /// part's bytes, told as they go.
 fn write_image(device: &Path, folder: &Path, stored: &Stored, telling: &mut Telling) -> Result<()> {
     let mut reader = Reader::open(folder, stored);
-    let mut out = OpenOptions::new().write(true).open(device).with_context(|| format!("open {}", device.display()))?;
-    copy(&mut reader, &mut out, stored.size, &AtomicBool::new(false), telling).with_context(|| format!("write {}", device.display()))?;
+    let mut out = OpenOptions::new()
+        .write(true)
+        .open(device)
+        .with_context(|| format!("open {}", device.display()))?;
+    copy(
+        &mut reader,
+        &mut out,
+        stored.size,
+        &AtomicBool::new(false),
+        telling,
+    )
+    .with_context(|| format!("write {}", device.display()))?;
     reader.check(stored)?;
-    out.sync_all().with_context(|| format!("write {}", device.display()))?;
+    out.sync_all()
+        .with_context(|| format!("write {}", device.display()))?;
     // What is read back comes from the storage, not the pages just written.
     let rc = unsafe { libc::posix_fadvise(out.as_raw_fd(), 0, 0, libc::POSIX_FADV_DONTNEED) };
     if rc != 0 {
-        return Err(io::Error::from_raw_os_error(rc)).with_context(|| format!("drop the cached pages of {}", device.display()));
+        return Err(io::Error::from_raw_os_error(rc))
+            .with_context(|| format!("drop the cached pages of {}", device.display()));
     }
     let back = File::open(device).with_context(|| format!("open {}", device.display()))?;
-    let read = store::digest(back, stored.size, &mut |n| telling.done(stored.size + n)).with_context(|| format!("read {} back", device.display()))?;
-    ensure!(read == stored.sha256, "{} reads back different from the backup", device.display());
+    let read = store::digest(back, stored.size, &mut |n| telling.done(stored.size + n))
+        .with_context(|| format!("read {} back", device.display()))?;
+    ensure!(
+        read == stored.sha256,
+        "{} reads back different from the backup",
+        device.display()
+    );
     Ok(())
 }

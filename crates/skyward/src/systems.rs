@@ -41,7 +41,10 @@ pub enum Event {
 /// The slot the bootloader starts next, as the phone's boot control holds
 /// it.
 pub fn next_slot() -> Result<Slot> {
-    let (binder, hardware) = (skyward_binder::driver::Binder::open()?, skyward_binder::driver::Binder::hardware()?);
+    let (binder, hardware) = (
+        skyward_binder::driver::Binder::open()?,
+        skyward_binder::driver::Binder::hardware()?,
+    );
     let control = skyward_vab::boot::BootControl::open(&binder, &hardware)?;
     Ok(control.slots()?.active)
 }
@@ -58,7 +61,11 @@ fn read(version_prop: &str) -> Result<Overview> {
         Some(_) => install::changed(&state, next_slot()?)?,
         None => false,
     };
-    Ok(install::overview(&state, skyward_systems::installed_name(&props, version_prop), changed))
+    Ok(install::overview(
+        &state,
+        skyward_systems::installed_name(&props, version_prop),
+        changed,
+    ))
 }
 
 /// The system whose boot set is in the boot partitions.
@@ -98,7 +105,8 @@ fn switched(done: Result<Who>) -> Event {
 
 /// The system a request in misc names.
 fn named(name: &str) -> Result<Who> {
-    Who::named(name, &install::state()?).with_context(|| format!("no system named {name:?} is installed"))
+    Who::named(name, &install::state()?)
+        .with_context(|| format!("no system named {name:?} is installed"))
 }
 
 /// The work on the systems, from a thread of its own.
@@ -120,7 +128,8 @@ impl Worker {
         if unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_CLOEXEC | libc::O_NONBLOCK) } != 0 {
             return Err(std::io::Error::last_os_error()).context("make the systems' wake pipe");
         }
-        let (wake, signal) = unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
+        let (wake, signal) =
+            unsafe { (OwnedFd::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
         let (tasks, todo) = mpsc::channel::<Task>();
         let (tx, events) = mpsc::channel();
         let thread = thread::Builder::new()
@@ -140,21 +149,35 @@ impl Worker {
                             Err(e) => Some(Event::NotResumed(format!("{e:#}"))),
                         },
                         Task::Switch(to) => Some(switched(switch(to).map(|()| to))),
-                        Task::SwitchNamed(name) => Some(switched(named(&name).and_then(|to| switch(to).map(|()| to)))),
-                        Task::Remove => install::remove().err().map(|e| Event::Failed(format!("{e:#}"))),
+                        Task::SwitchNamed(name) => Some(switched(
+                            named(&name).and_then(|to| switch(to).map(|()| to)),
+                        )),
+                        Task::Remove => install::remove()
+                            .err()
+                            .map(|e| Event::Failed(format!("{e:#}"))),
                     };
                     if let Some(event) = told {
                         tell(event);
                     }
-                    tell(Event::Read(read(&version_prop).map_err(|e| format!("{e:#}"))));
+                    tell(Event::Read(
+                        read(&version_prop).map_err(|e| format!("{e:#}")),
+                    ));
                 }
             })
             .context("start the systems' worker")?;
-        Ok(Worker { tasks, events, wake, pending: 0, thread: Some(thread) })
+        Ok(Worker {
+            tasks,
+            events,
+            wake,
+            pending: 0,
+            thread: Some(thread),
+        })
     }
 
     pub fn send(&mut self, task: Task) {
-        self.tasks.send(task).expect("the systems' worker takes tasks while the screen holds it");
+        self.tasks
+            .send(task)
+            .expect("the systems' worker takes tasks while the screen holds it");
         self.pending += 1;
     }
 
@@ -170,9 +193,19 @@ impl Worker {
     /// The events since the last call.
     pub fn events(&mut self) -> Vec<Event> {
         let mut drain = [0u8; 64];
-        while unsafe { libc::read(self.wake.as_raw_fd(), drain.as_mut_ptr().cast(), drain.len()) } > 0 {}
+        while unsafe {
+            libc::read(
+                self.wake.as_raw_fd(),
+                drain.as_mut_ptr().cast(),
+                drain.len(),
+            )
+        } > 0
+        {}
         let events: Vec<Event> = self.events.try_iter().collect();
-        self.pending -= events.iter().filter(|e| matches!(e, Event::Read(_))).count();
+        self.pending -= events
+            .iter()
+            .filter(|e| matches!(e, Event::Read(_)))
+            .count();
         events
     }
 }
