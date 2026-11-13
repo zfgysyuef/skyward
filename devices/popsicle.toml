@@ -83,9 +83,10 @@ version = "OS4.0.4.0.XPBCNXM"
 package = "https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS4.0.4.0.XPBCNXM/popsicle-ota_full-OS4.0.4.0.XPBCNXM-user-17.0-7d13a10bbc.zip"
 recovery = "e66b80e5f1c0f54383d5a7f4e0da2d52f69c927dab32ae88b69e6695767a4a70"
 
-# qcom-hv-haptics (qcom,hv-haptics in its dtbo), with the click made from
-# samples at the motor's resonant frequency as on the 17 Ultra. The
-# strengths are the 17 Ultra's, which were felt on that phone's motor.
-[haptics]
-resonance = "/sys/class/qcom-haptics/lra_frequency_hz"
-strength = { lightest = 0.25, strongest = 0.75 }
+# The motor is a Cirrus CS40L26A on I2C at 0x43 (cirrus,cs40l26a). Its
+# driver loads and the device is present, but the device stays unbound
+# while it waits on a supplier, so no input device takes force-feedback
+# effects and /sys/class/qcom-haptics is absent. Opening a motor before
+# the first frame used to end the recovery, which turned the main panel
+# off and left init to start it again. Vibration waits until the CS40L26
+# binds.

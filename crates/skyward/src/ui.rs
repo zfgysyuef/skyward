@@ -1059,7 +1059,18 @@ pub fn run(cfg: &DeviceConfig, font: &Path, mono: &Path, request: bcb::Request, 
     let mut touch_known = false;
     // adbd and fastbootd ask over it to go over to fastboot and back.
     let control = Control::open()?;
-    let mut haptics = cfg.haptics.as_ref().map(Haptics::open).transpose()?;
+    // The motor is not what draws the pages. One that is configured and does
+    // not come up must not end the recovery: ending it closes the display,
+    // the panel goes off, and init starts the recovery again, so the screen
+    // never stays on. The 17 Pro Max's CS40L26 stays unbound in recovery and
+    // leaves no force-feedback device.
+    let mut haptics = match cfg.haptics.as_ref().map(Haptics::open).transpose() {
+        Ok(opened) => opened,
+        Err(e) => {
+            skyward_sys::kmsg(&format!("the vibration motor is not used: {e:#}"))?;
+            None
+        }
+    };
     let mut backlight = Backlight::open()?;
     let first = match &request.work {
         Work::Fastboot => Screen::Fastboot,
